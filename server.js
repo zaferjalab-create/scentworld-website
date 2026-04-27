@@ -383,7 +383,7 @@ async function sendNotification(subject, text) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Scent World Canada <onboarding@resend.dev>',
+        from: 'Scent World Canada <hello@scentworld.ca>',
         to: [process.env.NOTIFY_EMAIL || 'hello@scentworld.ca'],
         subject: `[Scent World] ${subject}`,
         text: text
