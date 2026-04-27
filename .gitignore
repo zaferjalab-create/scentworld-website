@@ -4,7 +4,13 @@ data/
 *.log
 *.mp4
 *.pdf
+
+# Allow images inside public/images
 *.jpg
 *.jpeg
 *.png
 *.webp
+!public/images/*.jpg
+!public/images/*.jpeg
+!public/images/*.png
+!public/images/*.webp
