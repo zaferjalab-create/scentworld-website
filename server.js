@@ -374,22 +374,25 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 // ═══════════════════════════════════════
 
 async function sendNotification(subject, text) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+  if (!process.env.RESEND_API_KEY) return;
   try {
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.office365.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      tls: { ciphers: 'SSLv3' },
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Scent World Canada <onboarding@resend.dev>',
+        to: [process.env.NOTIFY_EMAIL || 'hello@scentworld.ca'],
+        subject: `[Scent World] ${subject}`,
+        text: text
+      })
     });
-    await transporter.sendMail({
-      from: `"Scent World Canada" <${process.env.SMTP_USER}>`,
-      to: process.env.NOTIFY_EMAIL || process.env.SMTP_USER,
-      subject: `[Scent World] ${subject}`,
-      text: text
-    });
+    if (!res.ok) {
+      const err = await res.json();
+      console.error('Email notification failed:', err.message);
+    }
   } catch (err) {
     console.error('Email notification failed:', err.message);
   }
