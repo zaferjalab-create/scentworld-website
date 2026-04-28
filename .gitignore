@@ -14,3 +14,4 @@ data/
 !public/images/*.jpeg
 !public/images/*.png
 !public/images/*.webp
+!public/images/*.svg
