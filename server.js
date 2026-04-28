@@ -224,11 +224,11 @@ app.get('/api/admin/check', requireAdmin, (req, res) => {
 
 // Dashboard stats
 app.get('/api/admin/stats', requireAdmin, (req, res) => {
-  const contacts = db.prepare('SELECT COUNT(*) as total, SUM(CASE WHEN status = "new" THEN 1 ELSE 0 END) as new_count FROM contacts').get();
-  const bookings = db.prepare('SELECT COUNT(*) as total, SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending FROM bookings').get();
-  const subscribers = db.prepare('SELECT COUNT(*) as total FROM subscribers WHERE status = "active"').get();
-  const products = db.prepare('SELECT COUNT(*) as total FROM products WHERE active = 1').get();
-  const orders = db.prepare('SELECT COUNT(*) as total, COALESCE(SUM(total), 0) as revenue FROM orders WHERE payment_status = "paid"').get();
+  const contacts = db.prepare("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_count FROM contacts").get();
+  const bookings = db.prepare("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending FROM bookings").get();
+  const subscribers = db.prepare("SELECT COUNT(*) as total FROM subscribers WHERE status = 'active'").get();
+  const products = db.prepare("SELECT COUNT(*) as total FROM products WHERE active = 1").get();
+  const orders = db.prepare("SELECT COUNT(*) as total, COALESCE(SUM(total), 0) as revenue FROM orders WHERE payment_status = 'paid'").get();
   res.json({ success: true, stats: { contacts, bookings, subscribers, products, orders } });
 });
 
