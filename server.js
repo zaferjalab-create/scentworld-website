@@ -240,7 +240,7 @@ app.get('/api/admin/contacts', requireAdmin, (req, res) => {
 
 app.patch('/api/admin/contacts/:id', requireAdmin, (req, res) => {
   const { status, notes } = req.body;
-  db.prepare('UPDATE contacts SET status = COALESCE(?, status), notes = COALESCE(?, notes) WHERE id = ?').run(status, notes, req.params.id);
+  db.prepare('UPDATE contacts SET status = COALESCE(?, status), notes = COALESCE(?, notes) WHERE id = ?').run(status ?? null, notes ?? null, req.params.id);
   res.json({ success: true });
 });
 
@@ -257,7 +257,7 @@ app.get('/api/admin/bookings', requireAdmin, (req, res) => {
 
 app.patch('/api/admin/bookings/:id', requireAdmin, (req, res) => {
   const { status, admin_notes } = req.body;
-  db.prepare('UPDATE bookings SET status = COALESCE(?, status), admin_notes = COALESCE(?, admin_notes) WHERE id = ?').run(status, admin_notes, req.params.id);
+  db.prepare('UPDATE bookings SET status = COALESCE(?, status), admin_notes = COALESCE(?, admin_notes) WHERE id = ?').run(status ?? null, admin_notes ?? null, req.params.id);
   res.json({ success: true });
 });
 
