@@ -311,6 +311,30 @@ app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// Test email
+app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
+  const toEmail = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return res.json({ success: false, error: 'RESEND_API_KEY not set in Railway environment variables' });
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Scent World Canada <hello@scentworld.ca>',
+        to: [toEmail],
+        subject: '[Scent World] Test Email',
+        text: `This is a test email from your Scent World website.\n\nIf you received this, email notifications are working!\n\nSent to: ${toEmail}`
+      })
+    });
+    const data = await r.json();
+    if (!r.ok) return res.json({ success: false, error: JSON.stringify(data), to: toEmail });
+    res.json({ success: true, message: `Test email sent to ${toEmail}`, id: data.id });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 // Settings
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
   const rows = db.prepare('SELECT * FROM settings').all();
@@ -374,7 +398,12 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 // ═══════════════════════════════════════
 
 async function sendNotification(subject, text) {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.RESEND_API_KEY) {
+    console.error('EMAIL: RESEND_API_KEY not set — skipping email');
+    return;
+  }
+  const toEmail = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+  console.log(`EMAIL: Sending "${subject}" to ${toEmail}`);
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -384,17 +413,19 @@ async function sendNotification(subject, text) {
       },
       body: JSON.stringify({
         from: 'Scent World Canada <hello@scentworld.ca>',
-        to: [process.env.NOTIFY_EMAIL || 'hello@scentworld.ca'],
+        to: [toEmail],
         subject: `[Scent World] ${subject}`,
         text: text
       })
     });
+    const data = await res.json();
     if (!res.ok) {
-      const err = await res.json();
-      console.error('Email notification failed:', err.message);
+      console.error('EMAIL FAILED:', JSON.stringify(data));
+    } else {
+      console.log('EMAIL SENT OK, id:', data.id);
     }
   } catch (err) {
-    console.error('Email notification failed:', err.message);
+    console.error('EMAIL ERROR:', err.message);
   }
 }
 
