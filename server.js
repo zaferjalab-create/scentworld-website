@@ -34,6 +34,7 @@ app.post('/api/contact', (req, res) => {
     const stmt = db.prepare(`INSERT INTO contacts (first_name, last_name, email, phone, customer_type, product_interest, message) VALUES (?, ?, ?, ?, ?, ?, ?)`);
     stmt.run(first_name, last_name, email, phone || null, customer_type || null, product_interest || null, message || null);
     sendNotification('New Quote Request', `From: ${first_name} ${last_name} (${email})\nType: ${customer_type}\nInterest: ${product_interest}\n\n${message || 'No message'}`);
+    sendConfirmation(email, first_name, 'quote', `Interest: ${product_interest || 'General'}\nType: ${customer_type || 'N/A'}`);
     res.json({ success: true, message: 'Quote request received. We\'ll be in touch within 24 hours.' });
   } catch (err) {
     console.error('Contact error:', err);
@@ -51,6 +52,7 @@ app.post('/api/booking', (req, res) => {
     const stmt = db.prepare(`INSERT INTO bookings (first_name, last_name, email, phone, business_name, preferred_date, preferred_time, topic, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     stmt.run(first_name, last_name, email, phone || null, business_name || null, preferred_date, preferred_time, topic || null, message || null);
     sendNotification('New Booking Request', `From: ${first_name} ${last_name} (${email})\nDate: ${preferred_date} at ${preferred_time}\nBusiness: ${business_name || 'N/A'}\nTopic: ${topic || 'General'}\n\n${message || ''}`);
+    sendConfirmation(email, first_name, 'booking', `${preferred_date} at ${preferred_time}\nTopic: ${topic || 'General Consultation'}`);
     res.json({ success: true, message: 'Consultation booked! We\'ll confirm your time slot within 24 hours.' });
   } catch (err) {
     console.error('Booking error:', err);
@@ -179,6 +181,7 @@ app.get('/api/checkout/verify', async (req, res) => {
     }
 
     sendNotification('New Order', `Order ${orderNumber}\nCustomer: ${name} (${email})\nTotal: $${session.amount_total / 100} CAD`);
+    sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\nTotal: $${session.amount_total / 100} CAD\n\nWe'll process and ship your order soon.`);
     res.json({ success: true, paid: true, order_number: orderNumber });
   } catch (err) {
     console.error('Verify error:', err.message);
@@ -397,13 +400,12 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 // EMAIL NOTIFICATIONS (optional)
 // ═══════════════════════════════════════
 
-async function sendNotification(subject, text) {
+async function resendEmail(to, subject, html, text) {
   if (!process.env.RESEND_API_KEY) {
     console.error('EMAIL: RESEND_API_KEY not set — skipping email');
     return;
   }
-  const toEmail = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
-  console.log(`EMAIL: Sending "${subject}" to ${toEmail}`);
+  console.log(`EMAIL: Sending "${subject}" to ${to}`);
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -413,9 +415,10 @@ async function sendNotification(subject, text) {
       },
       body: JSON.stringify({
         from: 'Scent World Canada <hello@scentworld.ca>',
-        to: [toEmail],
-        subject: `[Scent World] ${subject}`,
-        text: text
+        to: [to],
+        subject,
+        html,
+        text
       })
     });
     const data = await res.json();
@@ -427,6 +430,80 @@ async function sendNotification(subject, text) {
   } catch (err) {
     console.error('EMAIL ERROR:', err.message);
   }
+}
+
+// Admin notification
+async function sendNotification(subject, text) {
+  const toEmail = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+  await resendEmail(toEmail, `[Scent World] ${subject}`, `<pre style="font-family:sans-serif">${text}</pre>`, text);
+}
+
+// Customer confirmation email
+async function sendConfirmation(toEmail, firstName, type, details) {
+  const templates = {
+    quote: {
+      subject: 'We received your quote request — Scent World Canada',
+      html: `
+        <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#0b0908;color:#f5f0e8;padding:40px 32px">
+          <div style="text-align:center;margin-bottom:32px">
+            <div style="font-size:28px;font-weight:bold;color:#c9a55c;letter-spacing:3px">SCENT WORLD</div>
+            <div style="font-size:11px;letter-spacing:4px;color:#999;margin-top:4px">CANADA</div>
+          </div>
+          <h2 style="color:#c9a55c;font-size:20px;margin-bottom:16px">Thank you, ${firstName}!</h2>
+          <p style="color:#ccc;line-height:1.7">We've received your quote request and will be in touch within <strong style="color:#f5f0e8">24 hours</strong>.</p>
+          <div style="background:#1a1614;border-left:3px solid #c9a55c;padding:16px 20px;margin:24px 0;border-radius:4px">
+            <p style="color:#999;font-size:13px;margin:0 0 4px">Your request summary:</p>
+            <p style="color:#f5f0e8;margin:0;font-size:14px">${details}</p>
+          </div>
+          <p style="color:#ccc;line-height:1.7">In the meantime, feel free to explore our <a href="https://www.scentworld.ca" style="color:#c9a55c">full collection</a>.</p>
+          <hr style="border:none;border-top:1px solid #2a2420;margin:32px 0">
+          <p style="color:#666;font-size:12px;text-align:center">Scent World Canada · hello@scentworld.ca · www.scentworld.ca</p>
+        </div>`,
+      text: `Thank you, ${firstName}!\n\nWe've received your quote request and will be in touch within 24 hours.\n\nYour request: ${details}\n\nScent World Canada\nhello@scentworld.ca`
+    },
+    booking: {
+      subject: 'Consultation request confirmed — Scent World Canada',
+      html: `
+        <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#0b0908;color:#f5f0e8;padding:40px 32px">
+          <div style="text-align:center;margin-bottom:32px">
+            <div style="font-size:28px;font-weight:bold;color:#c9a55c;letter-spacing:3px">SCENT WORLD</div>
+            <div style="font-size:11px;letter-spacing:4px;color:#999;margin-top:4px">CANADA</div>
+          </div>
+          <h2 style="color:#c9a55c;font-size:20px;margin-bottom:16px">Your consultation is requested, ${firstName}!</h2>
+          <p style="color:#ccc;line-height:1.7">We've received your consultation request and will confirm your time slot within <strong style="color:#f5f0e8">24 hours</strong>.</p>
+          <div style="background:#1a1614;border-left:3px solid #c9a55c;padding:16px 20px;margin:24px 0;border-radius:4px">
+            <p style="color:#999;font-size:13px;margin:0 0 4px">Requested slot:</p>
+            <p style="color:#f5f0e8;margin:0;font-size:14px">${details}</p>
+          </div>
+          <p style="color:#ccc;line-height:1.7">We look forward to speaking with you.</p>
+          <hr style="border:none;border-top:1px solid #2a2420;margin:32px 0">
+          <p style="color:#666;font-size:12px;text-align:center">Scent World Canada · hello@scentworld.ca · www.scentworld.ca</p>
+        </div>`,
+      text: `Your consultation is requested, ${firstName}!\n\nWe'll confirm your time slot within 24 hours.\n\nRequested: ${details}\n\nScent World Canada\nhello@scentworld.ca`
+    },
+    order: {
+      subject: 'Order confirmed — Scent World Canada',
+      html: `
+        <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#0b0908;color:#f5f0e8;padding:40px 32px">
+          <div style="text-align:center;margin-bottom:32px">
+            <div style="font-size:28px;font-weight:bold;color:#c9a55c;letter-spacing:3px">SCENT WORLD</div>
+            <div style="font-size:11px;letter-spacing:4px;color:#999;margin-top:4px">CANADA</div>
+          </div>
+          <h2 style="color:#c9a55c;font-size:20px;margin-bottom:16px">Order Confirmed, ${firstName}!</h2>
+          <p style="color:#ccc;line-height:1.7">Thank you for your order. We'll process and ship it soon.</p>
+          <div style="background:#1a1614;border-left:3px solid #c9a55c;padding:16px 20px;margin:24px 0;border-radius:4px">
+            <p style="color:#f5f0e8;margin:0;font-size:14px">${details}</p>
+          </div>
+          <p style="color:#ccc;line-height:1.7">Questions? Reply to this email or contact us at <a href="mailto:hello@scentworld.ca" style="color:#c9a55c">hello@scentworld.ca</a></p>
+          <hr style="border:none;border-top:1px solid #2a2420;margin:32px 0">
+          <p style="color:#666;font-size:12px;text-align:center">Scent World Canada · hello@scentworld.ca · www.scentworld.ca</p>
+        </div>`,
+      text: `Order Confirmed, ${firstName}!\n\n${details}\n\nQuestions? Email hello@scentworld.ca\n\nScent World Canada`
+    }
+  };
+  const t = templates[type];
+  if (!t) return;
+  await resendEmail(toEmail, t.subject, t.html, t.text);
 }
 
 // ═══════════════════════════════════════
