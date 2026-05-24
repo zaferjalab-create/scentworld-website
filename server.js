@@ -507,6 +507,16 @@ async function sendConfirmation(toEmail, firstName, type, details) {
 }
 
 // ═══════════════════════════════════════
+// 404 HANDLER (must be last)
+// ═══════════════════════════════════════
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
+// ═══════════════════════════════════════
 // START SERVER
 // ═══════════════════════════════════════
 
