@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scent World Canada | Luxury Scent Marketing & Fragrance Solutions</title>
@@ -895,6 +903,13 @@ function addToCart(product) {
   if (ex) { ex.qty++; } else { cart.push({ id: product.id, name: product.name, price: product.price, category: product.category, qty: 1 }); }
   saveCart();
   updateCartBadge();
+  if (typeof gtag === 'function') {
+    gtag('event', 'add_to_cart', {
+      currency: 'CAD',
+      value: product.price,
+      items: [{item_id: product.id, item_name: product.name, item_category: product.category, price: product.price, quantity: 1}]
+    });
+  }
 }
 
 function removeFromCart(id) {
@@ -980,6 +995,14 @@ document.getElementById('checkoutBtn').addEventListener('click', async function 
   if (!cart.length) return;
   this.disabled = true;
   this.textContent = 'Processing…';
+  if (typeof gtag === 'function') {
+    const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
+    gtag('event', 'begin_checkout', {
+      currency: 'CAD',
+      value: total,
+      items: cart.map(i => ({item_id: i.id, item_name: i.name, item_category: i.category, price: i.price, quantity: i.qty}))
+    });
+  }
   try {
     const res = await fetch('/api/checkout', {
       method: 'POST',
@@ -1071,7 +1094,12 @@ document.getElementById('quoteForm').addEventListener('submit', async function (
       body: JSON.stringify(Object.fromEntries(new FormData(this))),
     });
     const data = await res.json();
-    if (data.success) { msg.className = 'form-msg ok'; msg.textContent = "Thank you! Your quote request has been received. We'll be in touch within 24 hours."; this.reset(); }
+    if (data.success) {
+      msg.className = 'form-msg ok';
+      msg.textContent = "Thank you! Your quote request has been received. We'll be in touch within 24 hours.";
+      if (typeof gtag === 'function') gtag('event', 'generate_lead', {event_category: 'form', event_label: 'quote_request', value: 1});
+      this.reset();
+    }
     else throw new Error(data.error);
   } catch { msg.className = 'form-msg err'; msg.textContent = 'Something went wrong. Please try again or email info@scentworld.ca'; }
   finally { btn.disabled = false; btn.textContent = 'Send Quote Request'; }
@@ -1088,7 +1116,12 @@ document.getElementById('bookingForm').addEventListener('submit', async function
       body: JSON.stringify(Object.fromEntries(new FormData(this))),
     });
     const data = await res.json();
-    if (data.success) { msg.className = 'form-msg ok'; msg.textContent = "Consultation booked! We'll confirm your time slot within 24 hours."; this.reset(); }
+    if (data.success) {
+      msg.className = 'form-msg ok';
+      msg.textContent = "Consultation booked! We'll confirm your time slot within 24 hours.";
+      if (typeof gtag === 'function') gtag('event', 'book_consultation', {event_category: 'form', event_label: 'booking', value: 1});
+      this.reset();
+    }
     else throw new Error(data.error);
   } catch { msg.className = 'form-msg err'; msg.textContent = 'Something went wrong. Please try again.'; }
   finally { btn.disabled = false; btn.textContent = 'Book My Free Consultation'; }
@@ -1125,8 +1158,28 @@ document.getElementById('newsBtn').addEventListener('click', async function () {
     const data = await res.json();
     document.getElementById('newsEmail').value = '';
     this.textContent = 'Subscribed!';
+    if (typeof gtag === 'function') gtag('event', 'newsletter_signup', {event_category: 'engagement', event_label: 'footer_subscribe'});
     setTimeout(() => { this.textContent = 'Subscribe'; this.disabled = false; }, 3000);
   } catch { this.textContent = 'Error'; setTimeout(() => { this.textContent = 'Subscribe'; this.disabled = false; }, 2000); }
+});
+
+// Track key conversion clicks (Google review, social links, contact actions)
+document.querySelectorAll('a[href*="g.page"], a[href*="google.com/maps"]').forEach(a => {
+  a.addEventListener('click', () => {
+    if (typeof gtag === 'function') gtag('event', 'click_google_review', {event_category: 'outbound', event_label: 'google_review_badge'});
+  });
+});
+document.querySelectorAll('a[href*="instagram.com"], a[href*="facebook.com"], a[href*="linkedin.com"]').forEach(a => {
+  a.addEventListener('click', () => {
+    const platform = a.href.includes('instagram') ? 'instagram' : a.href.includes('facebook') ? 'facebook' : 'linkedin';
+    if (typeof gtag === 'function') gtag('event', 'click_social', {event_category: 'outbound', event_label: platform});
+  });
+});
+document.querySelectorAll('a[href^="mailto:"], a[href^="tel:"]').forEach(a => {
+  a.addEventListener('click', () => {
+    const type = a.href.startsWith('mailto') ? 'email' : 'phone';
+    if (typeof gtag === 'function') gtag('event', 'contact_click', {event_category: 'contact', event_label: type});
+  });
 });
 
 // ── GSAP Animations ───────────────────────────────────
