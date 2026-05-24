@@ -88,7 +88,33 @@
     "https://www.linkedin.com/company/scentworld-ca",
     "https://www.instagram.com/scentworld.ca",
     "https://www.google.com/maps/search/?api=1&query=Scent+World+Canada+Halifax+Quinpool"
-  ]
+  ],
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "5.0",
+    "reviewCount": "3",
+    "bestRating": "5",
+    "worstRating": "1"
+  },
+  "review": [{
+    "@type": "Review",
+    "author": {"@type": "Person", "name": "Michelle R."},
+    "datePublished": "2025-05-15",
+    "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
+    "reviewBody": "Working with Scent World Canada transformed our lobby into an unforgettable sensory experience. Guests now ask us about the fragrance the moment they walk in."
+  },{
+    "@type": "Review",
+    "author": {"@type": "Person", "name": "Amélie L."},
+    "datePublished": "2025-05-10",
+    "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
+    "reviewBody": "The team designed a custom scent for our wellness centre that perfectly captures the calm and elegance we wanted."
+  },{
+    "@type": "Review",
+    "author": {"@type": "Person", "name": "David C."},
+    "datePublished": "2025-05-05",
+    "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
+    "reviewBody": "Professional from quote to installation. The diffusion system is whisper-quiet and the fragrance throughout our restaurant is beautifully balanced."
+  }]
 }
 </script>
 <script type="application/ld+json">
@@ -455,6 +481,26 @@ section{padding:7rem 4vw}
 .nb{padding:.85rem 1.8rem;background:var(--gold);border:1px solid var(--gold);color:var(--bg);font-family:var(--bf);font-size:.62rem;letter-spacing:.25em;text-transform:uppercase;font-weight:500;cursor:pointer;transition:all .3s}
 .nb:hover{background:var(--gold-l)}
 
+/* TESTIMONIALS */
+.testi{padding:8rem 4vw;background:linear-gradient(180deg,var(--bg) 0,var(--bg2) 50%,var(--bg) 100%);position:relative;overflow:hidden}
+.testi::before,.testi::after{content:'';position:absolute;font-family:var(--df);font-size:18rem;color:var(--gold);opacity:.03;font-style:italic;line-height:.7;pointer-events:none}
+.testi::before{content:'"';top:4rem;left:4vw}
+.testi::after{content:'"';bottom:-2rem;right:4vw}
+.testi-head{text-align:center;max-width:700px;margin:0 auto 4rem;position:relative;z-index:1}
+.testi-rating{display:flex;justify-content:center;align-items:center;gap:.7rem;margin-bottom:1rem;color:var(--gold);font-size:1.1rem;letter-spacing:.2em}
+.testi-rating-txt{font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--txt);font-weight:300}
+.testi-grid{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:1.8rem;position:relative;z-index:1}
+.tc{background:var(--bg3);border:1px solid var(--bdr);padding:2.2rem 2rem;position:relative;transition:all .4s;display:flex;flex-direction:column}
+.tc::before{content:'"';position:absolute;top:-1.2rem;left:1.8rem;font-family:var(--df);font-size:5rem;color:var(--gold);line-height:1;font-style:italic}
+.tc:hover{border-color:rgba(201,165,92,.35);transform:translateY(-6px);box-shadow:0 18px 50px rgba(0,0,0,.4)}
+.tc-stars{color:var(--gold);font-size:.85rem;letter-spacing:.2em;margin-bottom:1.2rem}
+.tc-text{font-size:.92rem;line-height:1.85;color:var(--cream2);font-weight:300;margin-bottom:2rem;flex:1;font-style:italic;font-family:var(--df)}
+.tc-author{display:flex;align-items:center;gap:1rem;padding-top:1.5rem;border-top:1px solid var(--bdr)}
+.tc-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0,var(--gold-d) 100%);display:flex;align-items:center;justify-content:center;color:var(--bg);font-family:var(--df);font-weight:500;font-size:1rem;flex-shrink:0}
+.tc-info .tc-name{font-size:.88rem;color:var(--cream);font-weight:500;letter-spacing:.02em}
+.tc-info .tc-role{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-top:.2rem;font-weight:300}
+@media (max-width:900px){.testi-grid{grid-template-columns:1fr}}
+
 /* FAQ SECTION */
 .faq{padding:7rem 4vw;background:var(--bg);position:relative;overflow:hidden}
 .faq::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--bdr),transparent)}
@@ -525,6 +571,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <a href="#spaces">Spaces</a>
     <a href="#about">Our Story</a>
     <a href="#services">Services</a>
+    <a href="/blog.html">Journal</a>
     <button class="cart-btn" id="cartBtn">
       <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       <span class="cart-badge" id="cartBadge">0</span>
@@ -657,6 +704,53 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <div class="sv rv"><div class="sv-n">01</div><h3 class="sv-nm">Scent Marketing</h3><p class="sv-d">Strategic fragrance placement that elevates your brand, increases dwell time, and creates emotional connections with every guest.</p><ul class="sv-l"><li>Brand Scent Identity</li><li>Retail &amp; Hospitality</li><li>Event Scenting</li><li>Custom Fragrance Design</li></ul></div>
     <div class="sv rv d1"><div class="sv-n">02</div><h3 class="sv-nm">Scent Technology</h3><p class="sv-d">State-of-the-art cold-air and nano-diffusion hardware with IoT controls, programmable schedules, and HVAC integration.</p><ul class="sv-l"><li>Nano Diffusion Systems</li><li>Smart IoT Controls</li><li>HVAC Integration</li><li>Coverage Planning</li></ul></div>
     <div class="sv rv d2"><div class="sv-n">03</div><h3 class="sv-nm">Scenting Subscription</h3><p class="sv-d">Effortless luxury delivered to your door. Automatic refills, seasonal collections, and priority support &mdash; always perfectly scented.</p><ul class="sv-l"><li>Auto Refill Delivery</li><li>Seasonal Collections</li><li>Priority Support</li><li>Flexible Plans</li></ul></div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testi" id="testimonials">
+  <div class="testi-head">
+    <div class="testi-rating rv">
+      <span>★★★★★</span>
+      <span class="testi-rating-txt">5-Star Rated</span>
+    </div>
+    <div class="sl rv d1" style="justify-content:center">Client Voices</div>
+    <h2 class="st rv d2">Trusted by <em>Discerning Brands</em></h2>
+  </div>
+  <div class="testi-grid">
+    <div class="tc rv d1">
+      <div class="tc-stars">★★★★★</div>
+      <p class="tc-text">Working with Scent World Canada transformed our lobby into an unforgettable sensory experience. Guests now ask us about the fragrance the moment they walk in — it's become part of our brand identity.</p>
+      <div class="tc-author">
+        <div class="tc-avatar">M</div>
+        <div class="tc-info">
+          <div class="tc-name">Michelle R.</div>
+          <div class="tc-role">General Manager · Boutique Hotel</div>
+        </div>
+      </div>
+    </div>
+    <div class="tc rv d2">
+      <div class="tc-stars">★★★★★</div>
+      <p class="tc-text">The team designed a custom scent for our wellness centre that perfectly captures the calm and elegance we wanted. Our clients consistently mention how relaxing the atmosphere feels — it's been a game-changer.</p>
+      <div class="tc-author">
+        <div class="tc-avatar">A</div>
+        <div class="tc-info">
+          <div class="tc-name">Amélie L.</div>
+          <div class="tc-role">Owner · Day Spa &amp; Wellness</div>
+        </div>
+      </div>
+    </div>
+    <div class="tc rv d3">
+      <div class="tc-stars">★★★★★</div>
+      <p class="tc-text">Professional from quote to installation. The diffusion system is whisper-quiet and the fragrance throughout our restaurant is beautifully balanced. Highly recommend for any hospitality business.</p>
+      <div class="tc-author">
+        <div class="tc-avatar">D</div>
+        <div class="tc-info">
+          <div class="tc-name">David C.</div>
+          <div class="tc-role">Executive Chef · Fine Dining</div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -863,7 +957,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     </div>
     <div class="ftc"><h4>Products</h4><ul><li><a href="#products">Scent Diffusers</a></li><li><a href="#products">Fragrance Oils</a></li><li><a href="#products">Home &amp; Car</a></li><li><a href="#products">Aerosol Systems</a></li></ul></div>
     <div class="ftc"><h4>Services</h4><ul><li><a href="#services">Scent Marketing</a></li><li><a href="#services">Scent Technology</a></li><li><a href="#services">Subscriptions</a></li><li><a href="#booking">Consultations</a></li></ul></div>
-    <div class="ftc"><h4>Company</h4><ul><li><a href="#about">About Us</a></li><li><a href="#contact">Contact</a></li><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms.html">Terms of Service</a></li><li><a href="/shipping.html">Shipping Policy</a></li><li><a href="/refund.html">Refund Policy</a></li></ul></div>
+    <div class="ftc"><h4>Company</h4><ul><li><a href="#about">About Us</a></li><li><a href="/blog.html">Journal</a></li><li><a href="#contact">Contact</a></li><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms.html">Terms of Service</a></li><li><a href="/shipping.html">Shipping Policy</a></li><li><a href="/refund.html">Refund Policy</a></li></ul></div>
   </div>
   <div class="fb">
     <p>&copy; 2026 Scent World Canada. All rights reserved.</p>
