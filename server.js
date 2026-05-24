@@ -512,11 +512,11 @@ async function sendConfirmation(toEmail, firstName, type, details) {
           <div style="background:#1a1614;border-left:3px solid #c9a55c;padding:16px 20px;margin:24px 0;border-radius:4px">
             <p style="color:#f5f0e8;margin:0;font-size:14px">${details}</p>
           </div>
-          <p style="color:#ccc;line-height:1.7">Questions? Reply to this email or contact us at <a href="mailto:hello@scentworld.ca" style="color:#c9a55c">hello@scentworld.ca</a></p>
+          <p style="color:#ccc;line-height:1.7">Questions? Reply to this email or contact us at <a href="mailto:support@scentworld.ca" style="color:#c9a55c">support@scentworld.ca</a></p>
           <hr style="border:none;border-top:1px solid #2a2420;margin:32px 0">
           <p style="color:#666;font-size:12px;text-align:center">Scent World Canada · hello@scentworld.ca · www.scentworld.ca</p>
         </div>`,
-      text: `Order Confirmed, ${firstName}!\n\n${details}\n\nQuestions? Email hello@scentworld.ca\n\nScent World Canada`
+      text: `Order Confirmed, ${firstName}!\n\n${details}\n\nQuestions? Email support@scentworld.ca\n\nScent World Canada`
     }
   };
   const t = templates[type];
