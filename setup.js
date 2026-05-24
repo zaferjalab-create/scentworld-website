@@ -44,7 +44,7 @@ const insert = db.prepare(`
 `);
 
 // Also update image_url for existing rows that have NULL (so re-seeding refreshes images after DB resets)
-const updateImage = db.prepare('UPDATE products SET image_url = ? WHERE slug = ? AND (image_url IS NULL OR image_url = "")');
+const updateImage = db.prepare("UPDATE products SET image_url = ? WHERE slug = ? AND (image_url IS NULL OR image_url = '')");
 
 let count = 0, updatedImages = 0;
 for (const p of products) {
