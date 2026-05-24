@@ -1,0 +1,12 @@
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.scentworld.ca/sitemap.xml
+
+# Crawl delay (optional - allows 1 second between requests)
+Crawl-delay: 1
+
+# Disallow admin pages from being indexed
+Disallow: /admin/
