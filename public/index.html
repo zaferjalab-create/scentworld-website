@@ -110,6 +110,83 @@
   }
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "What does Scent World Canada do?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Scent World Canada provides premium scent marketing and luxury fragrance solutions to hotels, spas, restaurants, retail spaces, offices, and homes across Canada. We supply commercial scent diffusers, signature fragrance oils, and custom scent strategy consultations to help businesses elevate guest experience through atmosphere."
+    }
+  },{
+    "@type": "Question",
+    "name": "Do you ship across Canada?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes, we ship coast to coast across Canada. Orders are processed within 24 to 48 hours and typical delivery time is 3 to 8 business days. We offer free shipping on all orders over $150 CAD, and all packages are sent with tracking numbers."
+    }
+  },{
+    "@type": "Question",
+    "name": "What types of businesses do you work with?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "We specialize in serving luxury hotels, boutique inns, spas and wellness centres, fine dining restaurants, retail stores, corporate offices, real estate showings, and high-end residential clients. Any space where atmosphere matters can benefit from our scent solutions."
+    }
+  },{
+    "@type": "Question",
+    "name": "Can you create a custom signature scent for my business?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Absolutely. We offer bespoke fragrance development tailored to your brand identity, target audience, and the specific atmosphere you want to create. Our scent strategy consultations help you design a signature scent that becomes part of your brand experience."
+    }
+  },{
+    "@type": "Question",
+    "name": "How much does a commercial scent diffuser cost?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Our scent diffusers and fragrance solutions vary in price depending on the size of your space, type of system, and fragrance selected. We offer solutions for small boutique spaces all the way up to large hotel chains. Request a quote on our website for personalized pricing tailored to your needs."
+    }
+  },{
+    "@type": "Question",
+    "name": "Do you offer free consultations?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes! We provide complimentary 30-minute scent strategy consultations to discuss your space, audience, and goals. Book your free consultation directly on our website and we will reach out within 24 hours to confirm your time slot."
+    }
+  },{
+    "@type": "Question",
+    "name": "Where is Scent World Canada located?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "We are based at 6156 Quinpool Road in Halifax, Nova Scotia. We serve clients across all of Atlantic Canada including Halifax, Dartmouth, Bedford, Moncton, Fredericton, and Charlottetown, as well as nationwide shipping to all Canadian provinces."
+    }
+  },{
+    "@type": "Question",
+    "name": "What is your return policy?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "We offer a 30-day return policy on all purchases. Items must be unused, unopened, and in original packaging. Refunds are processed within 10 business days. For damaged or defective items, we provide free return shipping and a full replacement or refund."
+    }
+  },{
+    "@type": "Question",
+    "name": "Are your fragrance oils safe for commercial use?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes, all our fragrance oils are professionally formulated for commercial environments and meet IFRA (International Fragrance Association) safety standards. They are non-toxic, hypoallergenic friendly, and designed for continuous use in occupied spaces."
+    }
+  },{
+    "@type": "Question",
+    "name": "How long does a bottle of fragrance oil last?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Fragrance oil duration depends on the size of your space, the diffuser settings, and how many hours per day the system operates. On average, a standard bottle lasts 30 to 60 days in a typical commercial space with regular use. We help you calculate exact needs during your consultation."
+    }
+  }]
+}
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
@@ -368,6 +445,31 @@ section{padding:7rem 4vw}
 .nb{padding:.85rem 1.8rem;background:var(--gold);border:1px solid var(--gold);color:var(--bg);font-family:var(--bf);font-size:.62rem;letter-spacing:.25em;text-transform:uppercase;font-weight:500;cursor:pointer;transition:all .3s}
 .nb:hover{background:var(--gold-l)}
 
+/* FAQ SECTION */
+.faq{padding:7rem 4vw;background:var(--bg);position:relative;overflow:hidden}
+.faq::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--bdr),transparent)}
+.faq-inner{max-width:880px;margin:0 auto}
+.faq-head{text-align:center;margin-bottom:4rem}
+.faq-list{display:flex;flex-direction:column;gap:.8rem}
+.faq-item{background:var(--bg2);border:1px solid var(--bdr);border-radius:2px;overflow:hidden;transition:all .4s}
+.faq-item:hover{border-color:rgba(201,165,92,.3)}
+.faq-item.open{border-color:var(--gold);background:var(--bg3)}
+.faq-q{width:100%;padding:1.4rem 1.6rem;background:none;border:none;color:var(--cream);font-family:var(--bf);font-size:.92rem;font-weight:400;letter-spacing:.02em;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1.5rem;transition:color .3s}
+.faq-q:hover{color:var(--gold)}
+.faq-item.open .faq-q{color:var(--gold)}
+.faq-icon{width:18px;height:18px;flex-shrink:0;position:relative;transition:transform .4s}
+.faq-icon::before,.faq-icon::after{content:'';position:absolute;background:var(--gold);transition:opacity .3s}
+.faq-icon::before{top:50%;left:0;right:0;height:1px;transform:translateY(-50%)}
+.faq-icon::after{left:50%;top:0;bottom:0;width:1px;transform:translateX(-50%)}
+.faq-item.open .faq-icon{transform:rotate(180deg)}
+.faq-item.open .faq-icon::after{opacity:0}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1)}
+.faq-a-inner{padding:0 1.6rem 1.5rem;color:var(--cream2);font-size:.86rem;line-height:1.8;font-weight:300}
+.faq-cta{text-align:center;margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid var(--bdr)}
+.faq-cta p{color:var(--txt);font-size:.85rem;margin-bottom:1.2rem;font-weight:300}
+.faq-cta a{display:inline-block;padding:.85rem 2.2rem;border:1px solid var(--gold);color:var(--gold);text-decoration:none;font-size:.66rem;letter-spacing:.28em;text-transform:uppercase;font-weight:400;transition:all .35s}
+.faq-cta a:hover{background:var(--gold);color:var(--bg)}
+
 /* FOOTER */
 footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--bdr)}
 .ft{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
@@ -599,6 +701,62 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
         <button type="submit" class="f-submit" id="submitBtn">Send Quote Request</button>
         <div class="form-msg" id="formMsg"></div>
       </form>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="faq-inner">
+    <div class="faq-head">
+      <div class="sl rv" style="justify-content:center">Questions Answered</div>
+      <h2 class="st rv d1" style="text-align:center">Frequently Asked <em>Questions</em></h2>
+    </div>
+    <div class="faq-list rv d2">
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">What does Scent World Canada do?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Scent World Canada provides premium scent marketing and luxury fragrance solutions to hotels, spas, restaurants, retail spaces, offices, and homes across Canada. We supply commercial scent diffusers, signature fragrance oils, and custom scent strategy consultations to help businesses elevate guest experience through atmosphere.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">Do you ship across Canada?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Yes, we ship coast to coast across Canada. Orders are processed within 24 to 48 hours and typical delivery time is 3 to 8 business days. We offer <strong>free shipping on all orders over $150 CAD</strong>, and all packages are sent with tracking numbers.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">What types of businesses do you work with?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">We specialize in serving luxury hotels, boutique inns, spas and wellness centres, fine dining restaurants, retail stores, corporate offices, real estate showings, and high-end residential clients. Any space where atmosphere matters can benefit from our scent solutions.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">Can you create a custom signature scent for my business?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Absolutely. We offer bespoke fragrance development tailored to your brand identity, target audience, and the specific atmosphere you want to create. Our scent strategy consultations help you design a signature scent that becomes part of your brand experience.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">How much does a commercial scent diffuser cost?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Our scent diffusers and fragrance solutions vary in price depending on the size of your space, type of system, and fragrance selected. We offer solutions for small boutique spaces all the way up to large hotel chains. <a href="#contact" style="color:var(--gold)">Request a quote</a> for personalized pricing tailored to your needs.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">Do you offer free consultations?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Yes! We provide complimentary 30-minute scent strategy consultations to discuss your space, audience, and goals. <a href="#booking" style="color:var(--gold)">Book your free consultation</a> directly on our website and we will reach out within 24 hours to confirm your time slot.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">Where is Scent World Canada located?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">We are based at <strong>6156 Quinpool Road, Halifax, Nova Scotia</strong>. We serve clients across all of Atlantic Canada including Halifax, Dartmouth, Bedford, Moncton, Fredericton, and Charlottetown, as well as nationwide shipping to all Canadian provinces.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">What is your return policy?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">We offer a <strong>30-day return policy</strong> on all purchases. Items must be unused, unopened, and in original packaging. Refunds are processed within 10 business days. For damaged or defective items, we provide free return shipping and a full replacement or refund. <a href="/refund.html" style="color:var(--gold)">Read full refund policy</a>.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">Are your fragrance oils safe for commercial use?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Yes, all our fragrance oils are professionally formulated for commercial environments and meet IFRA (International Fragrance Association) safety standards. They are non-toxic, hypoallergenic friendly, and designed for continuous use in occupied spaces.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">How long does a bottle of fragrance oil last?<span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Fragrance oil duration depends on the size of your space, the diffuser settings, and how many hours per day the system operates. On average, a standard bottle lasts 30 to 60 days in a typical commercial space with regular use. We help you calculate exact needs during your consultation.</div></div>
+      </div>
+    </div>
+    <div class="faq-cta rv d3">
+      <p>Still have questions? We're here to help.</p>
+      <a href="#contact">Get in Touch</a>
     </div>
   </div>
 </section>
@@ -910,6 +1068,25 @@ document.getElementById('bookingForm').addEventListener('submit', async function
     else throw new Error(data.error);
   } catch { msg.className = 'form-msg err'; msg.textContent = 'Something went wrong. Please try again.'; }
   finally { btn.disabled = false; btn.textContent = 'Book My Free Consultation'; }
+});
+
+// FAQ Accordion
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.faq-item');
+    const answer = item.querySelector('.faq-a');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(o => {
+      o.classList.remove('open');
+      o.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+      o.querySelector('.faq-a').style.maxHeight = '0';
+    });
+    if (!isOpen) {
+      item.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+      answer.style.maxHeight = answer.scrollHeight + 'px';
+    }
+  });
 });
 
 document.getElementById('newsBtn').addEventListener('click', async function () {

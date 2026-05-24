@@ -7,6 +7,24 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://www.scentworld.ca/#faq</loc>
+    <lastmod>2025-05-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.scentworld.ca/#contact</loc>
+    <lastmod>2025-05-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.scentworld.ca/#booking</loc>
+    <lastmod>2025-05-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.scentworld.ca/terms.html</loc>
     <lastmod>2025-05-23</lastmod>
     <changefreq>monthly</changefreq>
