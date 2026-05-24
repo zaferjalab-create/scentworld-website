@@ -5,11 +5,16 @@ data/
 *.mp4
 *.pdf
 
-# Allow images inside public/images
+# Allow images inside public/images (including subfolders)
 *.jpg
 *.jpeg
 *.png
 *.webp
+!public/images/**/*.jpg
+!public/images/**/*.jpeg
+!public/images/**/*.png
+!public/images/**/*.webp
+!public/images/**/*.svg
 !public/images/*.jpg
 !public/images/*.jpeg
 !public/images/*.png

@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 const db = require('./database');
 const bcrypt = require('bcryptjs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -286,6 +287,21 @@ app.get('/api/admin/subscribers/export', requireAdmin, (req, res) => {
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename=subscribers.csv');
   res.send(csv);
+});
+
+// List available product images
+app.get('/api/admin/product-images', requireAdmin, (req, res) => {
+  try {
+    const dir = path.join(__dirname, 'public', 'images', 'products');
+    if (!fs.existsSync(dir)) return res.json({ success: true, images: [] });
+    const files = fs.readdirSync(dir)
+      .filter(f => /\.(jpe?g|png|webp|svg)$/i.test(f))
+      .sort()
+      .map(f => ({ name: f, url: `/images/products/${f}` }));
+    res.json({ success: true, images: files });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
 });
 
 // Products CRUD
