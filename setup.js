@@ -20,13 +20,13 @@ if (!existing) {
 
 // Seed products
 const products = [
-  { name: 'S20 Nano Diffuser', slug: 's20', category: 'diffusers', short_desc: 'Compact nano diffuser for personal spaces up to 28m².', price: 199.00, coverage: 'Up to 28m²', sort_order: 1 },
-  { name: 'S30 Nano Diffuser', slug: 's30', category: 'diffusers', short_desc: 'Mid-size nano diffuser with programmable timer. Coverage up to 267m².', price: 349.00, coverage: 'Up to 267m²', sort_order: 2 },
-  { name: 'S100 Commercial Diffuser', slug: 's100', category: 'diffusers', short_desc: 'Professional-grade cold-air diffuser for commercial spaces up to 300m².', price: 599.00, coverage: 'Up to 300m²', sort_order: 3 },
-  { name: 'S200 Commercial Diffuser', slug: 's200', category: 'diffusers', short_desc: 'High-capacity nano diffuser for large commercial environments up to 1,667m².', price: 899.00, coverage: 'Up to 1,667m²', sort_order: 4 },
-  { name: 'L100 Luxury Diffuser', slug: 'l100', category: 'diffusers', short_desc: 'Premium luxury diffuser with elegant design and smart controls.', price: 749.00, coverage: 'Up to 300m²', sort_order: 5 },
-  { name: 'L100 AD Display Diffuser', slug: 'l100-ad', category: 'diffusers', short_desc: 'Luxury diffuser with built-in digital display for branding.', price: 999.00, coverage: 'Up to 300m²', sort_order: 6 },
-  { name: 'L200 Luxury Diffuser', slug: 'l200', category: 'diffusers', short_desc: 'Top-tier luxury diffuser with diamond-pattern design for premium venues.', price: 1299.00, coverage: 'Up to 1,667m²', sort_order: 7 },
+  { name: 'S20 Nano Diffuser', slug: 's20', category: 'diffusers', short_desc: 'Compact nano diffuser for personal spaces up to 300 sq ft.', price: 199.00, coverage: 'Up to 300 sq ft', sort_order: 1 },
+  { name: 'S30 Nano Diffuser', slug: 's30', category: 'diffusers', short_desc: 'Mid-size nano diffuser with programmable timer. Coverage up to 2,870 sq ft.', price: 349.00, coverage: 'Up to 2,870 sq ft', sort_order: 2 },
+  { name: 'S100 Commercial Diffuser', slug: 's100', category: 'diffusers', short_desc: 'Professional-grade cold-air diffuser for commercial spaces up to 3,230 sq ft.', price: 599.00, coverage: 'Up to 3,230 sq ft', sort_order: 3 },
+  { name: 'S200 Commercial Diffuser', slug: 's200', category: 'diffusers', short_desc: 'High-capacity nano diffuser for large commercial environments up to 17,945 sq ft.', price: 899.00, coverage: 'Up to 17,945 sq ft', sort_order: 4 },
+  { name: 'L100 Luxury Diffuser', slug: 'l100', category: 'diffusers', short_desc: 'Premium luxury diffuser with elegant design and smart controls.', price: 749.00, coverage: 'Up to 3,230 sq ft', sort_order: 5 },
+  { name: 'L100 AD Display Diffuser', slug: 'l100-ad', category: 'diffusers', short_desc: 'Luxury diffuser with built-in digital display for branding.', price: 999.00, coverage: 'Up to 3,230 sq ft', sort_order: 6 },
+  { name: 'L200 Luxury Diffuser', slug: 'l200', category: 'diffusers', short_desc: 'Top-tier luxury diffuser with diamond-pattern design for premium venues.', price: 1299.00, coverage: 'Up to 17,945 sq ft', sort_order: 7 },
   { name: 'Car Scent Diffuser', slug: 'car-diffuser', category: 'home_car', short_desc: 'Premium car diffuser with USB-C power and nano mist technology.', price: 149.00, coverage: 'Vehicle interior', sort_order: 8 },
   { name: 'Car Diffuser Gift Set', slug: 'car-gift-set', category: 'home_car', short_desc: 'Car diffuser with 5 curated fragrance oils in luxury packaging.', price: 249.00, coverage: 'Vehicle interior', sort_order: 9, featured: 1 },
   { name: 'Fresh Blossom Oil', slug: 'fresh-blossom', category: 'oils', short_desc: 'Light floral blend with notes of spring blossoms and green leaves.', price: 49.00, coverage: null, sort_order: 10 },

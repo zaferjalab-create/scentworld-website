@@ -138,4 +138,35 @@ try {
   // Column already exists, ignore
 }
 
+// Migration: Convert m² to sq ft in product coverage
+try {
+  const conversions = [
+    ['Up to 28m²', 'Up to 300 sq ft'],
+    ['Up to 267m²', 'Up to 2,870 sq ft'],
+    ['Up to 300m²', 'Up to 3,230 sq ft'],
+    ['Up to 1,667m²', 'Up to 17,945 sq ft']
+  ];
+  let updated = 0;
+  const stmt = db.prepare('UPDATE products SET coverage = ? WHERE coverage = ?');
+  for (const [oldVal, newVal] of conversions) {
+    const result = stmt.run(newVal, oldVal);
+    updated += result.changes;
+  }
+  if (updated > 0) console.log(`✅ Converted ${updated} product coverage values from m² to sq ft`);
+
+  // Also update short_desc that contains m²
+  const descUpdates = [
+    ['Compact nano diffuser for personal spaces up to 28m².', 'Compact nano diffuser for personal spaces up to 300 sq ft.'],
+    ['Mid-size nano diffuser with programmable timer. Coverage up to 267m².', 'Mid-size nano diffuser with programmable timer. Coverage up to 2,870 sq ft.'],
+    ['Professional-grade cold-air diffuser for commercial spaces up to 300m².', 'Professional-grade cold-air diffuser for commercial spaces up to 3,230 sq ft.'],
+    ['High-capacity nano diffuser for large commercial environments up to 1,667m².', 'High-capacity nano diffuser for large commercial environments up to 17,945 sq ft.']
+  ];
+  const descStmt = db.prepare('UPDATE products SET short_desc = ? WHERE short_desc = ?');
+  for (const [oldVal, newVal] of descUpdates) {
+    descStmt.run(newVal, oldVal);
+  }
+} catch (e) {
+  console.log('Coverage migration warning:', e.message);
+}
+
 module.exports = db;
