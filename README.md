@@ -177,7 +177,7 @@ To receive email alerts when someone submits a form:
    ```
    SMTP_USER=your-gmail@gmail.com
    SMTP_PASS=your-16-char-app-password
-   NOTIFY_EMAIL=info@scentworld.ca
+   NOTIFY_EMAIL=hello@scentworld.ca
    ```
 4. Restart the server: `pm2 restart scentworld`
 

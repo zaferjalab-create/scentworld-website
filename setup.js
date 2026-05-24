@@ -54,7 +54,7 @@ console.log(`✅ ${count} products seeded`);
 // Default settings
 const defaults = {
   'site_name': 'Scent World Canada',
-  'site_email': 'info@scentworld.ca',
+  'site_email': 'hello@scentworld.ca',
   'site_phone': '+1 (902) 555-1234',
   'site_address': 'Halifax, Nova Scotia, Canada',
   'shipping_threshold': '150',
