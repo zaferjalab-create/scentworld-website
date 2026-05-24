@@ -357,8 +357,12 @@ section{padding:7rem 4vw}
 .pc{position:relative;background:var(--bg3);border:1px solid var(--bdr);overflow:hidden;cursor:default;transition:all .5s;display:flex;flex-direction:column}
 .pc:hover{border-color:rgba(201,165,92,.3);transform:translateY(-3px);box-shadow:0 20px 50px rgba(0,0,0,.3),0 0 80px rgba(201,165,92,.04)}
 .pi{height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.pi img{width:100%;height:100%;object-fit:cover;transition:transform .6s}
+.pi img{width:100%;height:100%;object-fit:cover;transition:transform .6s,opacity .5s}
 .pc:hover .pi img{transform:scale(1.04)}
+.pi-main,.pi-hover{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+.pi-hover{opacity:0}
+.pc:hover .pi-main{opacity:0}
+.pc:hover .pi-hover{opacity:1}
 .pi-ph{width:100%;height:100%;background:linear-gradient(145deg,rgba(201,165,92,.06) 0%,var(--bg3) 50%,rgba(201,165,92,.03) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;transition:all .5s}
 .pc:hover .pi-ph{background:linear-gradient(145deg,rgba(201,165,92,.1) 0%,var(--bg3) 50%,rgba(201,165,92,.06) 100%)}
 .pi-ph svg{width:64px;height:64px;stroke:var(--gold);fill:none;stroke-width:.8;opacity:.35;transition:all .5s}
@@ -1147,7 +1151,20 @@ function renderProducts() {
     const pName = p.name.replace(/'/g, "&#39;");
     const icon = CAT_ICONS[p.category] || CAT_ICONS.diffusers;
     const label = CAT_LABELS[p.category] || p.category;
-    const img = p.image_url ? `<img src="${p.image_url}" alt="${pName}">` : `<div class="pi-ph">${icon}<span>${label}</span></div>`;
+    // Parse gallery images
+    let gallery = [];
+    if (p.gallery_images) {
+      try { gallery = typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images; if (!Array.isArray(gallery)) gallery = []; } catch (e) { gallery = []; }
+    }
+    // Build image with hover swap if gallery exists
+    let img;
+    if (p.image_url && gallery.length > 0) {
+      img = `<img src="${p.image_url}" alt="${pName}" class="pi-main"><img src="${gallery[0]}" alt="${pName}" class="pi-hover">`;
+    } else if (p.image_url) {
+      img = `<img src="${p.image_url}" alt="${pName}">`;
+    } else {
+      img = `<div class="pi-ph">${icon}<span>${label}</span></div>`;
+    }
     const priceHtml = p.price ? `<div class="pp">$${p.price.toFixed(2)} <span>CAD</span></div>` : '';
     const btnHtml = p.price
       ? `<button class="atc" onclick="(function(btn){addToCart({id:${p.id},name:'${pName}',price:${p.price},category:'${p.category}'});btn.textContent='Added ✓';btn.classList.add('added');setTimeout(()=>{btn.textContent='Add to Cart';btn.classList.remove('added')},1600)})(this)">Add to Cart</button>`

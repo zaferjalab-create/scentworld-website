@@ -176,12 +176,20 @@ tr:hover td{background:rgba(255,255,255,.01)}
     <label>Short Description</label><textarea id="prod-short_desc"></textarea>
     <label>Price (CAD)</label><input type="number" step="0.01" id="prod-price">
     <label>Coverage</label><input id="prod-coverage" placeholder="Up to 300m²">
-    <label>Image</label>
+    <label>Main Product Image</label>
     <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.4rem">
       <input id="prod-image_url" placeholder="/images/products/photo.jpg" style="flex:1" oninput="updateImagePreview()">
-      <button type="button" class="btn btn-outline btn-sm" onclick="openImagePicker()">📷 Pick</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="openImagePicker('main')">📷 Pick Main</button>
     </div>
-    <div id="prod-image-preview" style="margin-bottom:.5rem"></div>
+    <div id="prod-image-preview" style="margin-bottom:1rem"></div>
+
+    <label>Gallery Images (additional photos shown on product detail)</label>
+    <div style="margin-bottom:.4rem">
+      <button type="button" class="btn btn-outline btn-sm" onclick="openImagePicker('gallery')">📷 Add to Gallery</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="clearGallery()" style="background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.5);color:#c0392b">Clear All</button>
+    </div>
+    <div id="prod-gallery-preview" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem"></div>
+    <input type="hidden" id="prod-gallery_images" value="[]">
     <label>Sort Order</label><input type="number" id="prod-sort_order" value="0">
     <div style="margin-top:1rem;display:flex;gap:1rem">
       <label style="margin:0;display:flex;align-items:center;gap:.4rem"><input type="checkbox" id="prod-featured"> Featured</label>
@@ -331,38 +339,97 @@ function openProductModal(p){
   });
   document.getElementById('prod-featured').checked=p?!!p.featured:false;
   document.getElementById('prod-active').checked=p?!!p.active:true;
+  // Load gallery images (stored as JSON string in DB)
+  let galleryArr=[];
+  if(p&&p.gallery_images){
+    try{galleryArr=typeof p.gallery_images==='string'?JSON.parse(p.gallery_images):p.gallery_images;if(!Array.isArray(galleryArr))galleryArr=[];}catch(e){galleryArr=[];}
+  }
+  document.getElementById('prod-gallery_images').value=JSON.stringify(galleryArr);
+  renderGalleryPreview();
   document.getElementById('productModal').classList.add('show');
   updateImagePreview();
 }
 function closeProductModal(){document.getElementById('productModal').classList.remove('show')}
 
-// Image picker
+// Image picker (supports main image and gallery)
+let pickerMode='main'; // 'main' or 'gallery'
+
 function updateImagePreview(){
   const url=document.getElementById('prod-image_url').value;
   const preview=document.getElementById('prod-image-preview');
   if(url){preview.innerHTML=`<img src="${url}" style="max-width:140px;max-height:140px;border:1px solid #c9a55c;border-radius:4px;object-fit:cover">`;}
   else{preview.innerHTML='';}
 }
-async function openImagePicker(){
+
+function getGalleryImages(){
+  try{return JSON.parse(document.getElementById('prod-gallery_images').value||'[]');}catch(e){return [];}
+}
+function setGalleryImages(arr){
+  document.getElementById('prod-gallery_images').value=JSON.stringify(arr);
+  renderGalleryPreview();
+}
+function renderGalleryPreview(){
+  const arr=getGalleryImages();
+  const preview=document.getElementById('prod-gallery-preview');
+  if(!arr.length){preview.innerHTML='<div style="color:#666;font-size:.78rem;font-style:italic">No gallery images. Click "Add to Gallery" to add more photos.</div>';return;}
+  preview.innerHTML=arr.map((url,i)=>`
+    <div style="position:relative;width:90px;height:90px;border:1px solid #c9a55c;border-radius:4px;overflow:hidden">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block">
+      <button type="button" onclick="removeGalleryImage(${i})" style="position:absolute;top:2px;right:2px;background:rgba(192,57,43,.95);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:.7rem;line-height:1;padding:0">✕</button>
+    </div>
+  `).join('');
+}
+function removeGalleryImage(i){
+  const arr=getGalleryImages();
+  arr.splice(i,1);
+  setGalleryImages(arr);
+}
+function clearGallery(){
+  if(!confirm('Remove all gallery images?'))return;
+  setGalleryImages([]);
+}
+
+async function openImagePicker(mode){
+  pickerMode=mode||'main';
   const grid=document.getElementById('imagePickerGrid');
+  const titleEl=document.querySelector('#imagePickerModal h3');
+  if(titleEl)titleEl.textContent=pickerMode==='gallery'?'Add Image(s) to Gallery':'Select Main Product Image';
   grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#888;padding:2rem">Loading images...</div>';
   document.getElementById('imagePickerModal').classList.add('show');
   try{
     const r=await fetch(API+'/product-images');
     const d=await r.json();
     if(!d.images||!d.images.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#888;padding:2rem">No images in /public/images/products/</div>';return;}
-    grid.innerHTML=d.images.map(img=>`
-      <div style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;background:#1a1714;transition:all .2s" onmouseover="this.style.borderColor='#c9a55c'" onmouseout="this.style.borderColor='transparent'" onclick="selectImage('${img.url}')">
+    const galleryArr=getGalleryImages();
+    grid.innerHTML=d.images.map(img=>{
+      const inGallery=pickerMode==='gallery'&&galleryArr.includes(img.url);
+      return `
+      <div style="cursor:pointer;border:2px solid ${inGallery?'#27ae60':'transparent'};border-radius:6px;overflow:hidden;background:#1a1714;transition:all .2s;position:relative" onmouseover="this.style.borderColor='#c9a55c'" onmouseout="this.style.borderColor='${inGallery?'#27ae60':'transparent'}'" onclick="selectImage('${img.url}')">
         <img src="${img.url}" alt="${img.name}" style="width:100%;height:100px;object-fit:cover;display:block">
         <div style="font-size:.7rem;color:#888;padding:.3rem .4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${img.name}</div>
-      </div>
-    `).join('');
+        ${inGallery?'<div style="position:absolute;top:4px;right:4px;background:#27ae60;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:bold">✓</div>':''}
+      </div>`;
+    }).join('');
   }catch(err){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#c0392b;padding:2rem">Failed to load images</div>';}
 }
+
 function selectImage(url){
-  document.getElementById('prod-image_url').value=url;
-  updateImagePreview();
-  closeImagePicker();
+  if(pickerMode==='gallery'){
+    const arr=getGalleryImages();
+    if(arr.includes(url)){
+      // remove if already in gallery
+      arr.splice(arr.indexOf(url),1);
+    }else{
+      arr.push(url);
+    }
+    setGalleryImages(arr);
+    // Re-render the picker to update checkmarks
+    openImagePicker('gallery');
+  }else{
+    document.getElementById('prod-image_url').value=url;
+    updateImagePreview();
+    closeImagePicker();
+  }
 }
 function closeImagePicker(){document.getElementById('imagePickerModal').classList.remove('show')}
 async function editProduct(id){
@@ -378,10 +445,16 @@ async function saveProduct(){
   data.sort_order=parseInt(data.sort_order)||0;
   data.featured=document.getElementById('prod-featured').checked;
   data.active=document.getElementById('prod-active').checked;
+  data.gallery_images=getGalleryImages();
   const id=document.getElementById('prod-id').value;
-  if(id){await fetch(API+'/products/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}
-  else{await fetch(API+'/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}
-  closeProductModal();loadProducts();
+  try{
+    const r=id
+      ? await fetch(API+'/products/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+      : await fetch(API+'/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const d=await r.json();
+    if(!d.success){alert('Save failed: '+(d.error||'Unknown error'));return;}
+    closeProductModal();loadProducts();
+  }catch(err){alert('Save failed: '+err.message);}
 }
 async function deleteProduct(id){if(!confirm('Delete product?'))return;await fetch(API+'/products/'+id,{method:'DELETE'});loadProducts();loadDashboard();}
 

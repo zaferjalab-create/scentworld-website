@@ -311,17 +311,19 @@ app.get('/api/admin/products', requireAdmin, (req, res) => {
 });
 
 app.post('/api/admin/products', requireAdmin, (req, res) => {
-  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, featured, active, sort_order } = req.body;
+  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, featured, active, sort_order } = req.body;
   if (!name || !slug || !category) return res.status(400).json({ success: false, error: 'Name, slug, and category required' });
-  const stmt = db.prepare(`INSERT INTO products (name, slug, category, short_desc, full_desc, price, coverage, image_url, featured, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  const result = stmt.run(name, slug, category, short_desc || null, full_desc || null, price || null, coverage || null, image_url || null, featured ? 1 : 0, active !== false ? 1 : 0, sort_order || 0);
+  const gallery = Array.isArray(gallery_images) ? JSON.stringify(gallery_images) : (gallery_images || null);
+  const stmt = db.prepare(`INSERT INTO products (name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, featured, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const result = stmt.run(name, slug, category, short_desc || null, full_desc || null, price || null, coverage || null, image_url || null, gallery, featured ? 1 : 0, active !== false ? 1 : 0, sort_order || 0);
   res.json({ success: true, id: result.lastInsertRowid });
 });
 
 app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
-  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, featured, active, sort_order } = req.body;
-  db.prepare(`UPDATE products SET name=?, slug=?, category=?, short_desc=?, full_desc=?, price=?, coverage=?, image_url=?, featured=?, active=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .run(name, slug, category, short_desc, full_desc, price, coverage, image_url, featured ? 1 : 0, active ? 1 : 0, sort_order || 0, req.params.id);
+  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, featured, active, sort_order } = req.body;
+  const gallery = Array.isArray(gallery_images) ? JSON.stringify(gallery_images) : (gallery_images || null);
+  db.prepare(`UPDATE products SET name=?, slug=?, category=?, short_desc=?, full_desc=?, price=?, coverage=?, image_url=?, gallery_images=?, featured=?, active=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .run(name, slug, category, short_desc ?? null, full_desc ?? null, price ?? null, coverage ?? null, image_url ?? null, gallery, featured ? 1 : 0, active ? 1 : 0, sort_order || 0, req.params.id);
   res.json({ success: true });
 });
 

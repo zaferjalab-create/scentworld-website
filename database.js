@@ -130,4 +130,12 @@ db.exec(`
   );
 `);
 
+// Migration: Add gallery_images column if it doesn't exist
+try {
+  db.exec('ALTER TABLE products ADD COLUMN gallery_images TEXT');
+  console.log('✅ Added gallery_images column');
+} catch (e) {
+  // Column already exists, ignore
+}
+
 module.exports = db;
