@@ -299,6 +299,41 @@ app.get('/api/admin/subscribers/export', requireAdmin, (req, res) => {
   res.send(csv);
 });
 
+// IndexNow ping for instant search engine notification (Bing, Yandex, DuckDuckGo, Yahoo)
+app.post('/api/admin/indexnow-ping', requireAdmin, async (req, res) => {
+  const key = '9680638d101d3b3e47877ed48d45e004';
+  const urlList = req.body.urls || [
+    'https://www.scentworld.ca/',
+    'https://www.scentworld.ca/about.html',
+    'https://www.scentworld.ca/blog.html',
+    'https://www.scentworld.ca/industries/',
+    'https://www.scentworld.ca/industries/hotels.html',
+    'https://www.scentworld.ca/industries/spas.html',
+    'https://www.scentworld.ca/industries/restaurants.html',
+    'https://www.scentworld.ca/blog/hotel-lobby-signature-scent.html',
+    'https://www.scentworld.ca/blog/science-of-scent-marketing.html',
+    'https://www.scentworld.ca/blog/choosing-spa-diffuser.html',
+    'https://www.scentworld.ca/blog/restaurant-scent-marketing.html',
+    'https://www.scentworld.ca/blog/office-workplace-fragrance.html',
+    'https://www.scentworld.ca/blog/custom-signature-scent-guide.html'
+  ];
+  try {
+    const r = await fetch('https://api.indexnow.org/IndexNow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({
+        host: 'www.scentworld.ca',
+        key,
+        keyLocation: `https://www.scentworld.ca/${key}.txt`,
+        urlList
+      })
+    });
+    res.json({ success: true, status: r.status, statusText: r.statusText, urls_submitted: urlList.length });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 // List available product images
 app.get('/api/admin/product-images', requireAdmin, (req, res) => {
   try {
