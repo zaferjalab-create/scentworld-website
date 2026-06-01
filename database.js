@@ -140,10 +140,47 @@ try {
 
 // Migration: Add sizes column for product variants (e.g. 100ml/200ml/500ml)
 try {
-  db.exec('ALTER TABLE products ADD COLUMN sizes TEXT');
-  console.log('✅ Added sizes column');
+  // Check if column exists first
+  const cols = db.prepare("PRAGMA table_info(products)").all();
+  const hasSizes = cols.some(c => c.name === 'sizes');
+  if (!hasSizes) {
+    db.exec('ALTER TABLE products ADD COLUMN sizes TEXT');
+    console.log('✅ Added sizes column to products table');
+  } else {
+    console.log('ℹ sizes column already exists');
+  }
 } catch (e) {
-  // Column already exists, ignore
+  console.error('❌ sizes migration error:', e.message);
+}
+
+// Always seed default sizes for oil products on every startup (idempotent)
+try {
+  const defaultOilSizes = JSON.stringify([
+    {label: '100ml', price: 49},
+    {label: '200ml', price: 89},
+    {label: '500ml', price: 189}
+  ]);
+  const oudSizes = JSON.stringify([
+    {label: '100ml', price: 59},
+    {label: '200ml', price: 109},
+    {label: '500ml', price: 229}
+  ]);
+  const updates = [
+    ['fresh-blossom', defaultOilSizes],
+    ['white-tea', defaultOilSizes],
+    ['vienna', defaultOilSizes],
+    ['spark-honey', defaultOilSizes],
+    ['oud', oudSizes]
+  ];
+  const stmt = db.prepare("UPDATE products SET sizes = ? WHERE slug = ? AND (sizes IS NULL OR sizes = '')");
+  let updated = 0;
+  for (const [slug, sizes] of updates) {
+    const r = stmt.run(sizes, slug);
+    updated += r.changes;
+  }
+  if (updated > 0) console.log(`✅ Populated default sizes on ${updated} oil products`);
+} catch (e) {
+  console.error('❌ sizes seed error:', e.message);
 }
 
 // Migration: Convert m² to sq ft in product coverage
