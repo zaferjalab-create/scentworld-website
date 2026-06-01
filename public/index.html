@@ -1208,7 +1208,28 @@ document.getElementById('filterBtns').addEventListener('click', function (e) {
   renderProducts();
 });
 
-loadProducts();
+// Detect ?filter= query param (from product page breadcrumbs)
+const urlFilter = new URLSearchParams(window.location.search).get('filter');
+if (urlFilter) {
+  activeFilter = urlFilter;
+  document.querySelectorAll('.pf-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === urlFilter);
+  });
+  // Clean URL
+  if (window.history.replaceState) {
+    window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+  }
+}
+
+loadProducts().then(() => {
+  // Scroll to products section if hash is #products
+  if (window.location.hash === '#products') {
+    setTimeout(() => {
+      const el = document.getElementById('products');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  }
+});
 
 // ── FORMS ─────────────────────────────────────────────
 document.getElementById('quoteForm').addEventListener('submit', async function (e) {

@@ -220,8 +220,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
 
 <div class="crumb">
   <a href="/">Home</a><span>›</span>
-  <a href="/#products">Shop</a><span>›</span>
-  <a href="#" id="crumbCat">Fragrance Oils</a><span>›</span>
+  <a href="/?filter=all#products">Shop</a><span>›</span>
+  <a href="/?filter=all#products" id="crumbCat">Fragrance Oils</a><span>›</span>
   <span id="crumbName" style="color:var(--cream2)">Product</span>
 </div>
 
@@ -478,7 +478,9 @@ function renderProduct(p) {
   document.getElementById('pageTitle').textContent = p.name + ' | Scent World Canada';
   document.getElementById('pageDesc').setAttribute('content', p.short_desc || 'Premium product from Scent World Canada');
   document.getElementById('crumbName').textContent = p.name;
-  document.getElementById('crumbCat').textContent = CAT_LABELS[p.category] || 'Products';
+  const crumbCat = document.getElementById('crumbCat');
+  crumbCat.textContent = CAT_LABELS[p.category] || 'Products';
+  crumbCat.href = `/?filter=${p.category}#products`;
 
   const images = getAllImages(p);
   const sameCategory = allProducts.filter(o => o.category === p.category);
