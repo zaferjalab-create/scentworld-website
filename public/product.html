@@ -211,7 +211,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
     <a href="/#products">Shop</a>
     <a href="/#about">About</a>
     <a href="/blog.html">Journal</a>
-    <a href="/?cart=open" class="cart-link" onclick="openCartDrawer(event)">
+    <a href="/?cart=open" class="cart-link" id="cartLinkBtn">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       Cart <span id="cartCountNav">(0)</span>
     </a>
@@ -290,11 +290,26 @@ updateCartCount();
 // ─── CART DRAWER ───────────────────────────────────
 function openCartDrawer(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
-  renderCartBody();
+  try { renderCartBody(); } catch(err) { console.error('renderCartBody error', err); }
   document.getElementById('cartOverlay').classList.add('open');
   document.getElementById('cartDrawer').classList.add('open');
   document.body.style.overflow = 'hidden';
+  return false;
 }
+
+// Bind cart button IMMEDIATELY (don't wait for DOMContentLoaded since script is at bottom)
+(function bindCartLink() {
+  const link = document.getElementById('cartLinkBtn');
+  if (link) {
+    link.addEventListener('click', openCartDrawer);
+  } else {
+    // Try again after DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const l = document.getElementById('cartLinkBtn');
+      if (l) l.addEventListener('click', openCartDrawer);
+    });
+  }
+})();
 function closeCart() {
   document.getElementById('cartOverlay').classList.remove('open');
   document.getElementById('cartDrawer').classList.remove('open');
@@ -415,7 +430,13 @@ async function loadProducts() {
         '<div class="loading">Product not found. <a href="/" style="color:var(--gold);margin-left:1rem">Return Home →</a></div>';
       return;
     }
-    renderProduct(product);
+    try {
+      renderProduct(product);
+    } catch (err) {
+      console.error('Render error:', err);
+      document.getElementById('productContent').innerHTML =
+        '<div class="loading">Display error: ' + err.message + '. <a href="/" style="color:var(--gold);margin-left:1rem">Return Home →</a></div>';
+    }
   } catch (err) {
     document.getElementById('productContent').innerHTML =
       '<div class="loading">Could not load product. Please try again.</div>';
