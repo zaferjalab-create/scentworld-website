@@ -1095,6 +1095,13 @@ function renderCartBody() {
 }
 
 document.getElementById('cartBtn').addEventListener('click', openCart);
+// Auto-open cart if arriving from product page via ?cart=open
+if (new URLSearchParams(window.location.search).get('cart') === 'open') {
+  setTimeout(openCart, 100);
+  if (window.history.replaceState) {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
 document.getElementById('cartClose').addEventListener('click', closeCart);
 document.getElementById('cartOverlay').addEventListener('click', closeCart);
 
