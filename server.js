@@ -20,9 +20,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware - larger limit for image uploads via base64
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'scent-world-secret-change-me',
@@ -347,6 +347,73 @@ app.post('/api/admin/indexnow-ping', requireAdmin, async (req, res) => {
     res.json({ success: true, status: r.status, statusText: r.statusText, urls_submitted: urlList.length });
   } catch (err) {
     res.json({ success: false, error: err.message });
+  }
+});
+
+// Upload a product image (base64 encoded)
+app.post('/api/admin/upload-image', requireAdmin, express.json({ limit: '20mb' }), (req, res) => {
+  try {
+    const { filename, mimetype, data } = req.body;
+    if (!filename || !data) return res.status(400).json({ success: false, error: 'Missing filename or data' });
+
+    // Validate extension
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.gif'];
+    const ext = path.extname(filename).toLowerCase();
+    if (!allowedExts.includes(ext)) {
+      return res.status(400).json({ success: false, error: 'Only JPG, PNG, WEBP, SVG, GIF allowed' });
+    }
+
+    // Sanitize filename (remove path traversal, special chars)
+    let safeName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    // Ensure directory exists
+    const dir = path.join(__dirname, 'public', 'images', 'products');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    // Handle name conflicts: file.jpg → file_1.jpg, file_2.jpg, etc.
+    let finalName = safeName;
+    let counter = 1;
+    const base = safeName.replace(ext, '');
+    while (fs.existsSync(path.join(dir, finalName))) {
+      finalName = `${base}_${counter}${ext}`;
+      counter++;
+    }
+
+    // Decode base64 (strip data: prefix if present)
+    const base64Data = data.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // Size check (max 10MB)
+    if (buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ success: false, error: 'File too large (max 10MB)' });
+    }
+
+    // Write file
+    fs.writeFileSync(path.join(dir, finalName), buffer);
+
+    res.json({
+      success: true,
+      filename: finalName,
+      url: `/images/products/${finalName}`,
+      size: buffer.length
+    });
+  } catch (err) {
+    console.error('Upload error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Delete a product image
+app.delete('/api/admin/product-images/:filename', requireAdmin, (req, res) => {
+  try {
+    const name = path.basename(req.params.filename);
+    if (!/^[a-zA-Z0-9._-]+$/.test(name)) return res.status(400).json({ success: false, error: 'Invalid filename' });
+    const filePath = path.join(__dirname, 'public', 'images', 'products', name);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'File not found' });
+    fs.unlinkSync(filePath);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

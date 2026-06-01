@@ -207,9 +207,18 @@ tr:hover td{background:rgba(255,255,255,.01)}
 <div class="modal-bg" id="imagePickerModal" style="z-index:1100">
   <div class="modal" style="max-width:900px;max-height:85vh;overflow-y:auto">
     <h3>Select Product Image</h3>
-    <p style="color:#888;font-size:.85rem;margin-bottom:1rem">Click any image to assign it to this product.</p>
+    <p style="color:#888;font-size:.85rem;margin-bottom:1rem" id="pickerHint">Click any image to assign it to this product.</p>
+
+    <!-- Upload section -->
+    <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem;padding:1rem;background:rgba(201,165,92,.06);border:1px dashed rgba(201,165,92,.4);border-radius:6px;flex-wrap:wrap">
+      <input type="file" id="imageUploadInput" accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif" style="display:none" multiple onchange="handleImageUpload(event)">
+      <button type="button" class="btn btn-gold btn-sm" onclick="document.getElementById('imageUploadInput').click()" id="uploadTriggerBtn">📤 Upload New Photo(s)</button>
+      <div style="flex:1;font-size:.75rem;color:#aaa">JPG, PNG, WEBP, SVG · Max 10MB · Auto-saves to product gallery</div>
+      <div id="uploadStatus" style="font-size:.78rem;color:#c9a55c"></div>
+    </div>
+
     <div id="imagePickerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.7rem;margin-bottom:1rem"></div>
-    <div class="modal-btns"><button class="btn btn-outline" onclick="closeImagePicker()">Cancel</button></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeImagePicker()">Done</button></div>
   </div>
 </div>
 
@@ -420,10 +429,11 @@ async function openImagePicker(mode){
     grid.innerHTML=d.images.map(img=>{
       const inGallery=pickerMode==='gallery'&&galleryArr.includes(img.url);
       return `
-      <div style="cursor:pointer;border:2px solid ${inGallery?'#27ae60':'transparent'};border-radius:6px;overflow:hidden;background:#1a1714;transition:all .2s;position:relative" onmouseover="this.style.borderColor='#c9a55c'" onmouseout="this.style.borderColor='${inGallery?'#27ae60':'transparent'}'" onclick="selectImage('${img.url}')">
+      <div style="cursor:pointer;border:2px solid ${inGallery?'#27ae60':'transparent'};border-radius:6px;overflow:hidden;background:#1a1714;transition:all .2s;position:relative" onmouseover="this.style.borderColor='#c9a55c';this.querySelector('.del-btn').style.opacity='1'" onmouseout="this.style.borderColor='${inGallery?'#27ae60':'transparent'}';this.querySelector('.del-btn').style.opacity='0'" onclick="selectImage('${img.url}')">
         <img src="${img.url}" alt="${img.name}" style="width:100%;height:100px;object-fit:cover;display:block">
         <div style="font-size:.7rem;color:#888;padding:.3rem .4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${img.name}</div>
-        ${inGallery?'<div style="position:absolute;top:4px;right:4px;background:#27ae60;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:bold">✓</div>':''}
+        ${inGallery?'<div style="position:absolute;top:4px;right:4px;background:#27ae60;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:bold;z-index:1">✓</div>':''}
+        <button class="del-btn" type="button" onclick="deleteUploadedImage('${img.name}', event)" title="Delete this image" style="position:absolute;top:4px;left:4px;background:rgba(192,57,43,.92);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.7rem;line-height:1;padding:0;opacity:0;transition:opacity .2s;z-index:2">✕</button>
       </div>`;
     }).join('');
   }catch(err){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#c0392b;padding:2rem">Failed to load images</div>';}
@@ -448,6 +458,119 @@ function selectImage(url){
   }
 }
 function closeImagePicker(){document.getElementById('imagePickerModal').classList.remove('show')}
+
+// ───── Image Upload ─────────────────────────────────────────
+async function handleImageUpload(event){
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+
+  const status = document.getElementById('uploadStatus');
+  const triggerBtn = document.getElementById('uploadTriggerBtn');
+  triggerBtn.disabled = true;
+  let uploaded = 0;
+  let lastUploadedUrl = null;
+  const errors = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    status.textContent = `Uploading ${i+1}/${files.length}: ${file.name}...`;
+    try {
+      // Validate size client-side first
+      if (file.size > 10 * 1024 * 1024) {
+        errors.push(`${file.name}: too large (>10MB)`);
+        continue;
+      }
+      // Read as base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      // Upload to server
+      const r = await fetch(API+'/upload-image', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          filename: file.name,
+          mimetype: file.type,
+          data: base64
+        })
+      });
+      const d = await r.json();
+      if (!d.success) {
+        errors.push(`${file.name}: ${d.error || 'upload failed'}`);
+        continue;
+      }
+      uploaded++;
+      lastUploadedUrl = d.url;
+    } catch (err) {
+      errors.push(`${file.name}: ${err.message}`);
+    }
+  }
+
+  // Status feedback
+  if (uploaded > 0) {
+    status.textContent = `✅ Uploaded ${uploaded} photo${uploaded > 1 ? 's' : ''}` + (errors.length ? ` (${errors.length} failed)` : '');
+    status.style.color = '#27ae60';
+  } else {
+    status.textContent = `❌ All uploads failed`;
+    status.style.color = '#c0392b';
+  }
+  if (errors.length) {
+    setTimeout(() => alert('Some uploads failed:\n\n' + errors.join('\n')), 100);
+  }
+
+  // Reset
+  triggerBtn.disabled = false;
+  event.target.value = ''; // reset input so same file can be re-uploaded
+
+  // Auto-action based on picker mode
+  if (uploaded === 1 && pickerMode === 'main' && lastUploadedUrl) {
+    // Single upload in main mode: auto-assign and close
+    document.getElementById('prod-image_url').value = lastUploadedUrl;
+    updateImagePreview();
+    setTimeout(() => closeImagePicker(), 800);
+    return;
+  }
+  if (uploaded > 0 && pickerMode === 'gallery') {
+    // Gallery mode: add all uploaded URLs to gallery
+    // The list will refresh and show them
+  }
+
+  // Refresh the picker grid to show new images
+  setTimeout(() => openImagePicker(pickerMode), 500);
+}
+
+// Delete a photo from the products folder
+async function deleteUploadedImage(filename, e) {
+  if (e) { e.stopPropagation(); }
+  if (!confirm(`Delete "${filename}" from the products folder? This cannot be undone.`)) return;
+  try {
+    const r = await fetch(API + '/product-images/' + encodeURIComponent(filename), { method: 'DELETE' });
+    const d = await r.json();
+    if (!d.success) {
+      alert('Delete failed: ' + (d.error || 'unknown error'));
+      return;
+    }
+    // Also remove from current product fields if it was selected
+    const url = '/images/products/' + filename;
+    if (document.getElementById('prod-image_url').value === url) {
+      document.getElementById('prod-image_url').value = '';
+      updateImagePreview();
+    }
+    const gallery = getGalleryImages();
+    const idx = gallery.indexOf(url);
+    if (idx >= 0) {
+      gallery.splice(idx, 1);
+      setGalleryImages(gallery);
+    }
+    // Refresh
+    openImagePicker(pickerMode);
+  } catch (err) {
+    alert('Delete error: ' + err.message);
+  }
+}
 async function editProduct(id){
   const r=await fetch(API+'/products');const d=await r.json();
   const p=d.products.find(x=>x.id===id);if(p)openProductModal(p);
