@@ -302,6 +302,9 @@ function renderProduct(p) {
 
   const images = getAllImages(p);
   const sameCategory = allProducts.filter(o => o.category === p.category);
+  const allOils = allProducts.filter(o => o.category === 'oils');
+  const isDiffuser = p.category === 'diffusers';
+  const isOil = p.category === 'oils';
 
   // Push to history for bookmarking
   if (window.history.replaceState) {
@@ -347,11 +350,13 @@ function renderProduct(p) {
 
         <p class="pd-desc">${p.short_desc || ''}</p>
 
-        ${sameCategory.length > 1 ? `
+        ${p.coverage ? `<div style="display:flex;align-items:center;gap:.7rem;padding:.8rem 1rem;background:var(--bg2);border:1px solid var(--bdr);margin-bottom:1.8rem;border-radius:2px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9a55c" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><div><div style="font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--txt)">Coverage</div><div style="color:var(--cream);font-size:.85rem;font-weight:500">${p.coverage}</div></div></div>` : ''}
+
+        ${isOil && sameCategory.length > 1 ? `
         <div class="pd-selector">
-          <div class="pd-sel-label">Choose Fragrance: <span class="pd-sel-value" id="oilLabel">${p.name.replace(/\\sOil$/, '')}</span></div>
+          <div class="pd-sel-label">Choose Fragrance: <span class="pd-sel-value" id="oilLabel">${p.name.replace(/\sOil$/, '')}</span></div>
           <div class="pd-dropdown" id="oilDropdown">
-            <button class="pd-dropdown-btn" onclick="toggleDropdown()">
+            <button class="pd-dropdown-btn" onclick="toggleDropdown('oilDropdown')">
               <span id="dropdownCurrent">${p.name}</span>
               <span class="arrow">▼</span>
             </button>
@@ -367,7 +372,7 @@ function renderProduct(p) {
           </div>
         </div>` : ''}
 
-        ${sizes && sizes.length > 1 ? `
+        ${isOil && sizes && sizes.length > 1 ? `
         <div class="pd-selector">
           <div class="pd-sel-label">Choose Size: <span class="pd-sel-value" id="sizeLabel">${selectedSize.label}</span></div>
           <div class="pd-sizes" id="sizeButtons">
@@ -377,6 +382,47 @@ function renderProduct(p) {
                 <span class="sz-price">$${s.price.toFixed(2)}</span>
               </button>
             `).join('')}
+          </div>
+        </div>` : ''}
+
+        ${isDiffuser && allOils.length > 0 ? `
+        <div class="pd-bundle" style="margin-bottom:1.8rem;padding:1.4rem 1.5rem;background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid rgba(201,165,92,.25);border-radius:2px;position:relative">
+          <div style="position:absolute;top:-10px;left:1.2rem;background:var(--gold);color:var(--bg);padding:.2rem .8rem;font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;font-weight:600">Recommended</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:0">
+            <div>
+              <div style="font-family:var(--df);font-size:1.1rem;color:var(--cream);font-weight:500;font-style:italic">Pair with a Signature Fragrance Oil</div>
+              <div style="font-size:.78rem;color:var(--cream2);margin-top:.3rem;font-weight:300">Complete your diffuser with premium oils designed for this device.</div>
+            </div>
+            <label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0">
+              <input type="checkbox" id="addOilToggle" onchange="toggleOilBundle()" style="display:none">
+              <span id="bundleSwitch" style="width:46px;height:24px;background:var(--bg);border:1px solid var(--bdr);border-radius:12px;position:relative;transition:all .3s;display:inline-block">
+                <span id="bundleSwitchDot" style="width:18px;height:18px;background:var(--txt);border-radius:50%;position:absolute;top:2px;left:2px;transition:all .3s"></span>
+              </span>
+            </label>
+          </div>
+          <div id="oilBundleOptions" style="display:none;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--bdr)">
+            <div class="pd-sel-label" style="margin-bottom:.6rem">Select Fragrance:</div>
+            <div class="pd-dropdown" id="bundleOilDropdown" style="margin-bottom:1rem">
+              <button class="pd-dropdown-btn" onclick="toggleDropdown('bundleOilDropdown')">
+                <span id="bundleOilCurrent">${allOils[0].name}</span>
+                <span class="arrow">▼</span>
+              </button>
+              <div class="pd-dropdown-menu">
+                ${allOils.map((o, i) => `
+                  <div class="pd-dropdown-item ${i === 0 ? 'current' : ''}" onclick="selectBundleOil('${o.slug}', this)">
+                    <div class="item-thumb">${o.image_url ? `<img src="${o.image_url}" alt="">` : ''}</div>
+                    <div class="item-name">${o.name}</div>
+                    <div class="item-price">from $${(o.price || 0).toFixed(2)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="pd-sel-label" style="margin-bottom:.6rem">Select Size:</div>
+            <div class="pd-sizes" id="bundleSizeButtons"></div>
+            <div id="bundleSummary" style="margin-top:1rem;padding:.9rem 1.1rem;background:var(--bg);border:1px dashed var(--gold);display:flex;justify-content:space-between;align-items:center;font-size:.85rem;border-radius:2px">
+              <span style="color:var(--cream2)">Bundle total:</span>
+              <span style="color:var(--gold);font-family:var(--df);font-size:1.15rem;font-weight:500" id="bundleTotal">$${p.price.toFixed(2)}</span>
+            </div>
           </div>
         </div>` : ''}
 
@@ -461,15 +507,101 @@ function selectSize(i) {
 function changeQty(delta) {
   qty = Math.max(1, qty + delta);
   document.getElementById('qtyDisplay').textContent = qty;
+  updateBundleTotal();
 }
 
-function toggleDropdown() {
-  document.getElementById('oilDropdown').classList.toggle('open');
+function toggleDropdown(id) {
+  if (typeof id !== 'string') id = 'oilDropdown';
+  document.getElementById(id).classList.toggle('open');
 }
 document.addEventListener('click', (e) => {
-  const dd = document.getElementById('oilDropdown');
-  if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+  ['oilDropdown', 'bundleOilDropdown'].forEach(id => {
+    const dd = document.getElementById(id);
+    if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+  });
 });
+
+// ── Bundle Oil (for Diffuser pages) ──────────────────
+let bundleOilSlug = null;
+let bundleOilSize = null;
+let bundleEnabled = false;
+
+function toggleOilBundle() {
+  bundleEnabled = document.getElementById('addOilToggle').checked;
+  const opts = document.getElementById('oilBundleOptions');
+  const sw = document.getElementById('bundleSwitch');
+  const dot = document.getElementById('bundleSwitchDot');
+  if (bundleEnabled) {
+    opts.style.display = 'block';
+    sw.style.background = 'var(--gold)';
+    sw.style.borderColor = 'var(--gold)';
+    dot.style.background = 'var(--bg)';
+    dot.style.left = '23px';
+    // Initialize with first oil if not selected
+    const oils = allProducts.filter(o => o.category === 'oils');
+    if (!bundleOilSlug && oils.length) {
+      selectBundleOil(oils[0].slug);
+    } else {
+      renderBundleSizes();
+    }
+  } else {
+    opts.style.display = 'none';
+    sw.style.background = 'var(--bg)';
+    sw.style.borderColor = 'var(--bdr)';
+    dot.style.background = 'var(--txt)';
+    dot.style.left = '2px';
+    updateBundleTotal();
+  }
+}
+
+function selectBundleOil(slug, clickedEl) {
+  bundleOilSlug = slug;
+  const oil = allProducts.find(o => o.slug === slug);
+  if (!oil) return;
+  document.getElementById('bundleOilCurrent').textContent = oil.name;
+  // Mark current in dropdown
+  document.querySelectorAll('#bundleOilDropdown .pd-dropdown-item').forEach(el => el.classList.remove('current'));
+  if (clickedEl) clickedEl.classList.add('current');
+  // Default to first size
+  const sizes = parseSizes(oil);
+  bundleOilSize = sizes && sizes.length ? sizes[0] : null;
+  renderBundleSizes();
+  document.getElementById('bundleOilDropdown').classList.remove('open');
+}
+
+function renderBundleSizes() {
+  const oil = allProducts.find(o => o.slug === bundleOilSlug);
+  if (!oil) return;
+  const sizes = parseSizes(oil) || [];
+  const container = document.getElementById('bundleSizeButtons');
+  if (!container) return;
+  container.innerHTML = sizes.map((s, i) => `
+    <button class="pd-size-btn ${(bundleOilSize && bundleOilSize.label === s.label) ? 'active' : ''}" onclick="selectBundleSize(${i})">
+      <span class="sz-vol">${s.label}</span>
+      <span class="sz-price">+$${s.price.toFixed(2)}</span>
+    </button>
+  `).join('');
+  updateBundleTotal();
+}
+
+function selectBundleSize(i) {
+  const oil = allProducts.find(o => o.slug === bundleOilSlug);
+  if (!oil) return;
+  const sizes = parseSizes(oil) || [];
+  bundleOilSize = sizes[i];
+  document.querySelectorAll('#bundleSizeButtons .pd-size-btn').forEach((b, idx) => b.classList.toggle('active', idx === i));
+  updateBundleTotal();
+}
+
+function updateBundleTotal() {
+  const totalEl = document.getElementById('bundleTotal');
+  if (!totalEl) return;
+  let total = (currentProduct.price || 0) * qty;
+  if (bundleEnabled && bundleOilSize) {
+    total += bundleOilSize.price * qty;
+  }
+  totalEl.textContent = '$' + total.toFixed(2);
+}
 
 function switchProduct(slug) {
   const p = allProducts.find(x => x.slug === slug);
@@ -499,7 +631,7 @@ function addToCart() {
   const price = selectedSize ? selectedSize.price : (p.price || 0);
   const cartKey = sizeLabel ? `${p.id}-${sizeLabel}` : `${p.id}`;
 
-  // Find existing
+  // 1. Add main product
   const existing = cart.find(i => i.cartKey === cartKey);
   if (existing) {
     existing.qty += qty;
@@ -516,22 +648,55 @@ function addToCart() {
       qty
     });
   }
+
+  // 2. If diffuser with bundle enabled, also add the oil
+  let bundleAdded = null;
+  if (bundleEnabled && bundleOilSlug && bundleOilSize) {
+    const oil = allProducts.find(o => o.slug === bundleOilSlug);
+    if (oil) {
+      const oilKey = `${oil.id}-${bundleOilSize.label}`;
+      const exOil = cart.find(i => i.cartKey === oilKey);
+      if (exOil) {
+        exOil.qty += qty;
+      } else {
+        cart.push({
+          cartKey: oilKey,
+          id: oil.id,
+          slug: oil.slug,
+          name: `${oil.name} (${bundleOilSize.label})`,
+          price: bundleOilSize.price,
+          category: oil.category,
+          size: bundleOilSize.label,
+          image_url: oil.image_url,
+          qty
+        });
+      }
+      bundleAdded = `${oil.name} (${bundleOilSize.label})`;
+    }
+  }
   saveCart();
 
   // GA4
   if (typeof gtag === 'function') {
-    gtag('event', 'add_to_cart', {
-      currency: 'CAD',
-      value: price * qty,
-      items: [{ item_id: p.id, item_name: p.name, item_variant: sizeLabel || '', item_category: p.category, price, quantity: qty }]
-    });
+    const items = [{ item_id: p.id, item_name: p.name, item_variant: sizeLabel || '', item_category: p.category, price, quantity: qty }];
+    let totalValue = price * qty;
+    if (bundleAdded && bundleOilSize) {
+      const oil = allProducts.find(o => o.slug === bundleOilSlug);
+      if (oil) {
+        items.push({ item_id: oil.id, item_name: oil.name, item_variant: bundleOilSize.label, item_category: 'oils', price: bundleOilSize.price, quantity: qty });
+        totalValue += bundleOilSize.price * qty;
+      }
+    }
+    gtag('event', 'add_to_cart', { currency: 'CAD', value: totalValue, items });
   }
 
   // UI feedback
   const btn = document.getElementById('atcBtn');
   btn.classList.add('added');
   btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Added to Cart';
-  showToast('Added ' + qty + ' × ' + p.name + (sizeLabel ? ' (' + sizeLabel + ')' : '') + ' to cart');
+  const baseMsg = `${qty} × ${p.name}${sizeLabel ? ' (' + sizeLabel + ')' : ''}`;
+  const bundleMsg = bundleAdded ? ` + ${bundleAdded}` : '';
+  showToast('Added ' + baseMsg + bundleMsg + ' to cart');
   setTimeout(() => {
     btn.classList.remove('added');
     btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Add to Cart';
