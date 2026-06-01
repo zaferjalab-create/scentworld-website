@@ -1005,31 +1005,32 @@ let cart = JSON.parse(localStorage.getItem('sw_cart') || '[]');
 function saveCart() { localStorage.setItem('sw_cart', JSON.stringify(cart)); }
 
 function addToCart(product) {
-  const ex = cart.find(i => i.id === product.id);
-  if (ex) { ex.qty++; } else { cart.push({ id: product.id, name: product.name, price: product.price, category: product.category, qty: 1 }); }
+  const key = product.cartKey || String(product.id);
+  const ex = cart.find(i => (i.cartKey || String(i.id)) === key);
+  if (ex) { ex.qty++; } else { cart.push({ cartKey: key, id: product.id, name: product.name, price: product.price, category: product.category, size: product.size || null, qty: 1 }); }
   saveCart();
   updateCartBadge();
   if (typeof gtag === 'function') {
     gtag('event', 'add_to_cart', {
       currency: 'CAD',
       value: product.price,
-      items: [{item_id: product.id, item_name: product.name, item_category: product.category, price: product.price, quantity: 1}]
+      items: [{item_id: product.id, item_name: product.name, item_variant: product.size || '', item_category: product.category, price: product.price, quantity: 1}]
     });
   }
 }
 
-function removeFromCart(id) {
-  cart = cart.filter(i => i.id !== id);
+function removeFromCart(key) {
+  cart = cart.filter(i => (i.cartKey || String(i.id)) !== String(key));
   saveCart();
   updateCartBadge();
   renderCartBody();
 }
 
-function updateQty(id, delta) {
-  const item = cart.find(i => i.id === id);
+function updateQty(key, delta) {
+  const item = cart.find(i => (i.cartKey || String(i.id)) === String(key));
   if (!item) return;
   item.qty = Math.max(0, item.qty + delta);
-  if (item.qty === 0) { removeFromCart(id); return; }
+  if (item.qty === 0) { removeFromCart(key); return; }
   saveCart();
   updateCartBadge();
   renderCartBody();
@@ -1079,12 +1080,12 @@ function renderCartBody() {
         <div class="ci-name" title="${item.name}">${item.name}</div>
         <div class="ci-price">$${(item.price * item.qty).toFixed(2)} CAD</div>
         <div class="ci-qty">
-          <button class="qty-btn" onclick="updateQty(${item.id},-1)">&#8722;</button>
+          <button class="qty-btn" onclick="updateQty('${item.cartKey || item.id}',-1)">&#8722;</button>
           <span class="qty-num">${item.qty}</span>
-          <button class="qty-btn" onclick="updateQty(${item.id},1)">+</button>
+          <button class="qty-btn" onclick="updateQty('${item.cartKey || item.id}',1)">+</button>
         </div>
       </div>
-      <button class="ci-rm" onclick="removeFromCart(${item.id})" title="Remove">&#10005;</button>
+      <button class="ci-rm" onclick="removeFromCart('${item.cartKey || item.id}')" title="Remove">&#10005;</button>
     </div>`).join('');
   const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
   document.getElementById('cartSubtotal').textContent = `$${sub.toFixed(2)} CAD`;
@@ -1113,7 +1114,7 @@ document.getElementById('checkoutBtn').addEventListener('click', async function 
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: cart.map(i => ({ id: i.id, quantity: i.qty })) }),
+      body: JSON.stringify({ items: cart.map(i => ({ id: i.id, quantity: i.qty, size: i.size || null })) }),
     });
     const data = await res.json();
     if (data.success && data.url) {
@@ -1175,14 +1176,15 @@ function renderProducts() {
       ? `<button class="atc" onclick="(function(btn){addToCart({id:${p.id},name:'${pName}',price:${p.price},category:'${p.category}'});btn.textContent='Added ✓';btn.classList.add('added');setTimeout(()=>{btn.textContent='Add to Cart';btn.classList.remove('added')},1600)})(this)">Add to Cart</button>`
       : `<a href="#contact" class="pl">Get a Quote &rarr;</a>`;
     return `<div class="pc rv${i < 4 ? ' d' + Math.min(i + 1, 4) : ''}">
-      <div class="pi">${img}</div>
+      <a href="/product.html?slug=${p.slug}" class="pi" style="display:block;text-decoration:none">${img}</a>
       <div class="pb">
         <div class="pcat">${label}</div>
-        <h3 class="pn">${p.name}</h3>
+        <a href="/product.html?slug=${p.slug}" style="text-decoration:none;color:inherit"><h3 class="pn">${p.name}</h3></a>
         <p class="pdesc">${p.short_desc || ''}</p>
         ${p.coverage ? `<p class="pcov">Coverage: ${p.coverage}</p>` : ''}
         ${priceHtml}
         ${btnHtml}
+        <a href="/product.html?slug=${p.slug}" style="display:block;margin-top:.5rem;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);text-decoration:none">View Details →</a>
       </div>
     </div>`;
   }).join('');

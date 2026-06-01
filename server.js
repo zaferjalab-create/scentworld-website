@@ -122,12 +122,28 @@ app.post('/api/checkout', async (req, res) => {
     const lineItems = [];
     for (const item of items) {
       const product = db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.id);
-      if (!product || !product.price) return res.status(400).json({ success: false, error: `Product ${item.id} not available` });
+      if (!product) return res.status(400).json({ success: false, error: `Product ${item.id} not available` });
+      // Resolve price from size variant if provided, otherwise use product default
+      let unitPrice = product.price;
+      let productName = product.name;
+      if (item.size) {
+        try {
+          const sizes = product.sizes ? JSON.parse(product.sizes) : null;
+          if (Array.isArray(sizes)) {
+            const match = sizes.find(s => s.label === item.size);
+            if (match) {
+              unitPrice = match.price;
+              productName = `${product.name} — ${match.label}`;
+            }
+          }
+        } catch (e) {}
+      }
+      if (!unitPrice) return res.status(400).json({ success: false, error: `No price for product ${item.id}` });
       lineItems.push({
         price_data: {
           currency: 'cad',
-          product_data: { name: product.name, description: product.short_desc || undefined },
-          unit_amount: Math.round(product.price * 100),
+          product_data: { name: productName, description: product.short_desc || undefined },
+          unit_amount: Math.round(unitPrice * 100),
         },
         quantity: item.quantity,
       });
@@ -356,19 +372,21 @@ app.get('/api/admin/products', requireAdmin, (req, res) => {
 });
 
 app.post('/api/admin/products', requireAdmin, (req, res) => {
-  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, featured, active, sort_order } = req.body;
+  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order } = req.body;
   if (!name || !slug || !category) return res.status(400).json({ success: false, error: 'Name, slug, and category required' });
   const gallery = Array.isArray(gallery_images) ? JSON.stringify(gallery_images) : (gallery_images || null);
-  const stmt = db.prepare(`INSERT INTO products (name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, featured, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  const result = stmt.run(name, slug, category, short_desc || null, full_desc || null, price || null, coverage || null, image_url || null, gallery, featured ? 1 : 0, active !== false ? 1 : 0, sort_order || 0);
+  const sizesJson = Array.isArray(sizes) ? JSON.stringify(sizes) : (sizes || null);
+  const stmt = db.prepare(`INSERT INTO products (name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const result = stmt.run(name, slug, category, short_desc || null, full_desc || null, price || null, coverage || null, image_url || null, gallery, sizesJson, featured ? 1 : 0, active !== false ? 1 : 0, sort_order || 0);
   res.json({ success: true, id: result.lastInsertRowid });
 });
 
 app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
-  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, featured, active, sort_order } = req.body;
+  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order } = req.body;
   const gallery = Array.isArray(gallery_images) ? JSON.stringify(gallery_images) : (gallery_images || null);
-  db.prepare(`UPDATE products SET name=?, slug=?, category=?, short_desc=?, full_desc=?, price=?, coverage=?, image_url=?, gallery_images=?, featured=?, active=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .run(name, slug, category, short_desc ?? null, full_desc ?? null, price ?? null, coverage ?? null, image_url ?? null, gallery, featured ? 1 : 0, active ? 1 : 0, sort_order || 0, req.params.id);
+  const sizesJson = Array.isArray(sizes) ? JSON.stringify(sizes) : (sizes || null);
+  db.prepare(`UPDATE products SET name=?, slug=?, category=?, short_desc=?, full_desc=?, price=?, coverage=?, image_url=?, gallery_images=?, sizes=?, featured=?, active=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .run(name, slug, category, short_desc ?? null, full_desc ?? null, price ?? null, coverage ?? null, image_url ?? null, gallery, sizesJson, featured ? 1 : 0, active ? 1 : 0, sort_order || 0, req.params.id);
   res.json({ success: true });
 });
 

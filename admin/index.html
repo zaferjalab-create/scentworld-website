@@ -183,6 +183,10 @@ tr:hover td{background:rgba(255,255,255,.01)}
     </div>
     <div id="prod-image-preview" style="margin-bottom:1rem"></div>
 
+    <label>Size Variants (JSON — leave blank for no variants)</label>
+    <textarea id="prod-sizes" placeholder='[{"label":"100ml","price":49},{"label":"200ml","price":89},{"label":"500ml","price":189}]' style="font-family:monospace;font-size:.78rem"></textarea>
+    <p style="font-size:.72rem;color:#888;margin-top:-.5rem;margin-bottom:1rem">Example for oils: <code style="color:#c9a55c">[{"label":"100ml","price":49},{"label":"200ml","price":89},{"label":"500ml","price":189}]</code></p>
+
     <label>Gallery Images (additional photos shown on product detail)</label>
     <div style="margin-bottom:.4rem">
       <button type="button" class="btn btn-outline btn-sm" onclick="openImagePicker('gallery')">📷 Add to Gallery</button>
@@ -337,6 +341,18 @@ function openProductModal(p){
   ['id','name','slug','category','short_desc','price','coverage','image_url','sort_order'].forEach(f=>{
     const el=document.getElementById('prod-'+f);if(el)el.value=p?p[f]||'':'';
   });
+  // Sizes - prettify JSON for editing
+  const sizesEl = document.getElementById('prod-sizes');
+  if (sizesEl) {
+    if (p && p.sizes) {
+      try {
+        const parsed = typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes;
+        sizesEl.value = Array.isArray(parsed) ? JSON.stringify(parsed, null, 2) : '';
+      } catch(e) { sizesEl.value = p.sizes || ''; }
+    } else {
+      sizesEl.value = '';
+    }
+  }
   document.getElementById('prod-featured').checked=p?!!p.featured:false;
   document.getElementById('prod-active').checked=p?!!p.active:true;
   // Load gallery images (stored as JSON string in DB)
@@ -446,6 +462,17 @@ async function saveProduct(){
   data.featured=document.getElementById('prod-featured').checked;
   data.active=document.getElementById('prod-active').checked;
   data.gallery_images=getGalleryImages();
+  // Sizes - parse JSON if provided
+  const sizesText=(document.getElementById('prod-sizes').value||'').trim();
+  if(sizesText){
+    try{
+      const parsed=JSON.parse(sizesText);
+      if(!Array.isArray(parsed))throw new Error('Sizes must be an array');
+      data.sizes=parsed;
+    }catch(e){alert('Sizes JSON is invalid: '+e.message);return;}
+  }else{
+    data.sizes=null;
+  }
   const id=document.getElementById('prod-id').value;
   try{
     const r=id

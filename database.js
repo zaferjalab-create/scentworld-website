@@ -138,6 +138,14 @@ try {
   // Column already exists, ignore
 }
 
+// Migration: Add sizes column for product variants (e.g. 100ml/200ml/500ml)
+try {
+  db.exec('ALTER TABLE products ADD COLUMN sizes TEXT');
+  console.log('✅ Added sizes column');
+} catch (e) {
+  // Column already exists, ignore
+}
+
 // Migration: Convert m² to sq ft in product coverage
 try {
   const conversions = [
