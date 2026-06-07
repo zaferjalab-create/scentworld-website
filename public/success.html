@@ -9,6 +9,7 @@
   gtag('js', new Date());
   gtag('config', 'G-SW3F0J9C88');
   gtag('event', 'purchase_completed', {currency: 'CAD'});
+  // Meta Pixel Purchase event fires after verifying with the server (see script below)
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,6 +46,23 @@ h1 em{font-style:italic;color:var(--gold)}
 .btn-home:hover{background:var(--gold-l)}
 .err-box{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.2);padding:1rem;font-size:.8rem;color:var(--err);margin-bottom:1.5rem;display:none}
 </style>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 </head>
 <body>
 <div class="box" id="box">
@@ -84,7 +102,21 @@ h1 em{font-style:italic;color:var(--gold)}
       return;
     }
 
-    // Success
+    // Success - fire Purchase events
+    if (typeof fbq === 'function') {
+      fbq('track', 'Purchase', {
+        currency: 'CAD',
+        value: data.total || 0,
+        content_type: 'product'
+      });
+    }
+    if (typeof gtag === 'function') {
+      gtag('event', 'purchase', {
+        transaction_id: data.order_number,
+        currency: 'CAD',
+        value: data.total || 0
+      });
+    }
     icon.className = 'icon';
     icon.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
     title.innerHTML = 'Order <em>Confirmed</em>';

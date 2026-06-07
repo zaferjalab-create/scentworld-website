@@ -9,6 +9,24 @@
   gtag('js', new Date());
   gtag('config', 'G-SW3F0J9C88');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="pageTitle">Product | Scent World Canada</title>
@@ -501,6 +519,17 @@ function renderProduct(p) {
       items: [{ item_id: p.id, item_name: p.name, item_category: p.category, price: selectedSize ? selectedSize.price : p.price }]
     });
   }
+  // Meta Pixel ViewContent
+  if (typeof fbq === 'function') {
+    fbq('track', 'ViewContent', {
+      currency: 'CAD',
+      value: selectedSize ? selectedSize.price : (p.price || 0),
+      content_ids: [p.id],
+      content_name: p.name,
+      content_type: 'product',
+      content_category: p.category
+    });
+  }
 
   const html = `
     <div class="pd-wrap">
@@ -870,6 +899,21 @@ function addToCart() {
       }
     }
     gtag('event', 'add_to_cart', { currency: 'CAD', value: totalValue, items });
+  }
+  if (typeof fbq === 'function') {
+    let fbValue = price * qty;
+    if (bundleAdded && bundleOilSize) fbValue += bundleOilSize.price * qty;
+    fbq('track', 'AddToCart', {
+      currency: 'CAD',
+      value: fbValue,
+      content_ids: bundleAdded ? [p.id, allProducts.find(o => o.slug === bundleOilSlug).id] : [p.id],
+      content_name: p.name + (sizeLabel ? ' (' + sizeLabel + ')' : '') + (bundleAdded ? ' + ' + bundleAdded : ''),
+      content_type: 'product',
+      contents: bundleAdded ? [
+        { id: p.id, quantity: qty },
+        { id: allProducts.find(o => o.slug === bundleOilSlug).id, quantity: qty }
+      ] : [{ id: p.id, quantity: qty }]
+    });
   }
 
   // UI feedback

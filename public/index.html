@@ -9,6 +9,24 @@
   gtag('js', new Date());
   gtag('config', 'G-SW3F0J9C88');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scent World Canada | Luxury Scent Marketing</title>
@@ -1017,6 +1035,15 @@ function addToCart(product) {
       items: [{item_id: product.id, item_name: product.name, item_variant: product.size || '', item_category: product.category, price: product.price, quantity: 1}]
     });
   }
+  if (typeof fbq === 'function') {
+    fbq('track', 'AddToCart', {
+      currency: 'CAD',
+      value: product.price,
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product'
+    });
+  }
 }
 
 function removeFromCart(key) {
@@ -1115,6 +1142,15 @@ document.getElementById('checkoutBtn').addEventListener('click', async function 
       currency: 'CAD',
       value: total,
       items: cart.map(i => ({item_id: i.id, item_name: i.name, item_category: i.category, price: i.price, quantity: i.qty}))
+    });
+  }
+  if (typeof fbq === 'function') {
+    const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
+    fbq('track', 'InitiateCheckout', {
+      currency: 'CAD',
+      value: total,
+      num_items: cart.reduce((s,i) => s + i.qty, 0),
+      content_ids: cart.map(i => i.id)
     });
   }
   try {
@@ -1247,6 +1283,7 @@ document.getElementById('quoteForm').addEventListener('submit', async function (
       msg.className = 'form-msg ok';
       msg.textContent = "Thank you! Your quote request has been received. We'll be in touch within 24 hours.";
       if (typeof gtag === 'function') gtag('event', 'generate_lead', {event_category: 'form', event_label: 'quote_request', value: 1});
+      if (typeof fbq === 'function') fbq('track', 'Lead', {content_name: 'Quote Request'});
       this.reset();
     }
     else throw new Error(data.error);
@@ -1269,6 +1306,7 @@ document.getElementById('bookingForm').addEventListener('submit', async function
       msg.className = 'form-msg ok';
       msg.textContent = "Consultation booked! We'll confirm your time slot within 24 hours.";
       if (typeof gtag === 'function') gtag('event', 'book_consultation', {event_category: 'form', event_label: 'booking', value: 1});
+      if (typeof fbq === 'function') fbq('trackCustom', 'BookConsultation', {content_name: 'Consultation Booking'});
       this.reset();
     }
     else throw new Error(data.error);
@@ -1308,6 +1346,7 @@ document.getElementById('newsBtn').addEventListener('click', async function () {
     document.getElementById('newsEmail').value = '';
     this.textContent = 'Subscribed!';
     if (typeof gtag === 'function') gtag('event', 'newsletter_signup', {event_category: 'engagement', event_label: 'footer_subscribe'});
+    if (typeof fbq === 'function') fbq('track', 'Subscribe', {content_name: 'Newsletter'});
     setTimeout(() => { this.textContent = 'Subscribe'; this.disabled = false; }, 3000);
   } catch { this.textContent = 'Error'; setTimeout(() => { this.textContent = 'Subscribe'; this.disabled = false; }, 2000); }
 });
