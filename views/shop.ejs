@@ -86,6 +86,9 @@ a{color:var(--gold);text-decoration:none}
 .sp-name a{color:inherit}
 .sp-name a:hover{color:var(--gold)}
 .sp-cov{font-size:.7rem;color:var(--txt);font-weight:300;margin-bottom:.6rem}
+.sp-stars{display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem}
+.sp-stars span{color:var(--gold);font-size:.72rem;letter-spacing:.1em}
+.sp-stars em{font-style:normal;font-size:.64rem;color:var(--txt2);font-weight:200}
 .sp-row{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:.8rem}
 .sp-price{font-family:var(--df);color:var(--gold);font-size:1.05rem;font-weight:500}
 .sp-price small{color:var(--txt);font-size:.62rem;font-family:var(--bf);font-weight:300}
@@ -176,6 +179,7 @@ a{color:var(--gold);text-decoration:none}
     <div class="sp-body">
       <div class="sp-cat"><%= CAT_LABELS[p.category] || p.category %></div>
       <div class="sp-name"><a href="/products/<%= p.slug %>"><%= p.name %></a></div>
+      <% if (p.rating_count) { %><div class="sp-stars"><span><%= '★'.repeat(Math.round(p.rating_avg)) + '☆'.repeat(5 - Math.round(p.rating_avg)) %></span> <em><%= p.rating_avg.toFixed(1) %> (<%= p.rating_count %>)</em></div><% } %>
       <% if (p.coverage) { %><div class="sp-cov">Coverage: <%= p.coverage %></div><% } %>
       <div class="sp-row">
         <div class="sp-price"><% if (ps) { %><small>from </small><% } %>$<%= price.toFixed(2) %></div>

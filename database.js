@@ -240,4 +240,41 @@ try {
   console.log('Coverage migration warning:', e.message);
 }
 
+// Migration: product reviews + editable testimonials (Phase 4)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      text TEXT,
+      approved INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+    CREATE TABLE IF NOT EXISTS testimonials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      stars INTEGER DEFAULT 5,
+      text TEXT NOT NULL,
+      author_name TEXT NOT NULL,
+      author_role TEXT,
+      sort_order INTEGER DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  // Seed testimonials with the previously hard-coded homepage entries (once)
+  const count = db.prepare('SELECT COUNT(*) AS c FROM testimonials').get().c;
+  if (count === 0) {
+    const ins = db.prepare('INSERT INTO testimonials (stars, text, author_name, author_role, sort_order) VALUES (5, ?, ?, ?, ?)');
+    ins.run("Working with Scent World Canada transformed our lobby into an unforgettable sensory experience. Guests now ask us about the fragrance the moment they walk in — it's become part of our brand identity.", 'Michelle R.', 'General Manager · Boutique Hotel', 1);
+    ins.run('The team designed a custom scent for our wellness centre that perfectly captures the calm and elegance we wanted. Our clients consistently mention how relaxing the atmosphere feels — it\'s been a game-changer.', 'Amélie L.', 'Owner · Day Spa & Wellness', 2);
+    ins.run('Professional from quote to installation. The diffusion system is whisper-quiet and the fragrance throughout our restaurant is beautifully balanced. Highly recommend for any hospitality business.', 'David C.', 'Executive Chef · Fine Dining', 3);
+    console.log('✅ Seeded 3 testimonials');
+  }
+} catch (e) {
+  console.error('❌ reviews/testimonials migration error:', e.message);
+}
+
 module.exports = db;

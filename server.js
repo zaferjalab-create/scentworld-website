@@ -108,6 +108,28 @@ app.get('/api/products', (req, res) => {
   res.json({ success: true, products });
 });
 
+// Submit a product review (held for admin approval)
+app.post('/api/reviews', (req, res) => {
+  try {
+    const { product_id, name, rating, text } = req.body;
+    const pid = parseInt(product_id, 10);
+    const stars = parseInt(rating, 10);
+    const cleanName = String(name || '').trim().slice(0, 60);
+    const cleanText = String(text || '').trim().slice(0, 2000);
+    if (!pid || !cleanName || !stars || stars < 1 || stars > 5) {
+      return res.status(400).json({ success: false, error: 'Name and a 1–5 star rating are required' });
+    }
+    const product = db.prepare('SELECT id, name FROM products WHERE id = ? AND active = 1').get(pid);
+    if (!product) return res.status(400).json({ success: false, error: 'Product not found' });
+    db.prepare('INSERT INTO reviews (product_id, name, rating, text) VALUES (?, ?, ?, ?)').run(pid, cleanName, stars, cleanText || null);
+    sendNotification('New Product Review (pending approval)', `Product: ${product.name}\nFrom: ${cleanName}\nRating: ${stars}/5\n\n${cleanText || '(no text)'}\n\nApprove it in the admin dashboard → Reviews.`);
+    res.json({ success: true, message: 'Thank you! Your review will appear once approved.' });
+  } catch (err) {
+    console.error('Review error:', err);
+    res.status(500).json({ success: false, error: 'Something went wrong' });
+  }
+});
+
 app.get('/api/products/:slug', (req, res) => {
   const product = db.prepare('SELECT * FROM products WHERE slug = ? AND active = 1').get(req.params.slug);
   if (!product) return res.status(404).json({ success: false, error: 'Product not found' });
@@ -617,6 +639,53 @@ app.patch('/api/admin/orders/:id', requireAdmin, (req, res) => {
 });
 
 // Admin password change
+// ── Reviews (admin moderation) ──
+app.get('/api/admin/reviews', requireAdmin, (req, res) => {
+  const reviews = db.prepare(`
+    SELECT r.*, p.name AS product_name FROM reviews r
+    LEFT JOIN products p ON p.id = r.product_id
+    ORDER BY r.approved ASC, r.created_at DESC
+  `).all();
+  res.json({ success: true, reviews });
+});
+
+app.patch('/api/admin/reviews/:id', requireAdmin, (req, res) => {
+  const { approved } = req.body;
+  db.prepare('UPDATE reviews SET approved = ? WHERE id = ?').run(approved ? 1 : 0, req.params.id);
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/reviews/:id', requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM reviews WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ── Testimonials (homepage Google-reviews section) ──
+app.get('/api/admin/testimonials', requireAdmin, (req, res) => {
+  res.json({ success: true, testimonials: db.prepare('SELECT * FROM testimonials ORDER BY sort_order, id').all() });
+});
+
+app.post('/api/admin/testimonials', requireAdmin, (req, res) => {
+  const { stars, text, author_name, author_role, sort_order, active } = req.body;
+  if (!text || !author_name) return res.status(400).json({ success: false, error: 'Text and author name are required' });
+  db.prepare('INSERT INTO testimonials (stars, text, author_name, author_role, sort_order, active) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(Math.min(5, Math.max(1, parseInt(stars, 10) || 5)), text, author_name, author_role || null, parseInt(sort_order, 10) || 0, active === false ? 0 : 1);
+  res.json({ success: true });
+});
+
+app.put('/api/admin/testimonials/:id', requireAdmin, (req, res) => {
+  const { stars, text, author_name, author_role, sort_order, active } = req.body;
+  if (!text || !author_name) return res.status(400).json({ success: false, error: 'Text and author name are required' });
+  db.prepare('UPDATE testimonials SET stars = ?, text = ?, author_name = ?, author_role = ?, sort_order = ?, active = ? WHERE id = ?')
+    .run(Math.min(5, Math.max(1, parseInt(stars, 10) || 5)), text, author_name, author_role || null, parseInt(sort_order, 10) || 0, active === false ? 0 : 1, req.params.id);
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/testimonials/:id', requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM testimonials WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 app.post('/api/admin/change-password', requireAdmin, (req, res) => {
   const { current_password, new_password } = req.body;
   const admin = db.prepare('SELECT * FROM admins WHERE id = ?').get(req.session.adminId);
@@ -778,14 +847,29 @@ function getSalesCounts() {
     return Object.fromEntries(rows.map(r => [r.product_id, r.sold]));
   } catch (e) { return {}; }
 }
+function getRatings() {
+  try {
+    const rows = db.prepare('SELECT product_id, ROUND(AVG(rating), 1) AS avg, COUNT(*) AS count FROM reviews WHERE approved = 1 GROUP BY product_id').all();
+    return Object.fromEntries(rows.map(r => [r.product_id, { avg: r.avg, count: r.count }]));
+  } catch (e) { return {}; }
+}
+function withRatings(products) {
+  const ratings = getRatings();
+  return products.map(p => ({ ...p, rating_avg: ratings[p.id]?.avg || null, rating_count: ratings[p.id]?.count || 0 }));
+}
 function shopLocals(products) {
   const sales = getSalesCounts();
-  return products.map(p => ({ ...p, _bucket: coverageBucket(p), _sold: sales[p.id] || 0 }));
+  return withRatings(products).map(p => ({ ...p, _bucket: coverageBucket(p), _sold: sales[p.id] || 0 }));
+}
+function getTestimonials() {
+  try {
+    return db.prepare('SELECT * FROM testimonials WHERE active = 1 ORDER BY sort_order, id').all();
+  } catch (e) { return []; }
 }
 
 // Homepage — products rendered server-side
 app.get('/', (req, res) => {
-  res.render('index', { products: getActiveProducts() });
+  res.render('index', { products: withRatings(getActiveProducts()), testimonials: getTestimonials() });
 });
 
 // Clean product detail URLs: /products/:slug (SSR)
@@ -795,7 +879,9 @@ app.get('/products/:slug', (req, res, next) => {
   const all = getActiveProducts();
   const related = all.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
   const oils = all.filter(p => p.category === 'oils');
-  res.render('product-detail', { product, related, oils, all });
+  const reviews = db.prepare('SELECT name, rating, text, created_at FROM reviews WHERE product_id = ? AND approved = 1 ORDER BY created_at DESC').all(product.id);
+  const ratingAvg = reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 10) / 10 : null;
+  res.render('product-detail', { product, related, oils, all, reviews, ratingAvg });
 });
 
 // Legacy product page → 301 to clean URL

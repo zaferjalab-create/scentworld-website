@@ -403,6 +403,9 @@ section{padding:7rem 4vw}
 .pcat{font-size:.52rem;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
 .pn{font-family:var(--df);font-size:1.2rem;font-weight:500;margin-bottom:.4rem}
 .pdesc{font-size:.76rem;font-weight:200;line-height:1.6;color:var(--txt);margin-bottom:.6rem;flex:1}
+.pc-stars{display:flex;align-items:center;gap:.4rem;margin:-.2rem 0 .4rem}
+.pc-stars span{color:var(--gold);font-size:.72rem;letter-spacing:.1em}
+.pc-stars em{font-style:normal;font-size:.64rem;color:var(--txt2);font-weight:200}
 .pcov{font-size:.68rem;color:var(--txt2);margin-bottom:.8rem}
 .pp{font-family:var(--df);font-size:1.4rem;color:var(--gold);font-weight:400;margin-bottom:.9rem}
 .pp span{font-size:.68rem;color:var(--txt2);font-family:var(--bf);font-weight:200}
@@ -699,6 +702,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
       <div class="pb">
         <div class="pcat"><%= label %></div>
         <a href="/products/<%= p.slug %>" style="text-decoration:none;color:inherit"><h3 class="pn"><%= p.name %></h3></a>
+        <% if (p.rating_count) { %><div class="pc-stars"><span><%= '★'.repeat(Math.round(p.rating_avg)) + '☆'.repeat(5 - Math.round(p.rating_avg)) %></span> <em><%= p.rating_avg.toFixed(1) %> (<%= p.rating_count %>)</em></div><% } %>
         <p class="pdesc"><%= p.short_desc || '' %></p>
         <% if (p.coverage) { %><p class="pcov">Coverage: <%= p.coverage %></p><% } %>
         <% if (p.price) { %><div class="pp">$<%= p.price.toFixed(2) %> <span>CAD</span></div><% } %>
@@ -783,39 +787,19 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <h2 class="st rv d2">Trusted by <em>Discerning Brands</em></h2>
   </div>
   <div class="testi-grid">
-    <div class="tc rv d1">
-      <div class="tc-stars">★★★★★</div>
-      <p class="tc-text">Working with Scent World Canada transformed our lobby into an unforgettable sensory experience. Guests now ask us about the fragrance the moment they walk in — it's become part of our brand identity.</p>
+    <% (typeof testimonials !== 'undefined' ? testimonials : []).forEach((t, i) => { %>
+    <div class="tc rv d<%= (i % 3) + 1 %>">
+      <div class="tc-stars"><%= '★'.repeat(Math.min(5, Math.max(1, t.stars || 5))) %></div>
+      <p class="tc-text"><%= t.text %></p>
       <div class="tc-author">
-        <div class="tc-avatar">M</div>
+        <div class="tc-avatar"><%= (t.author_name || '?').trim().charAt(0).toUpperCase() %></div>
         <div class="tc-info">
-          <div class="tc-name">Michelle R.</div>
-          <div class="tc-role">General Manager · Boutique Hotel</div>
+          <div class="tc-name"><%= t.author_name %></div>
+          <div class="tc-role"><%= t.author_role || '' %></div>
         </div>
       </div>
     </div>
-    <div class="tc rv d2">
-      <div class="tc-stars">★★★★★</div>
-      <p class="tc-text">The team designed a custom scent for our wellness centre that perfectly captures the calm and elegance we wanted. Our clients consistently mention how relaxing the atmosphere feels — it's been a game-changer.</p>
-      <div class="tc-author">
-        <div class="tc-avatar">A</div>
-        <div class="tc-info">
-          <div class="tc-name">Amélie L.</div>
-          <div class="tc-role">Owner · Day Spa &amp; Wellness</div>
-        </div>
-      </div>
-    </div>
-    <div class="tc rv d3">
-      <div class="tc-stars">★★★★★</div>
-      <p class="tc-text">Professional from quote to installation. The diffusion system is whisper-quiet and the fragrance throughout our restaurant is beautifully balanced. Highly recommend for any hospitality business.</p>
-      <div class="tc-author">
-        <div class="tc-avatar">D</div>
-        <div class="tc-info">
-          <div class="tc-name">David C.</div>
-          <div class="tc-role">Executive Chef · Fine Dining</div>
-        </div>
-      </div>
-    </div>
+    <% }) %>
   </div>
 </section>
 
@@ -1254,6 +1238,7 @@ function renderProducts() {
       <div class="pb">
         <div class="pcat">${label}</div>
         <a href="/products/${p.slug}" style="text-decoration:none;color:inherit"><h3 class="pn">${p.name}</h3></a>
+        ${p.rating_count ? `<div class="pc-stars"><span>${'★'.repeat(Math.round(p.rating_avg)) + '☆'.repeat(5 - Math.round(p.rating_avg))}</span> <em>${p.rating_avg.toFixed(1)} (${p.rating_count})</em></div>` : ''}
         <p class="pdesc">${p.short_desc || ''}</p>
         ${p.coverage ? `<p class="pcov">Coverage: ${p.coverage}</p>` : ''}
         ${priceHtml}

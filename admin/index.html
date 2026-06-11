@@ -88,6 +88,8 @@ tr:hover td{background:rgba(255,255,255,.01)}
     <div class="nav-item" data-page="subscribers"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Subscribers</div>
     <div class="nav-item" data-page="products"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Products</div>
     <div class="nav-item" data-page="orders"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Orders</div>
+    <div class="nav-item" data-page="reviews"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Reviews</div>
+    <div class="nav-item" data-page="testimonials"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Testimonials</div>
     <div class="nav-sep"></div>
     <div class="nav-item" data-page="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</div>
     <a href="/" class="nav-item" style="text-decoration:none"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View Website</a>
@@ -146,6 +148,20 @@ tr:hover td{background:rgba(255,255,255,.01)}
         <table><thead><tr><th>Order #</th><th>Customer</th><th>Email</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
         <tbody id="tbl-orders"></tbody></table>
       </div>
+    </div>
+
+    <!-- REVIEWS -->
+    <div class="section" id="sec-reviews">
+      <h1 class="page-title">Product Reviews</h1>
+      <p class="page-desc">Customer reviews are hidden until you approve them.</p>
+      <div class="card"><div class="card-head"><h3>All Reviews</h3></div><table><thead><tr><th>Product</th><th>Name</th><th>Rating</th><th>Review</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="tbl-reviews"></tbody></table></div>
+    </div>
+
+    <!-- TESTIMONIALS -->
+    <div class="section" id="sec-testimonials">
+      <h1 class="page-title">Testimonials</h1>
+      <p class="page-desc">Curated client quotes shown in the Google-reviews section on the homepage.</p>
+      <div class="card"><div class="card-head"><h3>All Testimonials</h3><div class="card-actions"><button class="btn btn-gold btn-sm" onclick="openTestimonialModal()">+ Add Testimonial</button></div></div><table><thead><tr><th>Author</th><th>Role</th><th>Stars</th><th>Quote</th><th>Order</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tbl-testimonials"></tbody></table></div>
     </div>
 
     <!-- SETTINGS -->
@@ -219,6 +235,21 @@ tr:hover td{background:rgba(255,255,255,.01)}
   </div>
 </div>
 
+<!-- TESTIMONIAL MODAL -->
+<div class="modal-bg" id="testimonialModal">
+  <div class="modal">
+    <h3 id="testiModalTitle">Add Testimonial</h3>
+    <input type="hidden" id="testi-id">
+    <label>Author Name *</label><input id="testi-author_name" placeholder="Michelle R.">
+    <label>Author Role</label><input id="testi-author_role" placeholder="General Manager · Boutique Hotel">
+    <label>Stars (1–5)</label><select id="testi-stars"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select>
+    <label>Quote *</label><textarea id="testi-text" style="min-height:110px"></textarea>
+    <label>Sort Order</label><input type="number" id="testi-sort_order" value="0">
+    <div style="margin-top:1rem"><label style="margin:0;display:flex;align-items:center;gap:.4rem;text-transform:none;letter-spacing:0;font-size:.8rem;color:var(--cream2)"><input type="checkbox" id="testi-active" checked style="width:auto"> Show on homepage</label></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeTestimonialModal()">Cancel</button><button class="btn btn-gold" onclick="saveTestimonial()">Save Testimonial</button></div>
+  </div>
+</div>
+
 <!-- Image Picker Modal -->
 <div class="modal-bg" id="imagePickerModal" style="z-index:1100">
   <div class="modal" style="max-width:900px;max-height:85vh;overflow-y:auto">
@@ -240,6 +271,7 @@ tr:hover td{background:rgba(255,255,255,.01)}
 
 <script>
 const API = '/api/admin';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 // Auth check
 fetch(API+'/check').then(r=>{if(!r.ok)window.location.href='/admin/login.html'});
@@ -262,8 +294,75 @@ function loadPage(page){
   if(page==='subscribers')loadSubscribers();
   if(page==='products')loadProducts();
   if(page==='orders')loadOrders();
+  if(page==='reviews')loadReviews();
+  if(page==='testimonials')loadTestimonials();
   if(page==='settings')loadSettings();
 }
+
+// Reviews moderation
+async function loadReviews(){
+  const r=await fetch(API+'/reviews');const d=await r.json();
+  document.getElementById('tbl-reviews').innerHTML=(d.reviews||[]).map(rv=>`<tr>
+    <td>${esc(rv.product_name||'#'+rv.product_id)}</td>
+    <td>${esc(rv.name)}</td>
+    <td style="color:#c9a55c">${'★'.repeat(rv.rating)}${'☆'.repeat(5-rv.rating)}</td>
+    <td style="max-width:320px;white-space:normal">${esc(rv.text||'')}</td>
+    <td><span class="badge ${rv.approved?'badge-done':'badge-pending'}">${rv.approved?'Live':'Pending'}</span></td>
+    <td>${(rv.created_at||'').slice(0,10)}</td>
+    <td>
+      <button class="btn ${rv.approved?'btn-outline':'btn-gold'} btn-sm" onclick="setReviewApproval(${rv.id},${rv.approved?0:1})">${rv.approved?'Unpublish':'Approve'}</button>
+      <button class="btn btn-outline btn-sm" style="border-color:rgba(192,57,43,.5);color:#c0392b" onclick="deleteReview(${rv.id})">Delete</button>
+    </td></tr>`).join('')||'<tr><td colspan="7" style="color:#888">No reviews yet.</td></tr>';
+}
+async function setReviewApproval(id,approved){await fetch(API+'/reviews/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({approved})});loadReviews();}
+async function deleteReview(id){if(!confirm('Delete this review?'))return;await fetch(API+'/reviews/'+id,{method:'DELETE'});loadReviews();}
+
+// Testimonials
+async function loadTestimonials(){
+  const r=await fetch(API+'/testimonials');const d=await r.json();
+  window._testimonials=d.testimonials||[];
+  document.getElementById('tbl-testimonials').innerHTML=window._testimonials.map(t=>`<tr>
+    <td>${esc(t.author_name)}</td>
+    <td>${esc(t.author_role||'')}</td>
+    <td style="color:#c9a55c">${'★'.repeat(t.stars||5)}</td>
+    <td style="max-width:340px;white-space:normal">${esc((t.text||'').slice(0,140))}${(t.text||'').length>140?'…':''}</td>
+    <td>${t.sort_order}</td>
+    <td><span class="badge ${t.active?'badge-done':'badge-pending'}">${t.active?'Active':'Hidden'}</span></td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="openTestimonialModal(${t.id})">Edit</button>
+      <button class="btn btn-outline btn-sm" style="border-color:rgba(192,57,43,.5);color:#c0392b" onclick="deleteTestimonial(${t.id})">Delete</button>
+    </td></tr>`).join('')||'<tr><td colspan="7" style="color:#888">No testimonials yet.</td></tr>';
+}
+function openTestimonialModal(id){
+  const t=id?window._testimonials.find(x=>x.id===id):null;
+  document.getElementById('testi-id').value=t?t.id:'';
+  document.getElementById('testi-author_name').value=t?t.author_name:'';
+  document.getElementById('testi-author_role').value=t?(t.author_role||''):'';
+  document.getElementById('testi-stars').value=t?(t.stars||5):5;
+  document.getElementById('testi-text').value=t?t.text:'';
+  document.getElementById('testi-sort_order').value=t?t.sort_order:0;
+  document.getElementById('testi-active').checked=t?!!t.active:true;
+  document.getElementById('testiModalTitle').textContent=t?'Edit Testimonial':'Add Testimonial';
+  document.getElementById('testimonialModal').classList.add('show');
+}
+function closeTestimonialModal(){document.getElementById('testimonialModal').classList.remove('show');}
+async function saveTestimonial(){
+  const id=document.getElementById('testi-id').value;
+  const body={
+    author_name:document.getElementById('testi-author_name').value.trim(),
+    author_role:document.getElementById('testi-author_role').value.trim(),
+    stars:parseInt(document.getElementById('testi-stars').value,10)||5,
+    text:document.getElementById('testi-text').value.trim(),
+    sort_order:parseInt(document.getElementById('testi-sort_order').value,10)||0,
+    active:document.getElementById('testi-active').checked
+  };
+  if(!body.author_name||!body.text){alert('Author name and quote are required');return;}
+  const r=await fetch(API+'/testimonials'+(id?'/'+id:''),{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!d.success){alert(d.error||'Save failed');return;}
+  closeTestimonialModal();loadTestimonials();
+}
+async function deleteTestimonial(id){if(!confirm('Delete this testimonial?'))return;await fetch(API+'/testimonials/'+id,{method:'DELETE'});loadTestimonials();}
 
 // Dashboard
 async function loadDashboard(){
