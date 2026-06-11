@@ -174,8 +174,24 @@ tr:hover td{background:rgba(255,255,255,.01)}
     <label>URL Slug *</label><input id="prod-slug" placeholder="s100">
     <label>Category *</label><select id="prod-category"><option value="diffusers">Scent Diffusers</option><option value="oils">Fragrance Oils</option><option value="home_car">Home & Car</option><option value="aerosol">Aerosol Systems</option></select>
     <label>Short Description</label><textarea id="prod-short_desc"></textarea>
+    <label>Long Description (shown on product page — blank paragraphs separate)</label><textarea id="prod-full_desc" style="min-height:110px"></textarea>
     <label>Price (CAD)</label><input type="number" step="0.01" id="prod-price">
-    <label>Coverage</label><input id="prod-coverage" placeholder="Up to 300m²">
+    <label>Coverage</label><input id="prod-coverage" placeholder="Up to 300 sq ft">
+
+    <div style="margin-top:1.2rem;padding:1rem;border:1px solid rgba(201,165,92,.25);border-radius:6px">
+      <p style="font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:#c9a55c;margin-bottom:.6rem">Specifications (optional — blank rows are hidden on the product page)</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+        <div><label>Coverage Area</label><input id="prod-spec_coverage" placeholder="Up to 3,230 sq ft / 300 m²"></div>
+        <div><label>Oil Capacity</label><input id="prod-spec_oil_capacity" placeholder="500 ml"></div>
+        <div><label>Noise Level</label><input id="prod-spec_noise" placeholder="< 35 dB"></div>
+        <div><label>Power Supply</label><input id="prod-spec_power" placeholder="100–240V AC"></div>
+        <div><label>Dimensions</label><input id="prod-spec_dimensions" placeholder="20 × 20 × 30 cm"></div>
+        <div><label>Weight</label><input id="prod-spec_weight" placeholder="2.4 kg"></div>
+        <div style="grid-column:1/-1"><label>Warranty</label><input id="prod-spec_warranty" placeholder="1-year limited warranty"></div>
+      </div>
+      <label style="margin-top:.8rem">What's in the Box (one item per line)</label>
+      <textarea id="prod-box_contents" placeholder="S100 Diffuser unit&#10;Power adapter&#10;User manual" style="min-height:80px"></textarea>
+    </div>
     <label>Main Product Image</label>
     <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.4rem">
       <input id="prod-image_url" placeholder="/images/products/photo.jpg" style="flex:1" oninput="updateImagePreview()">
@@ -347,9 +363,16 @@ async function loadProducts(){
 }
 function openProductModal(p){
   document.getElementById('modalTitle').textContent=p?'Edit Product':'Add Product';
-  ['id','name','slug','category','short_desc','price','coverage','image_url','sort_order'].forEach(f=>{
+  ['id','name','slug','category','short_desc','full_desc','price','coverage','image_url','sort_order','spec_coverage','spec_oil_capacity','spec_noise','spec_power','spec_dimensions','spec_weight','spec_warranty'].forEach(f=>{
     const el=document.getElementById('prod-'+f);if(el)el.value=p?p[f]||'':'';
   });
+  // Box contents: JSON array <-> one item per line
+  const boxEl=document.getElementById('prod-box_contents');
+  if(boxEl){
+    let arr=[];
+    if(p&&p.box_contents){try{arr=JSON.parse(p.box_contents);if(!Array.isArray(arr))arr=[];}catch(e){arr=[];}}
+    boxEl.value=arr.join('\n');
+  }
   // Sizes - prettify JSON for editing
   const sizesEl = document.getElementById('prod-sizes');
   if (sizesEl) {
@@ -577,9 +600,15 @@ async function editProduct(id){
 }
 async function saveProduct(){
   const data={};
-  ['name','slug','category','short_desc','price','coverage','image_url','sort_order'].forEach(f=>{
+  ['name','slug','category','short_desc','full_desc','price','coverage','image_url','sort_order','spec_coverage','spec_oil_capacity','spec_noise','spec_power','spec_dimensions','spec_weight','spec_warranty'].forEach(f=>{
     const el=document.getElementById('prod-'+f);data[f]=el?el.value:'';
   });
+  // Box contents: lines -> JSON array
+  const boxEl=document.getElementById('prod-box_contents');
+  if(boxEl){
+    const lines=boxEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    data.box_contents=lines.length?lines:null;
+  }
   data.price=data.price?parseFloat(data.price):null;
   data.sort_order=parseInt(data.sort_order)||0;
   data.featured=document.getElementById('prod-featured').checked;

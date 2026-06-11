@@ -138,6 +138,32 @@ try {
   // Column already exists, ignore
 }
 
+// Migration: product spec fields + what's-in-the-box (Phase 2)
+// All nullable — product pages render blank-tolerant rows.
+try {
+  const cols = db.prepare('PRAGMA table_info(products)').all().map(c => c.name);
+  const newCols = [
+    ['spec_coverage', 'TEXT'],      // e.g. "Up to 3,230 sq ft / 300 m²"
+    ['spec_oil_capacity', 'TEXT'],  // e.g. "500 ml"
+    ['spec_noise', 'TEXT'],         // e.g. "< 35 dB"
+    ['spec_power', 'TEXT'],         // e.g. "100–240V AC"
+    ['spec_dimensions', 'TEXT'],    // e.g. "20 × 20 × 30 cm"
+    ['spec_weight', 'TEXT'],        // e.g. "2.4 kg"
+    ['spec_warranty', 'TEXT'],      // e.g. "1-year limited warranty"
+    ['box_contents', 'TEXT'],       // JSON array of strings
+  ];
+  let added = 0;
+  for (const [name, type] of newCols) {
+    if (!cols.includes(name)) {
+      db.exec(`ALTER TABLE products ADD COLUMN ${name} ${type}`);
+      added++;
+    }
+  }
+  if (added > 0) console.log(`✅ Added ${added} product spec columns`);
+} catch (e) {
+  console.error('❌ spec columns migration error:', e.message);
+}
+
 // Migration: Add sizes column for product variants (e.g. 100ml/200ml/500ml)
 try {
   // Check if column exists first

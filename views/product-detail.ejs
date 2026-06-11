@@ -1,0 +1,824 @@
+<%
+// ── Server-side data prep ──────────────────────────────
+const CAT_LABELS = { diffusers: 'Scent Diffusers', oils: 'Fragrance Oils', home_car: 'Home & Car', aerosol: 'Aerosol Systems' };
+const catLabel = CAT_LABELS[product.category] || 'Products';
+
+let sizes = null;
+try { const s = JSON.parse(product.sizes || 'null'); if (Array.isArray(s) && s.length) sizes = s; } catch(e) {}
+
+let gallery = [];
+try { const g = JSON.parse(product.gallery_images || '[]'); if (Array.isArray(g)) gallery = g; } catch(e) {}
+const images = [];
+if (product.image_url) images.push(product.image_url);
+for (const g of gallery) if (g && !images.includes(g) && images.length < 6) images.push(g);
+
+let box = [];
+try { const b = JSON.parse(product.box_contents || '[]'); if (Array.isArray(b)) box = b; } catch(e) {}
+
+const specs = [
+  ['Coverage area', product.spec_coverage || product.coverage],
+  ['Oil capacity', product.spec_oil_capacity],
+  ['Noise level', product.spec_noise],
+  ['Power supply', product.spec_power],
+  ['Dimensions', product.spec_dimensions],
+  ['Weight', product.spec_weight],
+  ['Warranty', product.spec_warranty],
+].filter(([k, v]) => v && String(v).trim());
+
+const startPrice = sizes ? sizes[0].price : (product.price || 0);
+const minPrice = sizes ? Math.min(...sizes.map(s => s.price)) : (product.price || 0);
+const maxPrice = sizes ? Math.max(...sizes.map(s => s.price)) : (product.price || 0);
+const isOil = product.category === 'oils';
+const isDiffuser = product.category === 'diffusers';
+const metaDesc = (product.short_desc || product.name) + ' Ships from Halifax. Free shipping over $150 CAD across Canada.';
+const BASE = 'https://www.scentworld.ca';
+const pageUrl = BASE + '/products/' + product.slug;
+const imgAbs = u => u && u.startsWith('http') ? u : BASE + (u || '/images/logo.png');
+
+const oilsLite = oils.map(o => {
+  let os = null; try { const t = JSON.parse(o.sizes || 'null'); if (Array.isArray(t) && t.length) os = t; } catch(e) {}
+  return { id: o.id, slug: o.slug, name: o.name, image_url: o.image_url, price: o.price, sizes: os };
+});
+%><!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+fbq('track', 'ViewContent', {currency:'CAD', value:<%= startPrice %>, content_ids:[<%= product.id %>], content_name:<%- JSON.stringify(product.name) %>, content_type:'product', content_category:<%- JSON.stringify(product.category) %>});
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= product.name %> | Scent World Canada</title>
+<meta name="description" content="<%= metaDesc %>">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="<%= pageUrl %>">
+<meta property="og:type" content="product">
+<meta property="og:title" content="<%= product.name %> | Scent World Canada">
+<meta property="og:description" content="<%= metaDesc %>">
+<meta property="og:url" content="<%= pageUrl %>">
+<meta property="og:image" content="<%= imgAbs(images[0]) %>">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json"><%- JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  image: images.map(imgAbs),
+  description: product.short_desc || product.name,
+  sku: product.slug,
+  brand: { '@type': 'Brand', name: 'Scent World Canada' },
+  offers: sizes ? {
+    '@type': 'AggregateOffer', lowPrice: minPrice.toFixed(2), highPrice: maxPrice.toFixed(2),
+    priceCurrency: 'CAD', offerCount: sizes.length, availability: 'https://schema.org/InStock', url: pageUrl
+  } : {
+    '@type': 'Offer', price: (product.price || 0).toFixed(2), priceCurrency: 'CAD',
+    availability: 'https://schema.org/InStock', url: pageUrl
+  }
+}) %></script>
+<script type="application/ld+json"><%- JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: BASE + '/' },
+    { '@type': 'ListItem', position: 2, name: 'Shop', item: BASE + '/shop' },
+    { '@type': 'ListItem', position: 3, name: catLabel, item: BASE + '/shop?filter=' + product.category },
+    { '@type': 'ListItem', position: 4, name: product.name, item: pageUrl }
+  ]
+}) %></script>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--bg4:#211e1a;
+  --gold:#c9a55c;--gold-l:#e0ca8e;--gold-d:#9a7d3e;
+  --cream:#f5f0e6;--cream2:#cdc5b8;
+  --txt:#958e85;--txt2:#635d55;
+  --bdr:rgba(201,165,92,.1);--bdr2:rgba(255,255,255,0.06);
+  --err:#c0392b;--ok:#27ae60;
+  --df:'Playfair Display',serif;--bf:'Outfit',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--bf);background:var(--bg);color:var(--cream);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+
+/* NAV */
+nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display:flex;align-items:center;justify-content:space-between;background:rgba(11,9,8,.95);backdrop-filter:blur(25px);border-bottom:1px solid var(--bdr)}
+.nl{display:flex;align-items:center;text-decoration:none}
+.nl img{height:32px;width:auto;object-fit:contain}
+.nk{display:flex;gap:2.2rem;align-items:center}
+.nk a{font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--cream2);text-decoration:none;font-weight:300;transition:color .3s}
+.nk a:hover{color:var(--gold)}
+.cart-link{padding:.45rem 1.2rem;border:1px solid var(--gold);color:var(--gold)!important;font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;transition:all .3s;display:flex;align-items:center;gap:.4rem}
+.cart-link:hover{background:var(--gold);color:var(--bg)!important}
+
+/* BREADCRUMB */
+.crumb{padding:6.4rem 4vw .5rem;font-size:.7rem;letter-spacing:.06em;color:var(--txt)}
+.crumb a{color:var(--txt);text-decoration:none;transition:color .3s}
+.crumb a:hover{color:var(--gold)}
+.crumb span{margin:0 .6rem;color:var(--txt2)}
+
+/* MAIN LAYOUT */
+.pd-wrap{max-width:1320px;margin:0 auto;padding:1.5rem 4vw 5rem;display:grid;grid-template-columns:1.1fr 1fr;gap:4rem;align-items:start}
+@media (max-width:980px){.pd-wrap{grid-template-columns:1fr;gap:2.5rem;padding-top:1rem}}
+
+/* LEFT: GALLERY */
+.pd-gallery{position:sticky;top:6rem}
+.pd-main-img{width:100%;aspect-ratio:1/1;background:var(--bg2);border:1px solid var(--bdr);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;border-radius:2px}
+.pd-main-img img{width:100%;height:100%;object-fit:cover;transition:opacity .3s;cursor:zoom-in}
+.pd-main-img .placeholder{width:100%;height:100%;background:linear-gradient(135deg,var(--bg3),var(--bg2));display:flex;align-items:center;justify-content:center;color:var(--txt);font-size:.85rem;letter-spacing:.2em;text-transform:uppercase}
+.zoom-hint{position:absolute;bottom:1rem;right:1rem;background:rgba(11,9,8,.7);color:var(--gold);font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;padding:.4rem .7rem;border:1px solid var(--bdr);backdrop-filter:blur(8px);pointer-events:none}
+.pd-thumbs{display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap}
+.pd-thumb{width:78px;height:78px;border:1px solid var(--bdr);background:var(--bg2);cursor:pointer;transition:all .3s;overflow:hidden;border-radius:2px;flex-shrink:0}
+.pd-thumb:hover{border-color:var(--gold-d)}
+.pd-thumb.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.pd-thumb img{width:100%;height:100%;object-fit:cover}
+
+/* RIGHT: INFO */
+.pd-info{padding-top:.5rem}
+.pd-cat{font-size:.62rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);font-weight:400;margin-bottom:1rem;display:inline-block}
+.pd-name{font-family:var(--df);font-size:clamp(1.8rem,3.2vw,2.6rem);font-weight:500;line-height:1.15;margin-bottom:1rem;letter-spacing:.005em}
+.pd-rating{display:flex;align-items:center;gap:.8rem;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--bdr)}
+.pd-stars{color:var(--gold);font-size:.95rem;letter-spacing:.15em}
+.pd-rating-txt{color:var(--cream2);font-size:.8rem;font-weight:300}
+.pd-rating-txt a{color:var(--gold);text-decoration:none}
+.pd-rating-txt a:hover{text-decoration:underline}
+
+.pd-price-row{display:flex;align-items:baseline;gap:.8rem;margin-bottom:.4rem}
+.pd-price{font-family:var(--df);font-size:2.4rem;color:var(--gold);font-weight:500;line-height:1}
+.pd-price-cur{font-size:.85rem;color:var(--cream2);letter-spacing:.1em;font-weight:300}
+.pd-shipping{font-size:.78rem;color:var(--cream2);font-weight:300;margin-bottom:1.8rem}
+.pd-shipping strong{color:var(--gold);font-weight:500}
+
+.pd-desc{font-size:.92rem;line-height:1.85;color:var(--cream2);font-weight:300;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--bdr)}
+
+/* SELECTORS */
+.pd-selector{margin-bottom:1.8rem}
+.pd-sel-label{font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--cream2);font-weight:400;margin-bottom:.7rem;display:flex;align-items:center;gap:.7rem}
+.pd-sel-label .pd-sel-value{color:var(--gold);font-weight:500;letter-spacing:.06em;text-transform:none;font-size:.85rem;font-family:var(--df);font-style:italic}
+
+/* Oil dropdown */
+.pd-dropdown{position:relative;width:100%}
+.pd-dropdown-btn{width:100%;padding:1rem 1.2rem;background:var(--bg2);border:1px solid var(--bdr);color:var(--cream);font-family:var(--bf);font-size:.92rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .3s;text-align:left}
+.pd-dropdown-btn:hover{border-color:var(--gold-d)}
+.pd-dropdown-btn .arrow{color:var(--gold);font-size:.7rem;transition:transform .3s}
+.pd-dropdown.open .pd-dropdown-btn{border-color:var(--gold);border-bottom-color:transparent}
+.pd-dropdown.open .arrow{transform:rotate(180deg)}
+.pd-dropdown-menu{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--gold);border-top:none;max-height:0;overflow:hidden;transition:max-height .3s;z-index:10}
+.pd-dropdown.open .pd-dropdown-menu{max-height:400px;overflow-y:auto}
+.pd-dropdown-item{padding:.9rem 1.2rem;cursor:pointer;border-bottom:1px solid var(--bdr2);transition:all .25s;display:flex;align-items:center;gap:.8rem}
+.pd-dropdown-item:hover{background:var(--bg3)}
+.pd-dropdown-item:last-child{border-bottom:none}
+.pd-dropdown-item.current{background:rgba(201,165,92,.06);color:var(--gold)}
+.pd-dropdown-item .item-thumb{width:36px;height:36px;background:var(--bg3);border:1px solid var(--bdr);overflow:hidden;flex-shrink:0;border-radius:2px}
+.pd-dropdown-item .item-thumb img{width:100%;height:100%;object-fit:cover}
+.pd-dropdown-item .item-name{font-size:.85rem;font-weight:400}
+.pd-dropdown-item .item-price{margin-left:auto;color:var(--gold);font-size:.78rem;font-family:var(--df)}
+
+/* Size buttons */
+.pd-sizes{display:flex;gap:.7rem;flex-wrap:wrap}
+.pd-size-btn{padding:1rem 1.6rem;background:var(--bg2);border:1px solid var(--bdr);color:var(--cream);font-family:var(--bf);cursor:pointer;transition:all .3s;text-align:center;flex:1;min-width:90px;position:relative;display:flex;flex-direction:column;gap:.2rem;align-items:center;justify-content:center}
+.pd-size-btn:hover{border-color:var(--gold-d);background:var(--bg3)}
+.pd-size-btn.active{border-color:var(--gold);background:rgba(201,165,92,.08);box-shadow:inset 0 0 0 1px var(--gold)}
+.pd-size-btn .sz-vol{font-size:1rem;font-weight:500;letter-spacing:.04em}
+.pd-size-btn .sz-price{font-size:.72rem;color:var(--gold);font-family:var(--df);font-style:italic}
+.pd-size-btn.active .sz-vol{color:var(--gold)}
+
+/* Qty + Add */
+.pd-purchase{margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--bdr);display:flex;gap:1rem;align-items:stretch;flex-wrap:wrap}
+.pd-qty{display:flex;align-items:center;background:var(--bg2);border:1px solid var(--bdr);overflow:hidden}
+.pd-qty button{width:48px;height:54px;background:none;border:none;color:var(--cream);cursor:pointer;font-size:1.2rem;transition:all .3s;font-family:var(--bf)}
+.pd-qty button:hover{background:var(--bg3);color:var(--gold)}
+.pd-qty .pd-qty-num{padding:0 1rem;font-size:1rem;min-width:48px;text-align:center;border-left:1px solid var(--bdr);border-right:1px solid var(--bdr);height:54px;display:flex;align-items:center;justify-content:center}
+.pd-atc{flex:1;min-width:200px;padding:0 2rem;height:54px;background:var(--gold);color:var(--bg);border:none;font-family:var(--bf);font-size:.7rem;letter-spacing:.32em;text-transform:uppercase;font-weight:500;cursor:pointer;transition:all .35s;display:flex;align-items:center;justify-content:center;gap:.6rem}
+.pd-atc:hover{background:var(--gold-l)}
+.pd-atc:disabled{opacity:.5;cursor:not-allowed}
+.pd-atc.added{background:var(--ok);color:#fff}
+
+/* TRUST BADGES */
+.pd-trust{margin-top:2.5rem;padding:1.5rem;background:var(--bg2);border:1px solid var(--bdr);border-radius:2px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1.2rem}
+.pd-trust-item{display:flex;align-items:flex-start;gap:.7rem}
+.pd-trust-item svg{width:22px;height:22px;stroke:var(--gold);fill:none;stroke-width:1.5;flex-shrink:0;margin-top:.1rem}
+.pd-trust-item .t-title{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--cream);font-weight:500;margin-bottom:.15rem}
+.pd-trust-item .t-sub{font-size:.7rem;color:var(--txt);font-weight:300;line-height:1.4}
+
+/* DETAILS ACCORDION */
+.pd-details{max-width:1320px;margin:0 auto;padding:1rem 4vw 5rem}
+.pd-acc{border:1px solid var(--bdr);background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:.7rem}
+.pd-acc-q{width:100%;padding:1.3rem 1.8rem;background:none;border:none;color:var(--cream);font-family:var(--bf);font-size:.85rem;font-weight:400;letter-spacing:.06em;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:color .3s}
+.pd-acc-q:hover{color:var(--gold)}
+.pd-acc.open .pd-acc-q{color:var(--gold)}
+.pd-acc-icon{font-family:var(--df);color:var(--gold);font-size:1.4rem;transition:transform .3s;line-height:.8}
+.pd-acc.open .pd-acc-icon{transform:rotate(45deg)}
+.pd-acc-a{max-height:0;overflow:hidden;transition:max-height .4s}
+.pd-acc-a-inner{padding:0 1.8rem 1.5rem;font-size:.85rem;line-height:1.8;color:var(--cream2);font-weight:300}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg3);border:1px solid var(--gold);color:var(--cream);padding:1rem 2rem;font-size:.85rem;letter-spacing:.04em;opacity:0;transition:all .4s cubic-bezier(.16,1,.3,1);z-index:9999;display:flex;align-items:center;gap:.7rem;border-radius:2px}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast svg{width:18px;height:18px;stroke:var(--ok);fill:none;stroke-width:2}
+
+/* LOADING */
+.loading{text-align:center;padding:8rem 2rem;color:var(--txt);font-size:.85rem;letter-spacing:.2em;text-transform:uppercase}
+
+footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;text-align:center}
+.fb p{font-size:.72rem;color:var(--txt2);letter-spacing:.06em}
+.fb a{color:var(--txt);font-size:.72rem;letter-spacing:.06em;margin:0 .8rem}
+.fb a:hover{color:var(--gold)}
+.fb-links{margin-top:.7rem}
+
+/* CART DRAWER */
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:8000;opacity:0;visibility:hidden;transition:all .4s}
+.cart-overlay.open{opacity:1;visibility:visible}
+.cart-drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:var(--bg2);z-index:8001;transform:translateX(100%);transition:transform .42s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;border-left:1px solid var(--bdr)}
+.cart-drawer.open{transform:translateX(0)}
+.cart-head{display:flex;justify-content:space-between;align-items:center;padding:1.5rem 1.5rem 1.2rem;border-bottom:1px solid var(--bdr)}
+.cart-head h3{font-family:var(--df);font-size:1.2rem;font-weight:500}
+.cart-close{background:none;border:none;cursor:pointer;color:var(--txt);font-size:1.6rem;line-height:1;padding:4px 8px;transition:color .3s}
+.cart-close:hover{color:var(--gold)}
+.cart-body{flex:1;overflow-y:auto;padding:.5rem 1.5rem}
+.cart-empty{text-align:center;padding:3.5rem 1rem}
+.cart-empty svg{width:44px;height:44px;stroke:var(--txt2);fill:none;stroke-width:1.2;margin:0 auto 1rem;display:block}
+.cart-empty p{font-size:.82rem;font-weight:200;color:var(--txt);margin-bottom:1.5rem}
+.cart-empty a{display:inline-block;padding:.7rem 1.5rem;border:1px solid var(--gold);color:var(--gold);text-decoration:none;font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;transition:all .3s}
+.cart-empty a:hover{background:var(--gold);color:var(--bg)}
+.cart-item{display:flex;gap:1rem;padding:1.1rem 0;border-bottom:1px solid var(--bdr2);align-items:flex-start}
+.ci-icon{width:58px;height:58px;background:var(--bg3);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.ci-icon img{width:100%;height:100%;object-fit:cover}
+.ci-info{flex:1;min-width:0}
+.ci-name{font-size:.86rem;font-weight:400;margin-bottom:.25rem;color:var(--cream);line-height:1.3}
+.ci-price{font-size:.95rem;color:var(--gold);font-family:var(--df);font-weight:500;margin-bottom:.5rem}
+.ci-qty{display:inline-flex;align-items:center;border:1px solid var(--bdr);background:var(--bg3)}
+.qty-btn{background:none;border:none;color:var(--cream);cursor:pointer;width:28px;height:28px;font-size:.9rem;transition:color .3s}
+.qty-btn:hover{color:var(--gold)}
+.qty-num{padding:0 .6rem;font-size:.82rem;min-width:32px;text-align:center;border-left:1px solid var(--bdr);border-right:1px solid var(--bdr)}
+.ci-rm{background:none;border:none;color:var(--txt2);cursor:pointer;font-size:.95rem;padding:4px 8px;transition:color .3s;flex-shrink:0}
+.ci-rm:hover{color:var(--err)}
+.cart-foot{padding:1.2rem 1.5rem 1.5rem;border-top:1px solid var(--bdr);background:var(--bg)}
+.cart-row{display:flex;justify-content:space-between;padding:.4rem 0;font-size:.84rem;color:var(--cream2)}
+.cart-row.cart-total{padding-top:1rem;margin-top:.4rem;border-top:1px solid var(--bdr);font-size:1rem;color:var(--cream);font-weight:500}
+.cart-cta{width:100%;padding:1rem;background:var(--gold);color:var(--bg);border:none;font-family:var(--bf);font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;font-weight:500;cursor:pointer;margin-top:1.2rem;transition:all .35s}
+.cart-cta:hover{background:var(--gold-l)}
+.cart-cta:disabled{opacity:.5;cursor:not-allowed}
+.cart-cont{display:block;text-align:center;margin-top:1rem;font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--txt);text-decoration:none;transition:color .3s}
+.cart-cont:hover{color:var(--gold)}
+
+/* IMAGE ZOOM MODAL */
+.zoom-overlay{position:fixed;inset:0;background:rgba(11,9,8,.97);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all .35s;cursor:zoom-out;padding:2rem}
+.zoom-overlay.open{opacity:1;visibility:visible}
+.zoom-overlay img{max-width:95%;max-height:95vh;object-fit:contain;border:1px solid var(--bdr)}
+.zoom-close{position:absolute;top:1.5rem;right:1.5rem;background:none;border:1px solid var(--gold);color:var(--gold);width:42px;height:42px;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;transition:all .3s}
+.zoom-close:hover{background:var(--gold);color:var(--bg)}
+
+/* ── Phase 2 additions: specs, box, related, long-desc ── */
+.pd-section{max-width:1320px;margin:0 auto;padding:0 4vw 3rem}
+.pd-section h2{font-family:var(--df);font-size:1.5rem;font-weight:500;color:var(--cream);margin-bottom:1.2rem}
+.pd-section h2 em{color:var(--gold);font-style:italic}
+.pd-longdesc{max-width:820px;font-size:.95rem;line-height:1.9;color:var(--cream2);font-weight:300}
+.spec-table{width:100%;max-width:820px;border:1px solid var(--bdr);border-radius:2px;overflow:hidden;border-collapse:collapse}
+.spec-table tr{border-bottom:1px solid var(--bdr2)}
+.spec-table tr:last-child{border-bottom:none}
+.spec-table tr:nth-child(odd){background:var(--bg2)}
+.spec-table th{text-align:left;padding:.85rem 1.2rem;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:500;width:38%;vertical-align:top}
+.spec-table td{padding:.85rem 1.2rem;font-size:.9rem;color:var(--cream2);font-weight:300}
+.box-list{list-style:none;max-width:820px}
+.box-list li{padding:.65rem 0 .65rem 1.8rem;position:relative;font-size:.92rem;color:var(--cream2);font-weight:300;border-bottom:1px solid var(--bdr2)}
+.box-list li:last-child{border-bottom:none}
+.box-list li::before{content:'✓';position:absolute;left:.2rem;color:var(--gold)}
+.rel-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.4rem}
+.rel-card{background:var(--bg2);border:1px solid var(--bdr);text-decoration:none;display:flex;flex-direction:column;transition:all .35s;border-radius:2px;overflow:hidden}
+.rel-card:hover{border-color:rgba(201,165,92,.4);transform:translateY(-4px)}
+.rel-img{aspect-ratio:1/1;background:var(--bg3);overflow:hidden}
+.rel-img img{width:100%;height:100%;object-fit:cover;transition:transform .6s}
+.rel-card:hover .rel-img img{transform:scale(1.05)}
+.rel-body{padding:1rem 1.1rem 1.2rem}
+.rel-cat{font-size:.55rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:.35rem}
+.rel-name{font-size:.9rem;color:var(--cream);font-weight:400;margin-bottom:.4rem;line-height:1.35}
+.rel-price{font-family:var(--df);color:var(--gold);font-size:.95rem}
+.reviews-empty{max-width:820px;border:1px dashed var(--bdr);padding:2rem;border-radius:2px;text-align:center}
+.reviews-empty p{color:var(--txt);font-size:.88rem;font-weight:300;margin-bottom:1rem}
+.reviews-empty a{display:inline-block;padding:.7rem 1.6rem;border:1px solid var(--gold);color:var(--gold);text-decoration:none;font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;transition:all .3s}
+.reviews-empty a:hover{background:var(--gold);color:var(--bg)}
+.pd-oil-links{display:flex;flex-direction:column}
+@media(max-width:768px){.pd-section{padding-bottom:2.2rem}.rel-row{grid-template-columns:repeat(2,1fr);gap:.9rem}}
+</style>
+</head>
+<body>
+
+<%- include('partials/header', {cartLive: true}) %>
+
+<div class="crumb">
+  <a href="/">Home</a><span>›</span>
+  <a href="/shop">Shop</a><span>›</span>
+  <a href="/shop?filter=<%= product.category %>"><%= catLabel %></a><span>›</span>
+  <span style="color:var(--cream2)"><%= product.name %></span>
+</div>
+
+<div class="pd-wrap">
+  <div class="pd-gallery">
+    <div class="pd-main-img" id="mainImgBox">
+      <% if (images.length) { %>
+        <img src="<%= images[0] %>" alt="<%= product.name %>" id="mainImg" onclick="openZoom()" onerror="this.onerror=null;this.src='/images/placeholder.svg'">
+        <div class="zoom-hint">↗ Click to zoom</div>
+      <% } else { %>
+        <img src="/images/placeholder.svg" alt="<%= product.name %>" id="mainImg">
+      <% } %>
+    </div>
+    <% if (images.length > 1) { %>
+    <div class="pd-thumbs">
+      <% images.forEach((img, i) => { %>
+      <div class="pd-thumb <%= i === 0 ? 'active' : '' %>" data-src="<%= img %>" onclick="selectThumb(this)">
+        <img src="<%= img %>" alt="<%= product.name %> photo <%= i+1 %>" onerror="this.onerror=null;this.src='/images/placeholder.svg'">
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="pd-info">
+    <span class="pd-cat"><%= catLabel %></span>
+    <h1 class="pd-name"><%= product.name %></h1>
+    <div class="pd-rating" id="reviews-summary">
+      <span class="pd-stars">★★★★★</span>
+      <span class="pd-rating-txt">5.0 · <a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">18+ verified reviews</a></span>
+    </div>
+
+    <div class="pd-price-row">
+      <span class="pd-price" id="priceDisplay">$<%= startPrice.toFixed(2) %></span>
+      <span class="pd-price-cur">CAD</span>
+    </div>
+    <div class="pd-shipping">
+      Ships from Halifax in <strong>1–2 business days</strong> · <strong>Free shipping</strong> over $150 CAD
+    </div>
+
+    <p class="pd-desc"><%= product.short_desc || '' %></p>
+
+    <% if (product.coverage || product.spec_coverage) { %>
+    <div style="display:flex;align-items:center;gap:.7rem;padding:.8rem 1rem;background:var(--bg2);border:1px solid var(--bdr);margin-bottom:1.8rem;border-radius:2px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9a55c" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      <div>
+        <div style="font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--txt)">Coverage</div>
+        <div style="color:var(--cream);font-size:.85rem;font-weight:500"><%= product.spec_coverage || product.coverage %></div>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (isOil && oils.length > 1) { %>
+    <div class="pd-selector">
+      <div class="pd-sel-label">Choose Fragrance: <span class="pd-sel-value"><%= product.name.replace(/\sOil$/, '') %></span></div>
+      <div class="pd-dropdown" id="oilDropdown">
+        <button class="pd-dropdown-btn" onclick="toggleDropdown('oilDropdown')" aria-haspopup="listbox">
+          <span><%= product.name %></span>
+          <span class="arrow">▼</span>
+        </button>
+        <div class="pd-dropdown-menu pd-oil-links">
+          <% oils.forEach(o => { %>
+          <a href="/products/<%= o.slug %>" class="pd-dropdown-item <%= o.slug === product.slug ? 'current' : '' %>" style="text-decoration:none;color:inherit">
+            <div class="item-thumb"><% if (o.image_url) { %><img src="<%= o.image_url %>" alt="" onerror="this.onerror=null;this.src='/images/placeholder.svg'"><% } %></div>
+            <div class="item-name"><%= o.name %></div>
+            <div class="item-price">$<%= (o.price || 0).toFixed(2) %>+</div>
+          </a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (sizes && sizes.length > 1) { %>
+    <div class="pd-selector">
+      <div class="pd-sel-label">Choose Size: <span class="pd-sel-value" id="sizeLabel"><%= sizes[0].label %></span></div>
+      <div class="pd-sizes" id="sizeButtons">
+        <% sizes.forEach((s, i) => { %>
+        <button class="pd-size-btn <%= i === 0 ? 'active' : '' %>" data-label="<%= s.label %>" data-price="<%= s.price %>" onclick="selectSize(this)">
+          <span class="sz-vol"><%= s.label %></span>
+          <span class="sz-price">$<%= s.price.toFixed(2) %></span>
+        </button>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (isDiffuser && oilsLite.length) { %>
+    <div class="pd-bundle" style="margin-bottom:1.8rem;padding:1.4rem 1.5rem;background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid rgba(201,165,92,.25);border-radius:2px;position:relative">
+      <div style="position:absolute;top:-10px;left:1.2rem;background:var(--gold);color:var(--bg);padding:.2rem .8rem;font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;font-weight:600">Recommended</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+        <div>
+          <div style="font-family:var(--df);font-size:1.1rem;color:var(--cream);font-weight:500;font-style:italic">Pair with a Signature Fragrance Oil</div>
+          <div style="font-size:.78rem;color:var(--cream2);margin-top:.3rem;font-weight:300">Complete your diffuser with premium oils designed for this device.</div>
+        </div>
+        <label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0">
+          <input type="checkbox" id="addOilToggle" onchange="toggleOilBundle()" style="display:none">
+          <span id="bundleSwitch" style="width:46px;height:24px;background:var(--bg);border:1px solid var(--bdr);border-radius:12px;position:relative;transition:all .3s;display:inline-block">
+            <span id="bundleSwitchDot" style="width:18px;height:18px;background:var(--txt);border-radius:50%;position:absolute;top:2px;left:2px;transition:all .3s"></span>
+          </span>
+        </label>
+      </div>
+      <div id="oilBundleOptions" style="display:none;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--bdr)">
+        <div class="pd-sel-label" style="margin-bottom:.6rem">Select Fragrance:</div>
+        <div class="pd-dropdown" id="bundleOilDropdown" style="margin-bottom:1rem">
+          <button class="pd-dropdown-btn" onclick="toggleDropdown('bundleOilDropdown')">
+            <span id="bundleOilCurrent"><%= oilsLite[0].name %></span>
+            <span class="arrow">▼</span>
+          </button>
+          <div class="pd-dropdown-menu" id="bundleOilMenu"></div>
+        </div>
+        <div class="pd-sel-label" style="margin-bottom:.6rem">Select Size:</div>
+        <div class="pd-sizes" id="bundleSizeButtons"></div>
+        <div style="margin-top:1rem;padding:.9rem 1.1rem;background:var(--bg);border:1px dashed var(--gold);display:flex;justify-content:space-between;align-items:center;font-size:.85rem;border-radius:2px">
+          <span style="color:var(--cream2)">Bundle total:</span>
+          <span style="color:var(--gold);font-family:var(--df);font-size:1.15rem;font-weight:500" id="bundleTotal">$<%= (product.price || 0).toFixed(2) %></span>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="pd-purchase">
+      <div class="pd-qty">
+        <button onclick="changeQty(-1)" aria-label="Decrease quantity">−</button>
+        <div class="pd-qty-num" id="qtyDisplay">1</div>
+        <button onclick="changeQty(1)" aria-label="Increase quantity">+</button>
+      </div>
+      <button class="pd-atc" id="atcBtn" onclick="addToCart()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Add to Cart
+      </button>
+    </div>
+
+    <div class="pd-trust">
+      <div class="pd-trust-item">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 119 9"/><polyline points="3 12 9 6 3 12 9 18"/></svg>
+        <div><div class="t-title">30-Day Returns</div><div class="t-sub">Hassle-free</div></div>
+      </div>
+      <div class="pd-trust-item">
+        <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <div><div class="t-title">Free Shipping</div><div class="t-sub">Orders over $150</div></div>
+      </div>
+      <div class="pd-trust-item">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <div><div class="t-title">Secure Checkout</div><div class="t-sub">Stripe protected</div></div>
+      </div>
+      <div class="pd-trust-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        <div><div class="t-title">Ships Across Canada</div><div class="t-sub">Coast to coast</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (product.full_desc) { %>
+<div class="pd-section">
+  <h2>About this <em>product</em></h2>
+  <div class="pd-longdesc"><%- product.full_desc.split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin-bottom:1rem">${p}</p>`).join('') %></div>
+</div>
+<% } %>
+
+<% if (specs.length) { %>
+<div class="pd-section">
+  <h2>Specifications</h2>
+  <table class="spec-table">
+    <% specs.forEach(([k, v]) => { %>
+    <tr><th><%= k %></th><td><%= v %></td></tr>
+    <% }) %>
+  </table>
+</div>
+<% } %>
+
+<% if (box.length) { %>
+<div class="pd-section">
+  <h2>What's in the <em>box</em></h2>
+  <ul class="box-list">
+    <% box.forEach(item => { %><li><%= item %></li><% }) %>
+  </ul>
+</div>
+<% } %>
+
+<div class="pd-details">
+  <div class="pd-acc open">
+    <button class="pd-acc-q" onclick="toggleAcc(this)">Shipping &amp; Delivery<span class="pd-acc-icon">+</span></button>
+    <div class="pd-acc-a" style="max-height:200px">
+      <div class="pd-acc-a-inner">Orders processed within 1–2 business days and shipped from Halifax, NS. Typical delivery: 3–8 business days across Canada. Free shipping on orders over $150 CAD. All orders include tracking. <a href="/shipping.html" style="color:var(--gold)">Read full shipping policy →</a></div>
+    </div>
+  </div>
+  <div class="pd-acc">
+    <button class="pd-acc-q" onclick="toggleAcc(this)">Returns &amp; Refunds<span class="pd-acc-icon">+</span></button>
+    <div class="pd-acc-a">
+      <div class="pd-acc-a-inner">30-day return policy on unused items in original packaging. Refunds processed within 10 business days. Damaged items? We provide free return shipping and full refund. <a href="/refund.html" style="color:var(--gold)">Read full refund policy →</a></div>
+    </div>
+  </div>
+  <div class="pd-acc">
+    <button class="pd-acc-q" onclick="toggleAcc(this)">Need Help Choosing?<span class="pd-acc-icon">+</span></button>
+    <div class="pd-acc-a">
+      <div class="pd-acc-a-inner">Not sure which <%= isOil ? 'fragrance' : 'system' %> is right for your space? Book a complimentary 30-minute scent strategy consultation. <a href="/#booking" style="color:var(--gold)">Book consultation →</a> or call <a href="tel:+19027070807" style="color:var(--gold)">(902) 707-0807</a>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="pd-section" id="reviews">
+  <h2>Customer <em>Reviews</em></h2>
+  <div class="reviews-empty">
+    <p>Product reviews are coming soon. In the meantime, read what clients say about us on Google — rated 5.0 from 18+ reviews.</p>
+    <a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">Read Google Reviews</a>
+  </div>
+</div>
+
+<% if (related.length) { %>
+<div class="pd-section" style="padding-bottom:5rem">
+  <h2>You may also <em>like</em></h2>
+  <div class="rel-row">
+    <% related.forEach(r => { %>
+    <a href="/products/<%= r.slug %>" class="rel-card">
+      <div class="rel-img"><img src="<%= r.image_url || '/images/placeholder.svg' %>" alt="<%= r.name %>" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'"></div>
+      <div class="rel-body">
+        <div class="rel-cat"><%= CAT_LABELS[r.category] || r.category %></div>
+        <div class="rel-name"><%= r.name %></div>
+        <div class="rel-price">$<%= (r.price || 0).toFixed(2) %><% let rs=null; try{rs=JSON.parse(r.sizes||'null')}catch(e){}; if (Array.isArray(rs) && rs.length>1) { %><span style="color:var(--txt);font-size:.7rem;font-family:var(--bf)"> +</span><% } %></div>
+      </div>
+    </a>
+    <% }) %>
+  </div>
+</div>
+<% } %>
+
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<aside class="cart-drawer" id="cartDrawer">
+  <div class="cart-head">
+    <h3>Your Cart</h3>
+    <button class="cart-close" onclick="closeCart()">&times;</button>
+  </div>
+  <div class="cart-body" id="cartBody"></div>
+  <div class="cart-foot" id="cartFoot" style="display:none">
+    <div class="cart-row"><span>Subtotal</span><span id="cartSubtotal">$0.00</span></div>
+    <div class="cart-row"><span>Shipping</span><span id="cartShipping">Calculated at checkout</span></div>
+    <div class="cart-row cart-total"><span>Total</span><span id="cartTotal">$0.00</span></div>
+    <button class="cart-cta" id="checkoutBtn">Proceed to Checkout</button>
+    <a href="/shop" class="cart-cont">← Continue Shopping</a>
+  </div>
+</aside>
+
+<!-- Image Zoom Modal -->
+<div class="zoom-overlay" id="zoomOverlay">
+  <button class="zoom-close" onclick="closeZoom()">✕</button>
+  <img id="zoomImg" src="" alt="">
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <span id="toastMsg">Added to cart</span>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+// ── Page data (server-injected) ─────────────────────────
+const PRODUCT = <%- JSON.stringify({ id: product.id, slug: product.slug, name: product.name, price: product.price, category: product.category, image_url: product.image_url, sizes: sizes }) %>;
+const OILS = <%- JSON.stringify(oilsLite) %>;
+
+// ── Cart (localStorage, shared shape with homepage) ─────
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem('sw_cart') || '[]'); } catch(e) { cart = []; }
+function saveCart() { localStorage.setItem('sw_cart', JSON.stringify(cart)); updateBadge(); }
+function updateBadge() {
+  const n = cart.reduce((s, i) => s + (i.qty || 1), 0);
+  const b = document.getElementById('cartBadge');
+  if (b) { b.textContent = n; b.classList.toggle('show', n > 0); }
+}
+updateBadge();
+
+let qty = 1;
+let selectedSize = PRODUCT.sizes ? PRODUCT.sizes[0] : null;
+
+function changeQty(d) {
+  qty = Math.max(1, qty + d);
+  document.getElementById('qtyDisplay').textContent = qty;
+  updateBundleTotal();
+}
+function selectSize(btn) {
+  selectedSize = { label: btn.dataset.label, price: parseFloat(btn.dataset.price) };
+  document.querySelectorAll('#sizeButtons .pd-size-btn').forEach(b => b.classList.toggle('active', b === btn));
+  document.getElementById('priceDisplay').textContent = '$' + selectedSize.price.toFixed(2);
+  document.getElementById('sizeLabel').textContent = selectedSize.label;
+}
+function selectThumb(el) {
+  document.getElementById('mainImg').src = el.dataset.src;
+  document.querySelectorAll('.pd-thumb').forEach(t => t.classList.toggle('active', t === el));
+}
+function toggleDropdown(id) { document.getElementById(id).classList.toggle('open'); }
+document.addEventListener('click', e => {
+  ['oilDropdown', 'bundleOilDropdown'].forEach(id => {
+    const dd = document.getElementById(id);
+    if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+  });
+});
+function toggleAcc(btn) {
+  const acc = btn.closest('.pd-acc');
+  const ans = acc.querySelector('.pd-acc-a');
+  if (acc.classList.contains('open')) { acc.classList.remove('open'); ans.style.maxHeight = '0'; }
+  else { acc.classList.add('open'); ans.style.maxHeight = ans.scrollHeight + 'px'; }
+}
+
+// ── Bundle (diffuser pages) ─────────────────────────────
+let bundleEnabled = false, bundleOil = OILS[0] || null, bundleSize = null;
+function toggleOilBundle() {
+  bundleEnabled = document.getElementById('addOilToggle').checked;
+  const opts = document.getElementById('oilBundleOptions');
+  const sw = document.getElementById('bundleSwitch'), dot = document.getElementById('bundleSwitchDot');
+  if (bundleEnabled) {
+    opts.style.display = 'block';
+    sw.style.background = 'var(--gold)'; sw.style.borderColor = 'var(--gold)';
+    dot.style.background = 'var(--bg)'; dot.style.left = '23px';
+    if (bundleOil) selectBundleOil(bundleOil.slug);
+  } else {
+    opts.style.display = 'none';
+    sw.style.background = 'var(--bg)'; sw.style.borderColor = 'var(--bdr)';
+    dot.style.background = 'var(--txt)'; dot.style.left = '2px';
+  }
+  updateBundleTotal();
+}
+function selectBundleOil(slug) {
+  bundleOil = OILS.find(o => o.slug === slug) || OILS[0];
+  document.getElementById('bundleOilCurrent').textContent = bundleOil.name;
+  document.getElementById('bundleOilMenu').innerHTML = OILS.map(o => `
+    <div class="pd-dropdown-item ${o.slug === bundleOil.slug ? 'current' : ''}" onclick="selectBundleOil('${o.slug}');toggleDropdown('bundleOilDropdown')">
+      <div class="item-thumb">${o.image_url ? `<img src="${o.image_url}" alt="" onerror="this.onerror=null;this.src='/images/placeholder.svg'">` : ''}</div>
+      <div class="item-name">${o.name}</div>
+      <div class="item-price">from $${(o.price || 0).toFixed(2)}</div>
+    </div>`).join('');
+  const sizes = bundleOil.sizes || [];
+  bundleSize = sizes[0] || null;
+  document.getElementById('bundleSizeButtons').innerHTML = sizes.map((s, i) => `
+    <button class="pd-size-btn ${i === 0 ? 'active' : ''}" data-i="${i}" onclick="selectBundleSize(this)">
+      <span class="sz-vol">${s.label}</span><span class="sz-price">+$${s.price.toFixed(2)}</span>
+    </button>`).join('');
+  updateBundleTotal();
+}
+function selectBundleSize(btn) {
+  bundleSize = bundleOil.sizes[parseInt(btn.dataset.i)];
+  document.querySelectorAll('#bundleSizeButtons .pd-size-btn').forEach(b => b.classList.toggle('active', b === btn));
+  updateBundleTotal();
+}
+function updateBundleTotal() {
+  const el = document.getElementById('bundleTotal');
+  if (!el) return;
+  let t = (selectedSize ? selectedSize.price : (PRODUCT.price || 0)) * qty;
+  if (bundleEnabled && bundleSize) t += bundleSize.price * qty;
+  el.textContent = '$' + t.toFixed(2);
+}
+
+// ── Add to cart ─────────────────────────────────────────
+function addToCart() {
+  const sizeLabel = selectedSize ? selectedSize.label : null;
+  const price = selectedSize ? selectedSize.price : (PRODUCT.price || 0);
+  const key = sizeLabel ? `${PRODUCT.id}-${sizeLabel}` : String(PRODUCT.id);
+  const ex = cart.find(i => i.cartKey === key);
+  if (ex) ex.qty += qty;
+  else cart.push({ cartKey: key, id: PRODUCT.id, slug: PRODUCT.slug, name: PRODUCT.name + (sizeLabel ? ` (${sizeLabel})` : ''), price, category: PRODUCT.category, size: sizeLabel, image_url: PRODUCT.image_url, qty });
+
+  let bundleMsg = '';
+  if (bundleEnabled && bundleOil && bundleSize) {
+    const ok = `${bundleOil.id}-${bundleSize.label}`;
+    const exO = cart.find(i => i.cartKey === ok);
+    if (exO) exO.qty += qty;
+    else cart.push({ cartKey: ok, id: bundleOil.id, slug: bundleOil.slug, name: `${bundleOil.name} (${bundleSize.label})`, price: bundleSize.price, category: 'oils', size: bundleSize.label, image_url: bundleOil.image_url, qty });
+    bundleMsg = ` + ${bundleOil.name} (${bundleSize.label})`;
+  }
+  saveCart();
+
+  if (typeof gtag === 'function') gtag('event', 'add_to_cart', { currency: 'CAD', value: price * qty, items: [{ item_id: PRODUCT.id, item_name: PRODUCT.name, item_variant: sizeLabel || '', item_category: PRODUCT.category, price, quantity: qty }] });
+  if (typeof fbq === 'function') fbq('track', 'AddToCart', { currency: 'CAD', value: price * qty, content_ids: [PRODUCT.id], content_name: PRODUCT.name, content_type: 'product' });
+
+  const btn = document.getElementById('atcBtn');
+  btn.classList.add('added');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Added to Cart';
+  showToast(`Added ${qty} × ${PRODUCT.name}${sizeLabel ? ` (${sizeLabel})` : ''}${bundleMsg} to cart`);
+  setTimeout(() => {
+    btn.classList.remove('added');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Add to Cart';
+  }, 2500);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── Cart drawer ─────────────────────────────────────────
+function openCartDrawer(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  renderCartBody();
+  document.getElementById('cartOverlay').classList.add('open');
+  document.getElementById('cartDrawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCart() {
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function renderCartBody() {
+  const body = document.getElementById('cartBody');
+  const foot = document.getElementById('cartFoot');
+  if (!cart.length) {
+    body.innerHTML = `<div class="cart-empty"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Your cart is empty.</p><a href="/shop" onclick="closeCart()">Continue Shopping</a></div>`;
+    foot.style.display = 'none';
+    return;
+  }
+  body.innerHTML = cart.map(item => {
+    const key = item.cartKey || String(item.id);
+    return `<div class="cart-item">
+      <div class="ci-icon">${item.image_url ? `<img src="${item.image_url}" alt="" onerror="this.onerror=null;this.src='/images/placeholder.svg'">` : ''}</div>
+      <div class="ci-info">
+        <div class="ci-name" title="${item.name}">${item.name}</div>
+        <div class="ci-price">$${(item.price * item.qty).toFixed(2)} CAD</div>
+        <div class="ci-qty">
+          <button class="qty-btn" onclick="cartQty('${key}',-1)">&#8722;</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="cartQty('${key}',1)">+</button>
+        </div>
+      </div>
+      <button class="ci-rm" onclick="cartRm('${key}')" title="Remove">&times;</button>
+    </div>`;
+  }).join('');
+  const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('cartSubtotal').textContent = `$${sub.toFixed(2)} CAD`;
+  document.getElementById('cartShipping').textContent = sub >= 150 ? 'FREE' : 'Calculated at checkout';
+  document.getElementById('cartTotal').textContent = `$${sub.toFixed(2)} CAD`;
+  foot.style.display = 'block';
+}
+function cartQty(key, d) {
+  const it = cart.find(i => (i.cartKey || String(i.id)) === String(key));
+  if (!it) return;
+  it.qty = Math.max(0, it.qty + d);
+  if (it.qty === 0) return cartRm(key);
+  saveCart(); renderCartBody();
+}
+function cartRm(key) {
+  cart = cart.filter(i => (i.cartKey || String(i.id)) !== String(key));
+  saveCart(); renderCartBody();
+}
+document.getElementById('cartBtn').addEventListener('click', openCartDrawer);
+document.getElementById('checkoutBtn').addEventListener('click', async function() {
+  if (!cart.length) return;
+  this.disabled = true; this.textContent = 'Processing…';
+  if (typeof gtag === 'function') {
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    gtag('event', 'begin_checkout', { currency: 'CAD', value: total, items: cart.map(i => ({ item_id: i.id, item_name: i.name, item_variant: i.size || '', item_category: i.category, price: i.price, quantity: i.qty })) });
+  }
+  if (typeof fbq === 'function') {
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    fbq('track', 'InitiateCheckout', { currency: 'CAD', value: total, num_items: cart.reduce((s, i) => s + i.qty, 0), content_ids: cart.map(i => i.id) });
+  }
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart.map(i => ({ id: i.id, quantity: i.qty, size: i.size || null })) }),
+    });
+    const data = await res.json();
+    if (data.success && data.url) { cart = []; saveCart(); window.location.href = data.url; }
+    else throw new Error(data.error || 'Checkout failed');
+  } catch (err) {
+    alert('Something went wrong. Please try again.');
+    this.disabled = false; this.textContent = 'Proceed to Checkout';
+  }
+});
+
+// ── Zoom ────────────────────────────────────────────────
+function openZoom() {
+  document.getElementById('zoomImg').src = document.getElementById('mainImg').src;
+  document.getElementById('zoomOverlay').classList.add('open');
+}
+function closeZoom() { document.getElementById('zoomOverlay').classList.remove('open'); }
+document.getElementById('zoomOverlay').addEventListener('click', e => { if (e.target.id === 'zoomOverlay') closeZoom(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeZoom(); closeCart(); } });
+
+// GA4 view_item
+if (typeof gtag === 'function') gtag('event', 'view_item', { currency: 'CAD', value: selectedSize ? selectedSize.price : (PRODUCT.price || 0), items: [{ item_id: PRODUCT.id, item_name: PRODUCT.name, item_category: PRODUCT.category, price: selectedSize ? selectedSize.price : PRODUCT.price }] });
+</script>
+</body>
+</html>

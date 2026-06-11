@@ -505,21 +505,33 @@ app.get('/api/admin/products', requireAdmin, (req, res) => {
 });
 
 app.post('/api/admin/products', requireAdmin, (req, res) => {
-  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order } = req.body;
+  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order,
+          spec_coverage, spec_oil_capacity, spec_noise, spec_power, spec_dimensions, spec_weight, spec_warranty, box_contents } = req.body;
   if (!name || !slug || !category) return res.status(400).json({ success: false, error: 'Name, slug, and category required' });
   const gallery = Array.isArray(gallery_images) ? JSON.stringify(gallery_images) : (gallery_images || null);
   const sizesJson = Array.isArray(sizes) ? JSON.stringify(sizes) : (sizes || null);
-  const stmt = db.prepare(`INSERT INTO products (name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  const result = stmt.run(name, slug, category, short_desc || null, full_desc || null, price || null, coverage || null, image_url || null, gallery, sizesJson, featured ? 1 : 0, active !== false ? 1 : 0, sort_order || 0);
+  const boxJson = Array.isArray(box_contents) ? JSON.stringify(box_contents) : (box_contents || null);
+  const stmt = db.prepare(`INSERT INTO products (name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes,
+    spec_coverage, spec_oil_capacity, spec_noise, spec_power, spec_dimensions, spec_weight, spec_warranty, box_contents,
+    featured, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const result = stmt.run(name, slug, category, short_desc || null, full_desc || null, price || null, coverage || null, image_url || null, gallery, sizesJson,
+    spec_coverage || null, spec_oil_capacity || null, spec_noise || null, spec_power || null, spec_dimensions || null, spec_weight || null, spec_warranty || null, boxJson,
+    featured ? 1 : 0, active !== false ? 1 : 0, sort_order || 0);
   res.json({ success: true, id: result.lastInsertRowid });
 });
 
 app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
-  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order } = req.body;
+  const { name, slug, category, short_desc, full_desc, price, coverage, image_url, gallery_images, sizes, featured, active, sort_order,
+          spec_coverage, spec_oil_capacity, spec_noise, spec_power, spec_dimensions, spec_weight, spec_warranty, box_contents } = req.body;
   const gallery = Array.isArray(gallery_images) ? JSON.stringify(gallery_images) : (gallery_images || null);
   const sizesJson = Array.isArray(sizes) ? JSON.stringify(sizes) : (sizes || null);
-  db.prepare(`UPDATE products SET name=?, slug=?, category=?, short_desc=?, full_desc=?, price=?, coverage=?, image_url=?, gallery_images=?, sizes=?, featured=?, active=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .run(name, slug, category, short_desc ?? null, full_desc ?? null, price ?? null, coverage ?? null, image_url ?? null, gallery, sizesJson, featured ? 1 : 0, active ? 1 : 0, sort_order || 0, req.params.id);
+  const boxJson = Array.isArray(box_contents) ? JSON.stringify(box_contents) : (box_contents || null);
+  db.prepare(`UPDATE products SET name=?, slug=?, category=?, short_desc=?, full_desc=?, price=?, coverage=?, image_url=?, gallery_images=?, sizes=?,
+              spec_coverage=?, spec_oil_capacity=?, spec_noise=?, spec_power=?, spec_dimensions=?, spec_weight=?, spec_warranty=?, box_contents=?,
+              featured=?, active=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .run(name, slug, category, short_desc ?? null, full_desc ?? null, price ?? null, coverage ?? null, image_url ?? null, gallery, sizesJson,
+         spec_coverage ?? null, spec_oil_capacity ?? null, spec_noise ?? null, spec_power ?? null, spec_dimensions ?? null, spec_weight ?? null, spec_warranty ?? null, boxJson,
+         featured ? 1 : 0, active ? 1 : 0, sort_order || 0, req.params.id);
   res.json({ success: true });
 });
 
@@ -723,11 +735,104 @@ async function sendConfirmation(toEmail, firstName, type, details) {
 // ═══════════════════════════════════════
 // SERVER-RENDERED PAGES (shared EJS partials)
 // ═══════════════════════════════════════
+
+// ── Product helpers ──
+function getActiveProducts() {
+  return db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all();
+}
+function parseCoverageSqft(p) {
+  const src = p.spec_coverage || p.coverage || '';
+  const m = String(src).replace(/,/g, '').match(/([\d.]+)\s*sq\s*ft/i);
+  return m ? parseFloat(m[1]) : null;
+}
+function coverageBucket(p) {
+  if (/hvac/i.test(p.name) || /hvac/i.test(p.short_desc || '')) return 'hvac';
+  const sq = parseCoverageSqft(p);
+  if (sq == null) return '';
+  if (sq > 5000) return 'hvac';
+  if (sq > 1500) return 'commercial';
+  if (sq >= 500) return 'large';
+  return 'small';
+}
+function getSalesCounts() {
+  try {
+    const rows = db.prepare('SELECT product_id, SUM(quantity) AS sold FROM order_items GROUP BY product_id').all();
+    return Object.fromEntries(rows.map(r => [r.product_id, r.sold]));
+  } catch (e) { return {}; }
+}
+function shopLocals(products) {
+  const sales = getSalesCounts();
+  return products.map(p => ({ ...p, _bucket: coverageBucket(p), _sold: sales[p.id] || 0 }));
+}
+
+// Homepage — products rendered server-side
+app.get('/', (req, res) => {
+  res.render('index', { products: getActiveProducts() });
+});
+
+// Clean product detail URLs: /products/:slug (SSR)
+app.get('/products/:slug', (req, res, next) => {
+  const product = db.prepare('SELECT * FROM products WHERE slug = ? AND active = 1').get(req.params.slug);
+  if (!product) return next(); // falls through to 404
+  const all = getActiveProducts();
+  const related = all.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const oils = all.filter(p => p.category === 'oils');
+  res.render('product-detail', { product, related, oils, all });
+});
+
+// Legacy product page → 301 to clean URL
+app.get(['/product', '/product.html'], (req, res) => {
+  const slug = (req.query.slug || '').replace(/[^a-z0-9-]/gi, '');
+  res.redirect(301, slug ? `/products/${slug}` : '/shop');
+});
+
+// /shop — all products with filters & sort
+app.get(['/shop', '/shop.html'], (req, res) => {
+  res.render('shop', { products: shopLocals(getActiveProducts()), q: null });
+});
+
+// /search — name + description search
+app.get('/search', (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 80);
+  let products = [];
+  if (q) {
+    const like = `%${q}%`;
+    products = db.prepare(
+      `SELECT * FROM products WHERE active = 1 AND (name LIKE ? OR short_desc LIKE ? OR full_desc LIKE ?) ORDER BY sort_order`
+    ).all(like, like, like);
+  }
+  res.render('shop', { products: shopLocals(products), q });
+});
+
+// Dynamic sitemap.xml (DB-driven)
+app.get('/sitemap.xml', (req, res) => {
+  const BASE = 'https://www.scentworld.ca';
+  const today = new Date().toISOString().slice(0, 10);
+  const urls = [
+    ['/', '1.0', 'weekly'], ['/shop', '0.9', 'weekly'], ['/about.html', '0.8', 'monthly'],
+    ['/blog.html', '0.9', 'weekly'], ['/industries/', '0.9', 'monthly'],
+    ['/industries/hotels.html', '0.8', 'monthly'], ['/industries/spas.html', '0.8', 'monthly'],
+    ['/industries/restaurants.html', '0.8', 'monthly'],
+    ['/blog/hotel-lobby-signature-scent.html', '0.7', 'monthly'],
+    ['/blog/science-of-scent-marketing.html', '0.7', 'monthly'],
+    ['/blog/choosing-spa-diffuser.html', '0.7', 'monthly'],
+    ['/blog/restaurant-scent-marketing.html', '0.7', 'monthly'],
+    ['/blog/office-workplace-fragrance.html', '0.7', 'monthly'],
+    ['/blog/custom-signature-scent-guide.html', '0.7', 'monthly'],
+    ['/shipping.html', '0.5', 'monthly'], ['/refund.html', '0.5', 'monthly'],
+    ['/terms.html', '0.4', 'yearly'], ['/privacy-policy.html', '0.4', 'yearly'],
+  ];
+  for (const p of getActiveProducts()) urls.push([`/products/${p.slug}`, '0.8', 'weekly']);
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls.map(([loc, pri, freq]) =>
+      `  <url><loc>${BASE}${loc}</loc><lastmod>${today}</lastmod><changefreq>${freq}</changefreq><priority>${pri}</priority></url>`
+    ).join('\n') + '\n</urlset>';
+  res.type('application/xml').send(xml);
+});
+
 const PAGE_VIEWS = {
-  '/': 'index',
   '/about': 'about',
   '/blog': 'blog',
-  '/product': 'product',
   '/success': 'success',
   '/terms': 'terms',
   '/privacy-policy': 'privacy-policy',

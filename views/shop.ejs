@@ -1,0 +1,277 @@
+<%
+const CAT_LABELS = { diffusers: 'Scent Diffusers', oils: 'Fragrance Oils', home_car: 'Home & Car', aerosol: 'Aerosol Systems' };
+const isSearch = typeof q === 'string' && q !== null;
+const title = isSearch ? `Search: ${q} | Scent World Canada` : 'Shop Diffusers & Fragrance Oils | Scent World Canada';
+const desc = isSearch ? `Search results for "${q}" at Scent World Canada.` : 'Shop premium scent diffusers, fragrance oils, and aroma systems. Free shipping over $150 CAD across Canada. Ships from Halifax.';
+%><!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= title %></title>
+<meta name="description" content="<%= desc %>">
+<meta name="robots" content="<%= isSearch ? 'noindex, follow' : 'index, follow' %>">
+<link rel="canonical" href="https://www.scentworld.ca/shop">
+<meta property="og:type" content="website">
+<meta property="og:title" content="<%= title %>">
+<meta property="og:description" content="<%= desc %>">
+<meta property="og:url" content="https://www.scentworld.ca/shop">
+<meta property="og:image" content="https://www.scentworld.ca/images/logo.png">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--bg4:#211e1a;
+  --gold:#c9a55c;--gold-l:#e0ca8e;--gold-d:#9a7d3e;
+  --cream:#f5f0e6;--cream2:#cdc5b8;
+  --txt:#958e85;--txt2:#635d55;
+  --bdr:rgba(201,165,92,.1);--bdr2:rgba(255,255,255,0.06);
+  --err:#c0392b;--ok:#27ae60;
+  --df:'Playfair Display',serif;--bf:'Outfit',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--bf);background:var(--bg);color:var(--cream);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+
+.shop-head{padding:8.5rem 4vw 1.5rem;max-width:1320px;margin:0 auto}
+.shop-eyebrow{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
+.shop-head h1{font-family:var(--df);font-size:clamp(1.9rem,4vw,3rem);font-weight:500;line-height:1.15}
+.shop-head h1 em{color:var(--gold);font-style:italic}
+.shop-sub{color:var(--txt);font-size:.85rem;font-weight:300;margin-top:.6rem}
+
+.shop-toolbar{max-width:1320px;margin:1.5rem auto 0;padding:0 4vw;display:flex;flex-wrap:wrap;gap:.8rem;align-items:center}
+.pf-btn{padding:.5rem 1.15rem;background:transparent;border:1px solid var(--bdr);color:var(--txt);font-family:var(--bf);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .3s}
+.pf-btn:hover,.pf-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(201,165,92,.05)}
+.shop-selects{display:flex;gap:.8rem;margin-left:auto;flex-wrap:wrap}
+.shop-sel{padding:.5rem .9rem;background:var(--bg2);border:1px solid var(--bdr);color:var(--cream2);font-family:var(--bf);font-size:.7rem;letter-spacing:.06em;cursor:pointer;outline:none}
+.shop-sel:focus{border-color:var(--gold)}
+.shop-count{max-width:1320px;margin:1rem auto 0;padding:0 4vw;color:var(--txt2);font-size:.72rem;letter-spacing:.08em}
+
+.shop-grid{max-width:1320px;margin:1.2rem auto 0;padding:0 4vw 5rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem}
+.sp-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:2px;overflow:hidden;display:flex;flex-direction:column;transition:all .35s}
+.sp-card:hover{border-color:rgba(201,165,92,.4);transform:translateY(-4px);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.sp-img{display:block;aspect-ratio:1/1;background:var(--bg3);overflow:hidden;position:relative}
+.sp-img img{width:100%;height:100%;object-fit:cover;transition:transform .6s}
+.sp-card:hover .sp-img img{transform:scale(1.05)}
+.sp-body{padding:1.1rem 1.2rem 1.3rem;display:flex;flex-direction:column;flex:1}
+.sp-cat{font-size:.55rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.sp-name{font-size:.95rem;color:var(--cream);font-weight:400;line-height:1.35;margin-bottom:.35rem}
+.sp-name a{color:inherit}
+.sp-name a:hover{color:var(--gold)}
+.sp-cov{font-size:.7rem;color:var(--txt);font-weight:300;margin-bottom:.6rem}
+.sp-row{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:.8rem}
+.sp-price{font-family:var(--df);color:var(--gold);font-size:1.05rem;font-weight:500}
+.sp-price small{color:var(--txt);font-size:.62rem;font-family:var(--bf);font-weight:300}
+.sp-atc{padding:.55rem 1rem;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:var(--bf);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .3s;white-space:nowrap}
+.sp-atc:hover{background:var(--gold);color:var(--bg)}
+.sp-atc.added{background:var(--ok);border-color:var(--ok);color:#fff}
+.shop-empty{max-width:1320px;margin:3rem auto;padding:0 4vw;text-align:center}
+.shop-empty p{color:var(--txt);font-size:.95rem;font-weight:300;margin-bottom:1.4rem}
+.shop-empty a{display:inline-block;padding:.8rem 1.8rem;border:1px solid var(--gold);color:var(--gold);font-size:.65rem;letter-spacing:.25em;text-transform:uppercase}
+
+/* mini toast */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg3);border:1px solid var(--gold);color:var(--cream);padding:1rem 2rem;font-size:.85rem;opacity:0;transition:all .4s cubic-bezier(.16,1,.3,1);z-index:9999;border-radius:2px}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+@media(max-width:768px){
+  .shop-head{padding-top:7rem}
+  .shop-grid{grid-template-columns:repeat(2,1fr);gap:.9rem}
+  .sp-body{padding:.9rem .9rem 1rem}
+  .sp-row{flex-direction:column;align-items:stretch}
+  .sp-atc{text-align:center}
+  .shop-selects{margin-left:0;width:100%}
+  .shop-sel{flex:1}
+}
+</style>
+</head>
+<body>
+
+<%- include('partials/header', {cartLive: false}) %>
+
+<div class="shop-head">
+  <% if (isSearch) { %>
+    <div class="shop-eyebrow">Search Results</div>
+    <h1>Results for <em>&ldquo;<%= q %>&rdquo;</em></h1>
+    <p class="shop-sub"><a href="/shop" style="color:var(--gold)">← Browse the full collection</a></p>
+  <% } else { %>
+    <div class="shop-eyebrow">The Collection</div>
+    <h1>Shop <em>Scent World</em></h1>
+    <p class="shop-sub">Premium diffusers, fragrance oils and aroma systems · Free shipping over $150 CAD · Ships from Halifax</p>
+  <% } %>
+</div>
+
+<% if (!isSearch) { %>
+<div class="shop-toolbar">
+  <button class="pf-btn active" data-cat="all">All</button>
+  <button class="pf-btn" data-cat="diffusers">Diffusers</button>
+  <button class="pf-btn" data-cat="oils">Fragrance Oils</button>
+  <button class="pf-btn" data-cat="home_car">Home &amp; Car</button>
+  <button class="pf-btn" data-cat="aerosol">Aerosol</button>
+  <div class="shop-selects">
+    <select class="shop-sel" id="sizeSel" aria-label="Filter by space size">
+      <option value="">Any space size</option>
+      <option value="small">Small room (under 500 sq ft)</option>
+      <option value="large">Large room (500–1,500 sq ft)</option>
+      <option value="commercial">Commercial (1,500–5,000 sq ft)</option>
+      <option value="hvac">Whole building (HVAC)</option>
+    </select>
+    <select class="shop-sel" id="priceSel" aria-label="Filter by price">
+      <option value="">Any price</option>
+      <option value="0-100">Under $100</option>
+      <option value="100-300">$100 – $300</option>
+      <option value="300-700">$300 – $700</option>
+      <option value="700-99999">$700+</option>
+    </select>
+    <select class="shop-sel" id="sortSel" aria-label="Sort products">
+      <option value="featured">Sort: Featured</option>
+      <option value="best">Best sellers</option>
+      <option value="price-asc">Price: low → high</option>
+      <option value="price-desc">Price: high → low</option>
+      <option value="newest">Newest</option>
+    </select>
+  </div>
+</div>
+<% } %>
+
+<div class="shop-count" id="shopCount"></div>
+
+<% if (products.length) { %>
+<div class="shop-grid" id="shopGrid">
+  <% products.forEach(p => {
+       let ps = null; try { const t = JSON.parse(p.sizes || 'null'); if (Array.isArray(t) && t.length) ps = t; } catch(e) {}
+       const price = ps ? Math.min(...ps.map(s => s.price)) : (p.price || 0);
+       const created = new Date(p.created_at || 0).getTime();
+  %>
+  <div class="sp-card" data-cat="<%= p.category %>" data-price="<%= price %>" data-bucket="<%= p._bucket %>" data-sold="<%= p._sold %>" data-created="<%= created %>" data-order="<%= p.sort_order %>">
+    <a href="/products/<%= p.slug %>" class="sp-img">
+      <img src="<%= p.image_url || '/images/placeholder.svg' %>" alt="<%= p.name %>" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'">
+    </a>
+    <div class="sp-body">
+      <div class="sp-cat"><%= CAT_LABELS[p.category] || p.category %></div>
+      <div class="sp-name"><a href="/products/<%= p.slug %>"><%= p.name %></a></div>
+      <% if (p.coverage) { %><div class="sp-cov">Coverage: <%= p.coverage %></div><% } %>
+      <div class="sp-row">
+        <div class="sp-price"><% if (ps) { %><small>from </small><% } %>$<%= price.toFixed(2) %></div>
+        <button class="sp-atc" onclick='quickAdd(<%- JSON.stringify({id: p.id, slug: p.slug, name: p.name, price: price, category: p.category, image_url: p.image_url, size: ps ? ps[0].label : null}) %>, this)'>Add to Cart</button>
+      </div>
+    </div>
+  </div>
+  <% }) %>
+</div>
+<% } else { %>
+<div class="shop-empty">
+  <p><%= isSearch ? `No products matched "${q}". Try a different search, or browse the collection.` : 'No products available right now.' %></p>
+  <a href="/shop">Browse All Products</a>
+</div>
+<% } %>
+
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<%- include('partials/footer') %>
+
+<script>
+// ── Quick add to cart ───────────────────────────────────
+function quickAdd(p, btn) {
+  let cart = [];
+  try { cart = JSON.parse(localStorage.getItem('sw_cart') || '[]'); } catch(e) {}
+  const key = p.size ? `${p.id}-${p.size}` : String(p.id);
+  const ex = cart.find(i => (i.cartKey || String(i.id)) === key);
+  if (ex) ex.qty += 1;
+  else cart.push({ cartKey: key, id: p.id, slug: p.slug, name: p.name + (p.size ? ` (${p.size})` : ''), price: p.price, category: p.category, size: p.size, image_url: p.image_url, qty: 1 });
+  localStorage.setItem('sw_cart', JSON.stringify(cart));
+  const b = document.getElementById('cartBadge');
+  if (b) { b.textContent = cart.reduce((s, i) => s + i.qty, 0); b.classList.add('show'); }
+  if (typeof gtag === 'function') gtag('event', 'add_to_cart', { currency: 'CAD', value: p.price, items: [{ item_id: p.id, item_name: p.name, item_variant: p.size || '', item_category: p.category, price: p.price, quantity: 1 }] });
+  if (typeof fbq === 'function') fbq('track', 'AddToCart', { currency: 'CAD', value: p.price, content_ids: [p.id], content_name: p.name, content_type: 'product' });
+  btn.classList.add('added'); btn.textContent = 'Added ✓';
+  showToast(`Added ${p.name}${p.size ? ` (${p.size})` : ''} to cart`);
+  setTimeout(() => { btn.classList.remove('added'); btn.textContent = 'Add to Cart'; }, 1800);
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Filters + sort (client-side, no reload) ─────────────
+const grid = document.getElementById('shopGrid');
+if (grid && document.querySelector('.shop-toolbar')) {
+  let cat = 'all', bucket = '', priceRange = '', sort = 'featured';
+  const cards = Array.from(grid.children);
+
+  function apply() {
+    let visible = 0;
+    let [lo, hi] = priceRange ? priceRange.split('-').map(Number) : [0, Infinity];
+    cards.forEach(c => {
+      const okCat = cat === 'all' || c.dataset.cat === cat;
+      const okBucket = !bucket || c.dataset.bucket === bucket;
+      const price = parseFloat(c.dataset.price);
+      const okPrice = !priceRange || (price >= lo && price <= hi);
+      const show = okCat && okBucket && okPrice;
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    const sorted = [...cards].sort((a, b) => {
+      switch (sort) {
+        case 'price-asc': return a.dataset.price - b.dataset.price;
+        case 'price-desc': return b.dataset.price - a.dataset.price;
+        case 'newest': return b.dataset.created - a.dataset.created;
+        case 'best': return b.dataset.sold - a.dataset.sold || a.dataset.order - b.dataset.order;
+        default: return a.dataset.order - b.dataset.order;
+      }
+    });
+    sorted.forEach(c => grid.appendChild(c));
+    document.getElementById('shopCount').textContent = `${visible} product${visible === 1 ? '' : 's'}`;
+  }
+
+  document.querySelectorAll('.pf-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    cat = btn.dataset.cat;
+    apply();
+  }));
+  document.getElementById('sizeSel').addEventListener('change', e => { bucket = e.target.value; apply(); });
+  document.getElementById('priceSel').addEventListener('change', e => { priceRange = e.target.value; apply(); });
+  document.getElementById('sortSel').addEventListener('change', e => { sort = e.target.value; apply(); });
+
+  // honor URL params (?filter=oils, ?size=small)
+  const params = new URLSearchParams(location.search);
+  const f = params.get('filter');
+  if (f) { const btn = document.querySelector(`.pf-btn[data-cat="${f}"]`); if (btn) { cat = f; document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); } }
+  const sz = params.get('size');
+  if (sz) { const sel = document.getElementById('sizeSel'); if ([...sel.options].some(o => o.value === sz)) { sel.value = sz; bucket = sz; } }
+  apply();
+} else if (grid) {
+  document.getElementById('shopCount').textContent = `${grid.children.length} result${grid.children.length === 1 ? '' : 's'}`;
+}
+</script>
+</body>
+</html>

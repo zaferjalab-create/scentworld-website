@@ -34,17 +34,39 @@ nav.sc .nl img{height:28px}
 .cart-badge.show{opacity:1}
 @media(max-width:768px){.nk{display:none}.mb{display:flex}}
 a.cart-btn{text-decoration:none}
+/* Search */
+.nav-search{display:flex;align-items:center;position:relative}
+.nav-search-btn{background:none;border:none;cursor:pointer;color:var(--cream2);padding:4px 6px;display:flex;align-items:center;transition:color .3s}
+.nav-search-btn:hover{color:var(--gold)}
+.nav-search-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6}
+.nav-search-form{position:absolute;right:0;top:calc(100% + 12px);display:none;background:var(--bg2);border:1px solid var(--gold);padding:.4rem;border-radius:2px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.nav-search.open .nav-search-form{display:flex}
+.nav-search-form input{width:230px;padding:.6rem .8rem;background:transparent;border:none;outline:none;color:var(--cream);font-family:var(--bf);font-size:.82rem}
+.nav-search-form input::placeholder{color:var(--txt2)}
+.nav-search-form button{padding:.55rem 1rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;font-family:var(--bf);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500}
+.mn-search{display:flex;width:min(78vw,320px);margin-bottom:.6rem;background:var(--bg2);border:1px solid var(--bdr);border-radius:2px}
+.mn-search input{flex:1;padding:.75rem .9rem;background:transparent;border:none;outline:none;color:var(--cream);font-family:var(--bf);font-size:.88rem}
+.mn-search button{padding:.6rem 1rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;font-size:.85rem}
 </style>
 <nav id="nav">
   <a href="/" class="nl">
     <img src="/images/logo.png" alt="Scent World Canada" style="height:40px;width:auto;object-fit:contain" onerror="this.onerror=null;this.style.display='none'">
   </a>
   <div class="nk">
-    <a href="/#products">Shop</a>
+    <a href="/shop">Shop</a>
     <a href="/#spaces">Spaces</a>
     <a href="/#about">Our Story</a>
     <a href="/#services">Services</a>
     <a href="/blog.html">Journal</a>
+    <div class="nav-search" id="navSearch">
+      <button class="nav-search-btn" onclick="document.getElementById('navSearch').classList.toggle('open');document.getElementById('navSearchInput').focus()" aria-label="Search products">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <form class="nav-search-form" action="/search" method="get">
+        <input type="search" name="q" id="navSearchInput" placeholder="Search products…" maxlength="80" required>
+        <button type="submit">Go</button>
+      </form>
+    </div>
     <% if (typeof cartLive !== 'undefined' && cartLive) { %>
     <button class="cart-btn" id="cartBtn" aria-label="Cart">
       <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -62,7 +84,11 @@ a.cart-btn{text-decoration:none}
 </nav>
 <div class="mn" id="mn">
   <button class="mc" onclick="cm()">&#10005;</button>
-  <a href="/#products" onclick="cm()">Shop</a>
+  <form class="mn-search" action="/search" method="get">
+    <input type="search" name="q" placeholder="Search products…" maxlength="80" required>
+    <button type="submit" aria-label="Search">→</button>
+  </form>
+  <a href="/shop" onclick="cm()">Shop</a>
   <a href="/#spaces" onclick="cm()">Spaces</a>
   <a href="/#about" onclick="cm()">Our Story</a>
   <a href="/#services" onclick="cm()">Services</a>
