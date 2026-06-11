@@ -403,6 +403,15 @@ section{padding:7rem 4vw}
 .pcat{font-size:.52rem;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
 .pn{font-family:var(--df);font-size:1.2rem;font-weight:500;margin-bottom:.4rem}
 .pdesc{font-size:.76rem;font-weight:200;line-height:1.6;color:var(--txt);margin-bottom:.6rem;flex:1}
+/* Diffuser finder */
+.finder{max-width:1300px;margin:0 auto 2.5rem;padding:1.2rem 1.5rem;border:1px solid var(--bdr);background:var(--bg2);display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap}
+.finder-label{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:300;white-space:nowrap}
+.finder-opts{display:flex;gap:.7rem;flex-wrap:wrap;flex:1}
+.finder-opts a{flex:1;min-width:150px;padding:.7rem 1rem;border:1px solid var(--bdr);color:var(--cream2);text-decoration:none;font-size:.78rem;font-weight:300;text-align:center;transition:all .3s;display:flex;flex-direction:column;gap:.15rem}
+.finder-opts a small{font-size:.6rem;color:var(--txt2);font-weight:200;letter-spacing:.04em}
+.finder-opts a:hover{border-color:var(--gold);color:var(--gold)}
+.finder-opts a:hover small{color:var(--txt)}
+@media(max-width:768px){.finder{flex-direction:column;align-items:stretch;gap:.8rem}.finder-opts a{min-width:calc(50% - .4rem);flex:0 0 calc(50% - .4rem)}}
 .pc-stars{display:flex;align-items:center;gap:.4rem;margin:-.2rem 0 .4rem}
 .pc-stars span{color:var(--gold);font-size:.72rem;letter-spacing:.1em}
 .pc-stars em{font-style:normal;font-size:.64rem;color:var(--txt2);font-weight:200}
@@ -651,7 +660,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-bg"><img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1920&q=80&auto=format" alt="Luxury Hotel Lobby"></div>
+  <div class="hero-bg"><img src="/images/stock/photo-1542314831-068cd1dbfeeb.webp" alt="Luxury Hotel Lobby"></div>
   <div class="hero-ov"></div>
   <div class="hero-c">
     <div class="hero-ey"><span>Luxury Scent Solutions</span></div>
@@ -681,6 +690,15 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <button class="pf-btn" data-cat="oils">Fragrance Oils</button>
     <button class="pf-btn" data-cat="home_car">Home &amp; Car</button>
     <button class="pf-btn" data-cat="aerosol">Aerosol</button>
+  </div>
+  <div class="finder rv">
+    <span class="finder-label">Find the right diffuser for your space:</span>
+    <div class="finder-opts">
+      <a href="/shop?size=small">Up to 500 sq ft<small>Home office · Boutique</small></a>
+      <a href="/shop?size=large">500–1,500 sq ft<small>Café · Salon · Retail</small></a>
+      <a href="/shop?size=commercial">1,500–5,000 sq ft<small>Hotel lobby · Gym</small></a>
+      <a href="/shop?size=hvac">5,000+ sq ft<small>HVAC · Whole building</small></a>
+    </div>
   </div>
   <div class="pg" id="productsGrid">
     <%
@@ -725,17 +743,17 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <p class="sd rv d2">From five-star hotel lobbies to intimate dining rooms, our scenting solutions create the invisible layer of luxury that guests remember.</p>
   </div>
   <div class="spaces-grid rv d2">
-    <a href="/industries/hotels.html" class="sc2 lg" style="text-decoration:none;color:inherit;display:block"><img src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1200&q=80&auto=format" alt="Luxury Hotel Suite Interior"><div class="si"><div class="si-t">Hospitality</div><div class="si-n">Hotel Lobbies &amp; Suites</div><div class="si-d">Create an unforgettable first impression with signature lobby scenting.</div></div></a>
-    <a href="/industries/restaurants.html" class="sc2" style="text-decoration:none;color:inherit;display:block"><img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80&auto=format" alt="Upscale Restaurant Interior"><div class="si"><div class="si-t">Dining</div><div class="si-n">Restaurants</div><div class="si-d">Enhance the dining atmosphere with subtle ambient aromas.</div></div></a>
-    <a href="/industries/spas.html" class="sc2" style="text-decoration:none;color:inherit;display:block"><img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1200&q=80&auto=format" alt="Luxury Spa Interior"><div class="si"><div class="si-t">Wellness</div><div class="si-n">Spas &amp; Retreats</div><div class="si-d">Calming scents that complete the relaxation journey.</div></div></a>
-    <a href="/blog/office-workplace-fragrance.html" class="sc2" style="text-decoration:none;color:inherit;display:block"><img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80&auto=format" alt="Modern Corporate Office"><div class="si"><div class="si-t">Commercial</div><div class="si-n">Offices &amp; Retail</div><div class="si-d">Boost mood and productivity with ambient scenting.</div></div></a>
-    <div class="sc2"><img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=80&auto=format" alt="Luxury Home Living Room"><div class="si"><div class="si-t">Residential</div><div class="si-n">Luxury Homes</div><div class="si-d">Bring the five-star experience to your private spaces.</div></div></div>
+    <a href="/industries/hotels.html" class="sc2 lg" style="text-decoration:none;color:inherit;display:block"><img loading="lazy" decoding="async" src="/images/stock/photo-1618773928121-c32242e63f39.webp" alt="Luxury Hotel Suite Interior"><div class="si"><div class="si-t">Hospitality</div><div class="si-n">Hotel Lobbies &amp; Suites</div><div class="si-d">Create an unforgettable first impression with signature lobby scenting.</div></div></a>
+    <a href="/industries/restaurants.html" class="sc2" style="text-decoration:none;color:inherit;display:block"><img loading="lazy" decoding="async" src="/images/stock/photo-1517248135467-4c7edcad34c4.webp" alt="Upscale Restaurant Interior"><div class="si"><div class="si-t">Dining</div><div class="si-n">Restaurants</div><div class="si-d">Enhance the dining atmosphere with subtle ambient aromas.</div></div></a>
+    <a href="/industries/spas.html" class="sc2" style="text-decoration:none;color:inherit;display:block"><img loading="lazy" decoding="async" src="/images/stock/photo-1544161515-4ab6ce6db874.webp" alt="Luxury Spa Interior"><div class="si"><div class="si-t">Wellness</div><div class="si-n">Spas &amp; Retreats</div><div class="si-d">Calming scents that complete the relaxation journey.</div></div></a>
+    <a href="/blog/office-workplace-fragrance.html" class="sc2" style="text-decoration:none;color:inherit;display:block"><img loading="lazy" decoding="async" src="/images/stock/photo-1497366216548-37526070297c.webp" alt="Modern Corporate Office"><div class="si"><div class="si-t">Commercial</div><div class="si-n">Offices &amp; Retail</div><div class="si-d">Boost mood and productivity with ambient scenting.</div></div></a>
+    <div class="sc2"><img loading="lazy" decoding="async" src="/images/stock/photo-1600607687939-ce8a6c25118c.webp" alt="Luxury Home Living Room"><div class="si"><div class="si-t">Residential</div><div class="si-n">Luxury Homes</div><div class="si-d">Bring the five-star experience to your private spaces.</div></div></div>
   </div>
 </section>
 
 <!-- QUOTE -->
 <div class="qb">
-  <div class="qb-bg"><img src="https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=1400&q=80&auto=format" alt=""></div>
+  <div class="qb-bg"><img loading="lazy" decoding="async" src="/images/stock/photo-1596394516093-501ba68a0ba6.webp" alt=""></div>
   <div class="qb-ov"></div>
   <div class="qb-c rv">
     <div class="qb-t">Scent is the most powerful trigger of emotion and memory. The right fragrance doesn't just fill a room &mdash; it transforms how people feel, think, and remember your space.</div>
@@ -746,7 +764,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
 <!-- ABOUT -->
 <section class="about" id="about">
   <div class="about-iw rv">
-    <div class="about-im"><img src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1200&q=80&auto=format" alt="Luxury Hotel Interior"></div>
+    <div class="about-im"><img loading="lazy" decoding="async" src="/images/stock/photo-1564501049412-61c2a3083791.webp" alt="Luxury Hotel Interior"></div>
     <div class="about-fl"><div class="about-fn">2017</div><div class="about-ft">Established</div></div>
   </div>
   <div class="about-c">
@@ -1057,9 +1075,10 @@ function updateQty(key, delta) {
 
 function updateCartBadge() {
   const n = cart.reduce((s, i) => s + i.qty, 0);
-  const badge = document.getElementById('cartBadge');
-  badge.textContent = n;
-  badge.classList.toggle('show', n > 0);
+  document.querySelectorAll('.cart-badge').forEach(badge => {
+    badge.textContent = n;
+    badge.classList.toggle('show', n > 0);
+  });
 }
 
 function openCart() {

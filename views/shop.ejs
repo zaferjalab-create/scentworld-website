@@ -210,8 +210,8 @@ function quickAdd(p, btn) {
   if (ex) ex.qty += 1;
   else cart.push({ cartKey: key, id: p.id, slug: p.slug, name: p.name + (p.size ? ` (${p.size})` : ''), price: p.price, category: p.category, size: p.size, image_url: p.image_url, qty: 1 });
   localStorage.setItem('sw_cart', JSON.stringify(cart));
-  const b = document.getElementById('cartBadge');
-  if (b) { b.textContent = cart.reduce((s, i) => s + i.qty, 0); b.classList.add('show'); }
+  const total = cart.reduce((s, i) => s + i.qty, 0);
+  document.querySelectorAll('.cart-badge').forEach(b => { b.textContent = total; b.classList.add('show'); });
   if (typeof gtag === 'function') gtag('event', 'add_to_cart', { currency: 'CAD', value: p.price, items: [{ item_id: p.id, item_name: p.name, item_variant: p.size || '', item_category: p.category, price: p.price, quantity: 1 }] });
   if (typeof fbq === 'function') fbq('track', 'AddToCart', { currency: 'CAD', value: p.price, content_ids: [p.id], content_name: p.name, content_type: 'product' });
   btn.classList.add('added'); btn.textContent = 'Added ✓';

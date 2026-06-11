@@ -32,7 +32,9 @@ nav.sc .nl img{height:28px}
 .cart-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
 .cart-badge{position:absolute;top:-5px;right:-5px;background:var(--gold);color:var(--bg);font-size:.5rem;font-weight:700;width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
 .cart-badge.show{opacity:1}
-@media(max-width:768px){.nk{display:none}.mb{display:flex}}
+.m-actions{display:flex;align-items:center;gap:.2rem}
+.m-actions .cart-btn,.m-actions .mb{display:none}
+@media(max-width:768px){.nk{display:none}.m-actions .cart-btn{display:flex}.m-actions .mb{display:flex}.m-actions{gap:.6rem}}
 a.cart-btn{text-decoration:none}
 /* Search */
 .nav-search{display:flex;align-items:center;position:relative}
@@ -54,10 +56,10 @@ a.cart-btn{text-decoration:none}
   </a>
   <div class="nk">
     <a href="/shop">Shop</a>
-    <a href="/#spaces">Spaces</a>
-    <a href="/#about">Our Story</a>
+    <a href="/#spaces">Industries</a>
+    <a href="/#about">About</a>
     <a href="/#services">Services</a>
-    <a href="/blog.html">Journal</a>
+    <a href="/blog.html">Blog</a>
     <div class="nav-search" id="navSearch">
       <button class="nav-search-btn" onclick="document.getElementById('navSearch').classList.toggle('open');document.getElementById('navSearchInput').focus()" aria-label="Search products">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -80,7 +82,23 @@ a.cart-btn{text-decoration:none}
     <% } %>
     <a href="/#contact" class="nc">Get a Quote</a>
   </div>
-  <button class="mb" id="mbBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+  <div class="m-actions">
+    <a href="tel:+19027070807" class="cart-btn" aria-label="Call us">
+      <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+    </a>
+    <% if (typeof cartLive !== 'undefined' && cartLive) { %>
+    <button class="cart-btn" aria-label="Cart" onclick="document.getElementById('cartBtn').click()">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge">0</span>
+    </button>
+    <% } else { %>
+    <a href="/?cart=open" class="cart-btn" aria-label="Cart">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge">0</span>
+    </a>
+    <% } %>
+    <button class="mb" id="mbBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
 </nav>
 <div class="mn" id="mn">
   <button class="mc" onclick="cm()">&#10005;</button>
@@ -89,10 +107,10 @@ a.cart-btn{text-decoration:none}
     <button type="submit" aria-label="Search">→</button>
   </form>
   <a href="/shop" onclick="cm()">Shop</a>
-  <a href="/#spaces" onclick="cm()">Spaces</a>
-  <a href="/#about" onclick="cm()">Our Story</a>
+  <a href="/#spaces" onclick="cm()">Industries</a>
+  <a href="/#about" onclick="cm()">About</a>
   <a href="/#services" onclick="cm()">Services</a>
-  <a href="/blog.html" onclick="cm()">Journal</a>
+  <a href="/blog.html" onclick="cm()">Blog</a>
   <a href="/#contact" onclick="cm()">Contact</a>
   <a href="/#booking" onclick="cm()">Book Consultation</a>
 </div>

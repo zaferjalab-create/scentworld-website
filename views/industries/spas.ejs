@@ -109,13 +109,16 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
 .fb p{font-size:.72rem;color:var(--txt2);letter-spacing:.06em}.fb a{color:var(--txt);font-size:.72rem;letter-spacing:.06em;margin:0 .8rem}.fb a:hover{color:var(--gold)}
 .fb-links{margin-top:.7rem}
 </style>
+<style>.crumb5{padding:6.2rem 4vw .2rem;font-size:.7rem;letter-spacing:.06em;color:#958e85;position:relative;z-index:5}.crumb5 a{color:#958e85;text-decoration:none;transition:color .3s}.crumb5 a:hover{color:#c9a55c}.crumb5 span{margin:0 .5rem;color:#635d55}</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.scentworld.ca/"},{"@type": "ListItem", "position": 2, "name": "Industries", "item": "https://www.scentworld.ca/industries/"},{"@type": "ListItem", "position": 3, "name": "Spa & Wellness Scent Solutions", "item": "https://www.scentworld.ca/industries/spas.html"}]}</script>
 </head>
 <body>
 
 <%- include('../partials/header', {cartLive: false}) %>
+<div class="crumb5"><a href="/">Home</a><span>&rsaquo;</span><a href="/industries/">Industries</a><span>&rsaquo;</span>Spa & Wellness Scent Solutions</div>
 
 <section class="hero-bg">
-  <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1920&q=80&auto=format" alt="Tranquil spa with candles and aromatherapy">
+  <img loading="lazy" decoding="async" src="/images/stock/photo-1544161515-4ab6ce6db874.webp" alt="Tranquil spa with candles and aromatherapy">
   <div class="hero-content">
     <div class="hero-ind">For Spas &amp; Wellness</div>
     <h1>Where Calm Becomes <em>Tangible</em></h1>

@@ -706,8 +706,7 @@ try { cart = JSON.parse(localStorage.getItem('sw_cart') || '[]'); } catch(e) { c
 function saveCart() { localStorage.setItem('sw_cart', JSON.stringify(cart)); updateBadge(); }
 function updateBadge() {
   const n = cart.reduce((s, i) => s + (i.qty || 1), 0);
-  const b = document.getElementById('cartBadge');
-  if (b) { b.textContent = n; b.classList.toggle('show', n > 0); }
+  document.querySelectorAll('.cart-badge').forEach(b => { b.textContent = n; b.classList.toggle('show', n > 0); });
 }
 updateBadge();
 
