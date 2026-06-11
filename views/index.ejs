@@ -329,6 +329,18 @@ nav.sc{background:rgba(11,9,8,.93);backdrop-filter:blur(25px);padding:.85rem 4vw
 .cart-cta:hover{background:var(--gold-l)}
 .cart-cta:disabled{opacity:.5;cursor:not-allowed}
 .cart-note{font-size:.62rem;color:var(--txt2);text-align:center;margin-top:.7rem;font-weight:200}
+/* Free-shipping progress bar */
+.fs-bar{margin-bottom:1rem}
+.fs-msg{font-size:.7rem;font-weight:300;color:var(--cream2);margin-bottom:.45rem;letter-spacing:.03em}
+.fs-msg strong{color:var(--gold);font-weight:500}
+.fs-msg.ok,.fs-msg.ok strong{color:var(--ok)}
+.fs-track{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.fs-fill{height:100%;width:0;background:linear-gradient(90deg,var(--gold-d),var(--gold));transition:width .5s ease;border-radius:2px}
+.fs-fill.ok{background:var(--ok)}
+.cart-eta{font-size:.7rem;color:var(--txt);font-weight:300;margin:.2rem 0 .4rem}
+.cart-eta strong{color:var(--cream2);font-weight:400}
+.pay-row{display:flex;justify-content:center;align-items:center;gap:.45rem;margin-top:.8rem}
+.pay-row svg{height:23px;width:auto;display:block;opacity:.9}
 
 /* HERO */
 .hero{position:relative;height:100vh;min-height:750px;display:flex;align-items:center;overflow:hidden}
@@ -614,11 +626,23 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     </div>
   </div>
   <div class="cart-foot" id="cartFoot" style="display:none">
+    <div class="fs-bar">
+      <p class="fs-msg" id="fsMsg"></p>
+      <div class="fs-track"><div class="fs-fill" id="fsFill"></div></div>
+    </div>
     <div class="cart-row"><span>Subtotal</span><span id="cartSubtotal">$0.00 CAD</span></div>
     <div class="cart-row"><span>Shipping</span><span id="cartShipping">Calculated at checkout</span></div>
+    <p class="cart-eta">Estimated delivery: <strong id="cartEta"></strong></p>
     <div class="cart-row total"><span>Total</span><span id="cartTotal">$0.00 CAD</span></div>
     <button class="cart-cta" id="checkoutBtn">Proceed to Checkout</button>
-    <p class="cart-note">Secure payment via Stripe &bull; Ships across Canada</p>
+    <div class="pay-row" aria-label="We accept Visa, Mastercard, American Express, Apple Pay and Google Pay">
+      <svg viewBox="0 0 38 24" role="img" aria-label="Visa"><rect width="38" height="24" rx="3" fill="#1a1714" stroke="rgba(201,165,92,.2)"/><text x="19" y="15.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-style="italic" font-weight="bold" fill="#cdc5b8">VISA</text></svg>
+      <svg viewBox="0 0 38 24" role="img" aria-label="Mastercard"><rect width="38" height="24" rx="3" fill="#1a1714" stroke="rgba(201,165,92,.2)"/><circle cx="15.5" cy="12" r="6" fill="#958e85" opacity=".85"/><circle cx="22.5" cy="12" r="6" fill="#635d55" opacity=".85"/></svg>
+      <svg viewBox="0 0 38 24" role="img" aria-label="American Express"><rect width="38" height="24" rx="3" fill="#1a1714" stroke="rgba(201,165,92,.2)"/><text x="19" y="15" text-anchor="middle" font-family="Arial,sans-serif" font-size="7.5" font-weight="bold" fill="#cdc5b8">AMEX</text></svg>
+      <svg viewBox="0 0 44 24" role="img" aria-label="Apple Pay"><rect width="44" height="24" rx="3" fill="#1a1714" stroke="rgba(201,165,92,.2)"/><path d="M14.6 8.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.6-.4 2-1zm.7 1.2c-1.1-.1-2 .6-2.6.6-.5 0-1.3-.6-2.2-.6-1.1 0-2.2.7-2.7 1.7-1.2 2-.3 5 .8 6.6.5.8 1.2 1.7 2 1.6.8 0 1.1-.5 2.1-.5s1.3.5 2.2.5c.9 0 1.5-.8 2-1.6.7-.9.9-1.8.9-1.9 0 0-1.8-.7-1.8-2.7 0-1.7 1.4-2.5 1.4-2.5-.7-1.1-1.9-1.2-2.1-1.2z" fill="#cdc5b8"/><text x="29" y="15.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" font-weight="600" fill="#cdc5b8">Pay</text></svg>
+      <svg viewBox="0 0 44 24" role="img" aria-label="Google Pay"><rect width="44" height="24" rx="3" fill="#1a1714" stroke="rgba(201,165,92,.2)"/><text x="22" y="15.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" font-weight="600" fill="#cdc5b8">G Pay</text></svg>
+    </div>
+    <p class="cart-note">Guaranteed safe &amp; secure checkout via Stripe &bull; Ships across Canada</p>
   </div>
 </div>
 
@@ -1102,7 +1126,32 @@ function renderCartBody() {
   document.getElementById('cartSubtotal').textContent = `$${sub.toFixed(2)} CAD`;
   document.getElementById('cartShipping').textContent = sub >= 150 ? 'FREE' : 'Calculated at checkout';
   document.getElementById('cartTotal').textContent = `$${sub.toFixed(2)} CAD`;
+  updateFsBar(sub);
+  document.getElementById('cartEta').textContent = swEtaRange();
   foot.style.display = 'block';
+}
+
+// ── Free-shipping progress + delivery estimate ─────────
+const FREE_SHIP = 150;
+function updateFsBar(sub) {
+  const msg = document.getElementById('fsMsg'), fill = document.getElementById('fsFill');
+  if (!msg || !fill) return;
+  fill.style.width = Math.min(100, (sub / FREE_SHIP) * 100) + '%';
+  const ok = sub >= FREE_SHIP;
+  msg.classList.toggle('ok', ok);
+  fill.classList.toggle('ok', ok);
+  msg.innerHTML = ok
+    ? '&#10003; You&rsquo;ve unlocked <strong>free shipping</strong>'
+    : `Add <strong>$${(FREE_SHIP - sub).toFixed(2)}</strong> more for free shipping`;
+}
+function swAddBiz(from, n) {
+  const d = new Date(from);
+  while (n > 0) { d.setDate(d.getDate() + 1); const w = d.getDay(); if (w !== 0 && w !== 6) n--; }
+  return d;
+}
+function swEtaRange() {
+  const now = new Date(), f = d => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+  return f(swAddBiz(now, 4)) + ' – ' + f(swAddBiz(now, 10));
 }
 
 document.getElementById('cartBtn').addEventListener('click', openCart);

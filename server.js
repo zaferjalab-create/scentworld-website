@@ -118,12 +118,25 @@ app.get('/api/products/:slug', (req, res) => {
 // STRIPE CHECKOUT
 // ═══════════════════════════════════════
 
+// Estimated delivery range: 1–2 business days processing + 3–8 business days transit
+function addBusinessDays(from, n) {
+  const d = new Date(from);
+  while (n > 0) { d.setDate(d.getDate() + 1); const w = d.getDay(); if (w !== 0 && w !== 6) n--; }
+  return d;
+}
+function deliveryEstimate() {
+  const now = new Date();
+  const f = d => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'America/Halifax' });
+  return `${f(addBusinessDays(now, 4))} – ${f(addBusinessDays(now, 10))}`;
+}
+
 app.post('/api/checkout', async (req, res) => {
   try {
     const { items } = req.body;
     if (!items || !items.length) return res.status(400).json({ success: false, error: 'No items in cart' });
 
     const lineItems = [];
+    const metaItems = [];
     for (const item of items) {
       const product = db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.id);
       if (!product) return res.status(400).json({ success: false, error: `Product ${item.id} not available` });
@@ -151,6 +164,7 @@ app.post('/api/checkout', async (req, res) => {
         },
         quantity: item.quantity,
       });
+      metaItems.push({ id: item.id, qty: item.quantity, s: item.size || undefined, p: unitPrice });
     }
 
     const base = process.env.BASE_URL || 'http://localhost:3000';
@@ -161,7 +175,7 @@ app.post('/api/checkout', async (req, res) => {
       shipping_address_collection: { allowed_countries: ['CA', 'US'] },
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/#products`,
-      metadata: { items: JSON.stringify(items.map(i => ({ id: i.id, qty: i.quantity }))) },
+      metadata: { items: JSON.stringify(metaItems) },
     });
 
     res.json({ success: true, url: session.url });
@@ -204,15 +218,18 @@ app.get('/api/checkout/verify', async (req, res) => {
     if (session.metadata?.items) {
       for (const item of JSON.parse(session.metadata.items)) {
         const p = db.prepare('SELECT * FROM products WHERE id = ?').get(item.id);
-        if (p) db.prepare(`
+        if (!p) continue;
+        const unitPrice = item.p || p.price;
+        const itemName = item.s ? `${p.name} — ${item.s}` : p.name;
+        db.prepare(`
           INSERT INTO order_items (order_id, product_id, product_name, product_category, quantity, unit_price, total_price)
           VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(orderId, p.id, p.name, p.category, item.qty, p.price, p.price * item.qty);
+        `).run(orderId, p.id, itemName, p.category, item.qty, unitPrice, unitPrice * item.qty);
       }
     }
 
     sendNotification('New Order', `Order ${orderNumber}\nCustomer: ${name} (${email})\nTotal: $${session.amount_total / 100} CAD`);
-    sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\nTotal: $${session.amount_total / 100} CAD\n\nWe'll process and ship your order soon.`);
+    sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\nTotal: $${session.amount_total / 100} CAD\nEstimated delivery: ${deliveryEstimate()}\n\nWe'll process and ship your order within 1–2 business days, and you'll receive tracking by email.`);
     res.json({ success: true, paid: true, order_number: orderNumber });
   } catch (err) {
     console.error('Verify error:', err.message);
@@ -666,6 +683,7 @@ async function sendNotification(subject, text) {
 
 // Customer confirmation email
 async function sendConfirmation(toEmail, firstName, type, details) {
+  const detailsHtml = String(details || '').replace(/\n/g, '<br>');
   const templates = {
     quote: {
       subject: 'We received your quote request — Scent World Canada',
@@ -679,7 +697,7 @@ async function sendConfirmation(toEmail, firstName, type, details) {
           <p style="color:#ccc;line-height:1.7">We've received your quote request and will be in touch within <strong style="color:#f5f0e8">24 hours</strong>.</p>
           <div style="background:#1a1614;border-left:3px solid #c9a55c;padding:16px 20px;margin:24px 0;border-radius:4px">
             <p style="color:#999;font-size:13px;margin:0 0 4px">Your request summary:</p>
-            <p style="color:#f5f0e8;margin:0;font-size:14px">${details}</p>
+            <p style="color:#f5f0e8;margin:0;font-size:14px;line-height:1.7">${detailsHtml}</p>
           </div>
           <p style="color:#ccc;line-height:1.7">In the meantime, feel free to explore our <a href="https://www.scentworld.ca" style="color:#c9a55c">full collection</a>.</p>
           <hr style="border:none;border-top:1px solid #2a2420;margin:32px 0">
@@ -699,7 +717,7 @@ async function sendConfirmation(toEmail, firstName, type, details) {
           <p style="color:#ccc;line-height:1.7">We've received your consultation request and will confirm your time slot within <strong style="color:#f5f0e8">24 hours</strong>.</p>
           <div style="background:#1a1614;border-left:3px solid #c9a55c;padding:16px 20px;margin:24px 0;border-radius:4px">
             <p style="color:#999;font-size:13px;margin:0 0 4px">Requested slot:</p>
-            <p style="color:#f5f0e8;margin:0;font-size:14px">${details}</p>
+            <p style="color:#f5f0e8;margin:0;font-size:14px;line-height:1.7">${detailsHtml}</p>
           </div>
           <p style="color:#ccc;line-height:1.7">We look forward to speaking with you.</p>
           <hr style="border:none;border-top:1px solid #2a2420;margin:32px 0">
@@ -718,7 +736,7 @@ async function sendConfirmation(toEmail, firstName, type, details) {
           <h2 style="color:#c9a55c;font-size:20px;margin-bottom:16px">Order Confirmed, ${firstName}!</h2>
           <p style="color:#ccc;line-height:1.7">Thank you for your order. We'll process and ship it soon.</p>
           <div style="background:#1a1614;border-left:3px solid #c9a55c;padding:16px 20px;margin:24px 0;border-radius:4px">
-            <p style="color:#f5f0e8;margin:0;font-size:14px">${details}</p>
+            <p style="color:#f5f0e8;margin:0;font-size:14px;line-height:1.7">${detailsHtml}</p>
           </div>
           <p style="color:#ccc;line-height:1.7">Questions? Reply to this email or contact us at <a href="mailto:support@scentworld.ca" style="color:#c9a55c">support@scentworld.ca</a></p>
           <hr style="border:none;border-top:1px solid #2a2420;margin:32px 0">

@@ -76,6 +76,15 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
 </div>
 
 <script>
+function etaRange() {
+  function addBiz(from, n) {
+    const d = new Date(from);
+    while (n > 0) { d.setDate(d.getDate() + 1); const w = d.getDay(); if (w !== 0 && w !== 6) n--; }
+    return d;
+  }
+  const now = new Date(), f = d => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+  return f(addBiz(now, 4)) + ' – ' + f(addBiz(now, 10));
+}
 (async () => {
   const params = new URLSearchParams(location.search);
   const sessionId = params.get('session_id');
@@ -134,7 +143,9 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
       <div class="divider"></div>
       <div class="notice">
         <strong>What happens next?</strong><br>
-        We'll process your order within 1&ndash;2 business days. You'll receive a shipping confirmation with tracking information by email. For any questions, contact us at <strong>support@scentworld.ca</strong>
+        We'll process your order within 1&ndash;2 business days. You'll receive a shipping confirmation with tracking information by email.<br>
+        Estimated delivery: <strong>${etaRange()}</strong><br>
+        For any questions, contact us at <strong>support@scentworld.ca</strong>
       </div>
       <a href="/" class="btn-home">Continue Shopping</a>
     `;
