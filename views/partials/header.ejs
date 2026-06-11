@@ -1,0 +1,77 @@
+<style>
+:root{
+  --bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--bg4:#211e1a;
+  --gold:#c9a55c;--gold-l:#e0ca8e;--gold-d:#9a7d3e;
+  --cream:#f5f0e6;--cream2:#cdc5b8;
+  --txt:#958e85;--txt2:#635d55;
+  --bdr:rgba(201,165,92,.1);--bdr2:rgba(255,255,255,0.06);
+  --err:#c0392b;--ok:#27ae60;
+  --df:'Playfair Display',serif;--bf:'Outfit',sans-serif;
+}
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:1.3rem 4vw;display:flex;align-items:center;justify-content:space-between;transition:all .5s}
+nav.sc{background:rgba(11,9,8,.93);backdrop-filter:blur(25px);padding:.85rem 4vw;border-bottom:1px solid var(--bdr)}
+.nl img{height:34px;transition:height .3s}
+nav.sc .nl img{height:28px}
+.nk{display:flex;gap:2.5rem;align-items:center}
+.nk a{font-size:.66rem;letter-spacing:.28em;text-transform:uppercase;color:var(--cream2);text-decoration:none;font-weight:300;position:relative;transition:color .3s}
+.nk a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--gold);transition:width .4s}
+.nk a:hover{color:var(--gold)}
+.nk a:hover::after{width:100%}
+.nc{padding:.55rem 1.6rem!important;border:1px solid var(--gold)!important;color:var(--gold)!important;transition:all .4s!important}
+.nc:hover{background:var(--gold)!important;color:var(--bg)!important}
+.nc::after{display:none!important}
+.mb{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:5px}
+.mb span{width:22px;height:1px;background:var(--gold)}
+.mn{position:fixed;inset:0;z-index:999;background:rgba(11,9,8,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8rem;opacity:0;visibility:hidden;transition:all .4s}
+.mn.op{opacity:1;visibility:visible}
+.mn a{font-family:var(--df);font-size:1.8rem;font-weight:400;color:var(--cream);text-decoration:none;transition:color .3s}
+.mn a:hover{color:var(--gold)}
+.mc{position:absolute;top:1.5rem;right:1.5rem;background:none;border:none;color:var(--gold);font-size:1.3rem;cursor:pointer}
+.cart-btn{position:relative;background:none;border:none;cursor:pointer;color:var(--cream2);padding:4px 8px;display:flex;align-items:center;gap:.4rem;transition:color .3s}
+.cart-btn:hover{color:var(--gold)}
+.cart-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
+.cart-badge{position:absolute;top:-5px;right:-5px;background:var(--gold);color:var(--bg);font-size:.5rem;font-weight:700;width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
+.cart-badge.show{opacity:1}
+@media(max-width:768px){.nk{display:none}.mb{display:flex}}
+a.cart-btn{text-decoration:none}
+</style>
+<nav id="nav">
+  <a href="/" class="nl">
+    <img src="/images/logo.png" alt="Scent World Canada" style="height:40px;width:auto;object-fit:contain" onerror="this.onerror=null;this.style.display='none'">
+  </a>
+  <div class="nk">
+    <a href="/#products">Shop</a>
+    <a href="/#spaces">Spaces</a>
+    <a href="/#about">Our Story</a>
+    <a href="/#services">Services</a>
+    <a href="/blog.html">Journal</a>
+    <% if (typeof cartLive !== 'undefined' && cartLive) { %>
+    <button class="cart-btn" id="cartBtn" aria-label="Cart">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+    <% } else { %>
+    <a href="/?cart=open" class="cart-btn" id="cartBtn" aria-label="Cart">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge" id="cartBadge">0</span>
+    </a>
+    <% } %>
+    <a href="/#contact" class="nc">Get a Quote</a>
+  </div>
+  <button class="mb" id="mbBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mn" id="mn">
+  <button class="mc" onclick="cm()">&#10005;</button>
+  <a href="/#products" onclick="cm()">Shop</a>
+  <a href="/#spaces" onclick="cm()">Spaces</a>
+  <a href="/#about" onclick="cm()">Our Story</a>
+  <a href="/#services" onclick="cm()">Services</a>
+  <a href="/blog.html" onclick="cm()">Journal</a>
+  <a href="/#contact" onclick="cm()">Contact</a>
+  <a href="/#booking" onclick="cm()">Book Consultation</a>
+</div>
+<script>
+window.addEventListener('scroll', function() { var n = document.getElementById('nav'); if (n) n.classList.toggle('sc', window.scrollY > 50); });
+function cm() { var m = document.getElementById('mn'); if (m) m.classList.remove('op'); }
+document.getElementById('mbBtn').onclick = function() { document.getElementById('mn').classList.add('op'); };
+</script>

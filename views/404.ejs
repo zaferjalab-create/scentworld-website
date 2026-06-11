@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+  gtag('event', 'page_not_found', {page_path: window.location.pathname});
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Not Found | Scent World Canada</title>
+<meta name="robots" content="noindex, follow">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Outfit',sans-serif;
+  background:#0b0908;
+  color:#f5f0e6;
+  
+  
+  
+  
+  padding:2rem;
+  text-align:center;
+  -webkit-font-smoothing:antialiased
+}
+.wrap{max-width:560px}
+.logo{font-family:'Playfair Display',serif;font-size:1.5rem;color:#c9a55c;letter-spacing:.06em;margin-bottom:3rem}
+.code{font-family:'Playfair Display',serif;font-size:clamp(5rem,12vw,9rem);color:#c9a55c;line-height:1;font-style:italic;font-weight:400;margin-bottom:.5rem}
+.divider{width:60px;height:1px;background:#c9a55c;margin:1.5rem auto;opacity:.5}
+h1{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:400;margin-bottom:1rem}
+p{color:#cdc5b8;line-height:1.7;font-weight:300;margin-bottom:2.5rem;font-size:.95rem}
+.btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn{padding:.85rem 2rem;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;transition:all .3s;font-weight:400}
+.btn-primary{background:#c9a55c;color:#0b0908}
+.btn-primary:hover{background:#e0ca8e}
+.btn-ghost{border:1px solid #c9a55c;color:#c9a55c}
+.btn-ghost:hover{background:#c9a55c;color:#0b0908}
+</style>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+</head>
+<body>
+<%- include('partials/header', {cartLive: false}) %>
+<main style="min-height:72vh;display:flex;align-items:center;justify-content:center;padding:7.5rem 1.5rem 4rem">
+<div class="wrap">
+  <div class="logo">SCENT WORLD CANADA</div>
+  <div class="code">404</div>
+  <div class="divider"></div>
+  <h1>Page Not Found</h1>
+  <p>The page you're looking for seems to have drifted away like a fleeting scent. Let's get you back to something delightful.</p>
+  <div class="btns">
+    <a href="/" class="btn btn-primary">Return Home</a>
+    <a href="/#contact" class="btn btn-ghost">Contact Us</a>
+  </div>
+</div>
+</main>
+<%- include('partials/footer') %>
+</body>
+</html>

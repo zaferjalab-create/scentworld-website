@@ -10,6 +10,10 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// EJS server-side templating (shared header/footer partials)
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 // Security headers middleware
 app.use((req, res, next) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
@@ -717,13 +721,45 @@ async function sendConfirmation(toEmail, firstName, type, details) {
 }
 
 // ═══════════════════════════════════════
+// SERVER-RENDERED PAGES (shared EJS partials)
+// ═══════════════════════════════════════
+const PAGE_VIEWS = {
+  '/': 'index',
+  '/about': 'about',
+  '/blog': 'blog',
+  '/product': 'product',
+  '/success': 'success',
+  '/terms': 'terms',
+  '/privacy-policy': 'privacy-policy',
+  '/shipping': 'shipping',
+  '/refund': 'refund',
+  '/industries': 'industries/index',
+  '/industries/hotels': 'industries/hotels',
+  '/industries/spas': 'industries/spas',
+  '/industries/restaurants': 'industries/restaurants',
+  '/blog/hotel-lobby-signature-scent': 'blog/hotel-lobby-signature-scent',
+  '/blog/science-of-scent-marketing': 'blog/science-of-scent-marketing',
+  '/blog/choosing-spa-diffuser': 'blog/choosing-spa-diffuser',
+  '/blog/restaurant-scent-marketing': 'blog/restaurant-scent-marketing',
+  '/blog/office-workplace-fragrance': 'blog/office-workplace-fragrance',
+  '/blog/custom-signature-scent-guide': 'blog/custom-signature-scent-guide',
+};
+for (const [route, view] of Object.entries(PAGE_VIEWS)) {
+  const paths = route === '/' ? ['/'] : [route, route + '.html'];
+  if (route === '/industries') paths.push('/industries/');
+  if (route === '/blog') paths.push('/blog/');
+  app.get(paths, (req, res) => res.render(view));
+}
+app.get('/index.html', (req, res) => res.redirect(301, '/'));
+
+// ═══════════════════════════════════════
 // 404 HANDLER (must be last)
 // ═══════════════════════════════════════
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ success: false, error: 'Not found' });
   }
-  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+  res.status(404).render('404');
 });
 
 // ═══════════════════════════════════════

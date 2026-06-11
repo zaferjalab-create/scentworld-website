@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+  gtag('event', 'purchase_completed', {currency: 'CAD'});
+  // Meta Pixel Purchase event fires after verifying with the server (see script below)
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Confirmed — Scent World Canada</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--gold:#c9a55c;--gold-l:#e0ca8e;--cream:#f5f0e6;--cream2:#cdc5b8;--txt:#958e85;--txt2:#635d55;--bdr:rgba(201,165,92,.1);--ok:#27ae60;--err:#c0392b}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--cream);padding:2rem}
+.box{width:100%;max-width:560px;background:var(--bg2);border:1px solid var(--bdr);padding:3rem 2.5rem;text-align:center}
+.icon{width:64px;height:64px;border:1px solid rgba(39,174,96,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.8rem;background:rgba(39,174,96,.08)}
+.icon svg{width:28px;height:28px;stroke:var(--ok);fill:none;stroke-width:2}
+.icon.spin svg{display:none}
+.icon.spin::after{content:'';width:28px;height:28px;border:2px solid var(--bdr);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.eyebrow{font-size:.52rem;letter-spacing:.55em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:.6rem}
+.eyebrow::before,.eyebrow::after{content:'';height:1px;width:20px;background:var(--gold-l);opacity:.4}
+h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:500;margin-bottom:.8rem}
+h1 em{font-style:italic;color:var(--gold)}
+.sub{font-size:.88rem;font-weight:200;line-height:1.8;color:var(--txt);margin-bottom:2rem}
+.order-num{display:inline-block;padding:.6rem 1.6rem;background:var(--bg3);border:1px solid var(--bdr);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:2rem}
+.divider{height:1px;background:var(--bdr);margin:1.5rem 0}
+.items-list{text-align:left;margin-bottom:1.5rem}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.8rem}
+.item-row:last-child{border-bottom:none}
+.item-name{color:var(--cream2);font-weight:300}
+.item-qty{color:var(--txt2);font-size:.72rem;margin-left:.4rem}
+.item-price{color:var(--gold);font-family:'Playfair Display',serif}
+.total-row{display:flex;justify-content:space-between;font-size:.85rem;color:var(--cream);font-weight:400;padding:.5rem 0}
+.total-row span:last-child{color:var(--gold);font-family:'Playfair Display',serif;font-size:1rem}
+.notice{background:var(--bg3);border:1px solid var(--bdr);padding:1rem 1.2rem;font-size:.75rem;font-weight:200;color:var(--txt);line-height:1.7;margin-bottom:2rem;text-align:left}
+.notice strong{color:var(--cream2);font-weight:400}
+.btn-home{display:inline-block;padding:.9rem 2.5rem;background:var(--gold);color:var(--bg);font-family:'Outfit',sans-serif;font-size:.65rem;letter-spacing:.28em;text-transform:uppercase;font-weight:500;text-decoration:none;transition:background .3s}
+.btn-home:hover{background:var(--gold-l)}
+.err-box{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.2);padding:1rem;font-size:.8rem;color:var(--err);margin-bottom:1.5rem;display:none}
+</style>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+</head>
+<body>
+<%- include('partials/header', {cartLive: false}) %>
+<main style="min-height:72vh;display:flex;align-items:center;justify-content:center;padding:7.5rem 1.5rem 4rem">
+<div class="box" id="box">
+  <div style="margin-bottom:1.5rem"><img src="/images/logo-white.webp" alt="Scent World Canada" style="height:36px;width:auto;opacity:.9"></div>
+  <div class="icon spin" id="icon"></div>
+  <div class="eyebrow">Scent World Canada</div>
+  <h1 id="title">Verifying <em>Payment</em></h1>
+  <p class="sub" id="subtitle">Please wait while we confirm your order&hellip;</p>
+</div>
+
+<script>
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const sessionId = params.get('session_id');
+  const icon = document.getElementById('icon');
+  const title = document.getElementById('title');
+  const subtitle = document.getElementById('subtitle');
+  const box = document.getElementById('box');
+
+  if (!sessionId) {
+    icon.className = 'icon';
+    icon.innerHTML = `<svg viewBox="0 0 24 24" style="stroke:var(--err)"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+    title.innerHTML = 'Something <em>Went Wrong</em>';
+    subtitle.textContent = 'No session found. Please contact us at support@scentworld.ca';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/checkout/verify?session_id=${encodeURIComponent(sessionId)}`);
+    const data = await res.json();
+
+    if (!data.success || !data.paid) {
+      icon.className = 'icon';
+      icon.innerHTML = `<svg viewBox="0 0 24 24" style="stroke:var(--err)"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+      title.innerHTML = 'Payment <em>Not Completed</em>';
+      subtitle.innerHTML = 'Your payment was not confirmed. No charge was made. <a href="/" style="color:var(--gold)">Return to shop</a>';
+      return;
+    }
+
+    // Success - fire Purchase events
+    if (typeof fbq === 'function') {
+      fbq('track', 'Purchase', {
+        currency: 'CAD',
+        value: data.total || 0,
+        content_type: 'product'
+      });
+    }
+    if (typeof gtag === 'function') {
+      gtag('event', 'purchase', {
+        transaction_id: data.order_number,
+        currency: 'CAD',
+        value: data.total || 0
+      });
+    }
+    icon.className = 'icon';
+    icon.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
+    title.innerHTML = 'Order <em>Confirmed</em>';
+
+    box.innerHTML = `
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="eyebrow">Scent World Canada</div>
+      <h1>Order <em>Confirmed</em></h1>
+      <p class="sub">Thank you for your order! A confirmation email will be sent to you shortly.</p>
+      <div class="order-num">Order ${data.order_number}</div>
+      <div class="divider"></div>
+      <div class="notice">
+        <strong>What happens next?</strong><br>
+        We'll process your order within 1&ndash;2 business days. You'll receive a shipping confirmation with tracking information by email. For any questions, contact us at <strong>support@scentworld.ca</strong>
+      </div>
+      <a href="/" class="btn-home">Continue Shopping</a>
+    `;
+  } catch (err) {
+    icon.className = 'icon';
+    icon.innerHTML = `<svg viewBox="0 0 24 24" style="stroke:var(--err)"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+    title.innerHTML = 'Something <em>Went Wrong</em>';
+    subtitle.innerHTML = 'Could not verify your payment. Please email <strong>support@scentworld.ca</strong> with your order details.';
+  }
+})();
+</script>
+</main>
+<%- include('partials/footer') %>
+</body>
+</html>

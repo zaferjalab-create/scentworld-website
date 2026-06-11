@@ -1,0 +1,72 @@
+<style>
+.google-badge{display:inline-flex;align-items:center;gap:.65rem;margin-top:1.4rem;padding:.65rem 1rem .65rem .85rem;background:var(--bg3);border:1px solid var(--bdr);border-radius:30px;text-decoration:none;transition:all .35s;max-width:fit-content}
+.google-badge:hover{border-color:var(--gold);background:var(--bg4);transform:translateY(-2px);box-shadow:0 6px 20px rgba(201,165,92,.12)}
+.google-badge svg{flex-shrink:0}
+.gb-txt{display:flex;flex-direction:column;line-height:1.1}
+.gb-lbl{font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;color:var(--txt);font-weight:300}
+.gb-txt strong{font-size:.82rem;color:var(--cream);font-weight:500;letter-spacing:.02em;font-family:var(--bf)}
+.gb-txt strong{background:linear-gradient(90deg,var(--cream) 0,var(--cream) 55%,#f5b400 55%,#f5b400 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.google-badge:hover .gb-txt strong{background:linear-gradient(90deg,var(--gold) 0,var(--gold) 55%,#f5b400 55%,#f5b400 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--bdr)}
+.ft{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+.ftb p{font-size:.78rem;font-weight:200;line-height:1.7;color:var(--txt);max-width:280px;margin-top:.8rem}
+.ftc h4{font-family:var(--df);font-size:.95rem;font-weight:500;margin-bottom:1.2rem}
+.ftc ul{list-style:none}
+.ftc ul li{margin-bottom:.6rem}
+.ftc ul li a{font-size:.75rem;font-weight:200;color:var(--txt);text-decoration:none;transition:color .3s}
+.ftc ul li a:hover{color:var(--gold)}
+.fb{display:flex;justify-content:space-between;align-items:center;padding-top:1.5rem;border-top:1px solid var(--bdr);flex-wrap:wrap;gap:.8rem}
+.fb p{font-size:.65rem;color:var(--txt2);font-weight:200}
+.fb a{color:var(--gold);text-decoration:none}
+.fs{display:flex;gap:1rem}
+.fs a{width:32px;height:32px;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--txt);text-decoration:none;font-size:.65rem;transition:all .3s}
+.fs a:hover{border-color:var(--gold);color:var(--gold)}
+@media(max-width:1024px){.ft{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){.ft{grid-template-columns:1fr;gap:1.5rem}}
+</style>
+<footer>
+  <div class="ft">
+    <div class="ftb">
+      <span style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--gold);letter-spacing:.06em">Scent World Canada</span>
+      <p>Premium scent marketing and fragrance solutions. Transforming spaces across Canada with the art of atmosphere.</p>
+      <a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener" class="google-badge" aria-label="Leave a review on Google">
+        <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        <div class="gb-txt">
+          <span class="gb-lbl">Review us on</span>
+          <strong>Google ★★★★★</strong>
+        </div>
+      </a>
+    </div>
+    <div class="ftc"><h4>Products</h4><ul><li><a href="/#products">Scent Diffusers</a></li><li><a href="/#products">Fragrance Oils</a></li><li><a href="/#products">Home &amp; Car</a></li><li><a href="/#products">Aerosol Systems</a></li></ul></div>
+    <div class="ftc"><h4>Industries</h4><ul><li><a href="/industries/hotels.html">For Hotels</a></li><li><a href="/industries/spas.html">For Spas</a></li><li><a href="/industries/restaurants.html">For Restaurants</a></li><li><a href="/industries/">All Industries</a></li></ul></div>
+    <div class="ftc"><h4>Company</h4><ul><li><a href="/about.html">About Us</a></li><li><a href="/blog.html">Journal</a></li><li><a href="/#contact">Contact</a></li><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms.html">Terms of Service</a></li><li><a href="/shipping.html">Shipping Policy</a></li><li><a href="/refund.html">Refund Policy</a></li></ul></div>
+  </div>
+  <div class="fb">
+    <p>&copy; <%= new Date().getFullYear() %> Scent World Canada. All rights reserved.</p>
+    <div class="fs"><a href="https://www.instagram.com/scentworld.ca" target="_blank" rel="noopener" aria-label="Instagram">IG</a><a href="https://www.facebook.com/profile.php?id=61589484729828" target="_blank" rel="noopener" aria-label="Facebook">FB</a><a href="https://www.linkedin.com/company/scentworld-ca" target="_blank" rel="noopener" aria-label="LinkedIn">IN</a></div>
+  </div>
+</footer>
+<script>
+(function() {
+  document.addEventListener('error', function(e) {
+    var t = e.target;
+    if (t && t.tagName === 'IMG' && !t.dataset.fbk) { t.dataset.fbk = '1'; t.src = '/images/placeholder.svg'; }
+  }, true);
+  window.addEventListener('load', function() {
+    document.querySelectorAll('img').forEach(function(im) {
+      if (im.complete && im.naturalWidth === 0 && !im.dataset.fbk) { im.dataset.fbk = '1'; im.src = '/images/placeholder.svg'; }
+    });
+  });
+  try {
+    var c = JSON.parse(localStorage.getItem('sw_cart') || '[]');
+    var n = c.reduce(function(s, i) { return s + (i.qty || 1); }, 0);
+    var b = document.getElementById('cartBadge');
+    if (b) { b.textContent = n; if (n > 0) b.classList.add('show'); }
+  } catch (e) {}
+})();
+</script>
