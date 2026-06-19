@@ -868,7 +868,9 @@ function getTestimonials() {
 }
 
 // Homepage — products rendered server-side
+// ?cart=open is legacy; redirect to / so Google doesn't flag it as a redirect page
 app.get('/', (req, res) => {
+  if (req.query.cart === 'open') return res.redirect(301, '/');
   res.render('index', { products: withRatings(getActiveProducts()), testimonials: getTestimonials() });
 });
 

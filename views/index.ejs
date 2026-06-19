@@ -1158,8 +1158,8 @@ function swEtaRange() {
 }
 
 document.getElementById('cartBtn').addEventListener('click', openCart);
-// Auto-open cart if arriving from product page via ?cart=open
-if (new URLSearchParams(window.location.search).get('cart') === 'open') {
+// Auto-open cart if arriving from another page via #cart hash
+if (window.location.hash === '#cart') {
   setTimeout(openCart, 100);
   if (window.history.replaceState) {
     window.history.replaceState({}, '', window.location.pathname);
