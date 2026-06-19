@@ -80,7 +80,28 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
 <meta property="og:url" content="<%= pageUrl %>">
 <meta property="og:image" content="<%= imgAbs(images[0]) %>">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json"><%- JSON.stringify({
+<script type="application/ld+json"><%
+const offerExtra = {
+  hasMerchantReturnPolicy: {
+    '@type': 'MerchantReturnPolicy',
+    applicableCountry: 'CA',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: 30,
+    returnMethod: 'https://schema.org/ReturnByMail',
+    returnFees: 'https://schema.org/FreeReturn'
+  },
+  shippingDetails: {
+    '@type': 'OfferShippingDetails',
+    shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'CAD' },
+    shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'CA' },
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime',
+      handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 2, unitCode: 'DAY' },
+      transitTime:  { '@type': 'QuantitativeValue', minValue: 3, maxValue: 8, unitCode: 'DAY' }
+    }
+  }
+};
+%><%- JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: product.name,
@@ -90,10 +111,12 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
   brand: { '@type': 'Brand', name: 'Scent World Canada' },
   offers: sizes ? {
     '@type': 'AggregateOffer', lowPrice: minPrice.toFixed(2), highPrice: maxPrice.toFixed(2),
-    priceCurrency: 'CAD', offerCount: sizes.length, availability: 'https://schema.org/InStock', url: pageUrl
+    priceCurrency: 'CAD', offerCount: sizes.length, availability: 'https://schema.org/InStock', url: pageUrl,
+    ...offerExtra
   } : {
     '@type': 'Offer', price: (product.price || 0).toFixed(2), priceCurrency: 'CAD',
-    availability: 'https://schema.org/InStock', url: pageUrl
+    availability: 'https://schema.org/InStock', url: pageUrl,
+    ...offerExtra
   },
   ...(reviews.length ? {
     aggregateRating: { '@type': 'AggregateRating', ratingValue: ratingAvg, reviewCount: reviews.length },
