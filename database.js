@@ -277,4 +277,21 @@ try {
   console.error('❌ reviews/testimonials migration error:', e.message);
 }
 
+// Seed aerosol products if missing (added locally but not on Railway)
+try {
+  const ins = db.prepare(`
+    INSERT OR IGNORE INTO products
+      (name, slug, category, short_desc, price, coverage, image_url, active, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+  `);
+  ins.run('Gold Aerosol Spray', 'aerosol-gold', 'aerosol',
+    'Premium aerosol spray with fine mist and long-lasting Gold fragrance.',
+    30, 'Room spray', '/images/products/SW500.jpg', 15);
+  ins.run('Aerosol Dispenser Unit', 'aerosol-dispenser', 'aerosol',
+    'Programmable automatic aerosol dispenser for consistent ambient scenting.',
+    89, 'Single room', '/images/products/C002.jpg', 16);
+} catch (e) {
+  console.error('❌ aerosol seed error:', e.message);
+}
+
 module.exports = db;
