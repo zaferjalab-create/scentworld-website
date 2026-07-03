@@ -1,14 +1,32 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 const db = require('./database');
 const bcrypt = require('bcryptjs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// A real session secret should be set in the environment. The old hardcoded
+// fallback let anyone who read the public repo forge an admin session cookie.
+// If none is set we generate a random one at startup rather than crashing —
+// the site stays up, but sessions reset on every restart until SESSION_SECRET
+// is configured, so admins get logged out on redeploy. Set it in Railway.
+let SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+  console.warn('⚠ SESSION_SECRET not set — using a random ephemeral secret. ' +
+    'Set SESSION_SECRET in the environment so admin sessions survive restarts.');
+  SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+}
+
+// Railway terminates TLS at its proxy; trust it so secure cookies work and
+// rate limiting sees the real client IP (via X-Forwarded-For) instead of the proxy.
+app.set('trust proxy', 1);
 
 // EJS server-side templating (shared header/footer partials)
 app.set('view engine', 'ejs');
@@ -29,18 +47,46 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'scent-world-secret-change-me',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+  cookie: {
+    secure: 'auto',         // HTTPS-only when the connection is HTTPS (works via trust proxy)
+    httpOnly: true,         // not readable by JS (blocks cookie theft via XSS)
+    sameSite: 'lax',        // mitigates CSRF on admin mutations
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
+
+// ═══════════════════════════════════════
+// RATE LIMITERS
+// ═══════════════════════════════════════
+
+// Strict limiter for the admin login — blunts credential brute-forcing.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,                  // 10 attempts per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // only failed attempts count
+  message: { success: false, error: 'Too many login attempts. Please try again in 15 minutes.' },
+});
+
+// Looser limiter for public form submissions — stops spam floods.
+const formLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 30,                  // 30 submissions per IP per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many submissions. Please try again later.' },
+});
 
 // ═══════════════════════════════════════
 // PUBLIC API ROUTES
 // ═══════════════════════════════════════
 
 // Contact / Quote Form
-app.post('/api/contact', (req, res) => {
+app.post('/api/contact', formLimiter, (req, res) => {
   try {
     const { first_name, last_name, email, phone, customer_type, product_interest, message } = req.body;
     if (!first_name || !last_name || !email) {
@@ -58,7 +104,7 @@ app.post('/api/contact', (req, res) => {
 });
 
 // Booking / Consultation
-app.post('/api/booking', (req, res) => {
+app.post('/api/booking', formLimiter, (req, res) => {
   try {
     const { first_name, last_name, email, phone, business_name, preferred_date, preferred_time, topic, message } = req.body;
     if (!first_name || !last_name || !email || !preferred_date || !preferred_time) {
@@ -76,7 +122,7 @@ app.post('/api/booking', (req, res) => {
 });
 
 // Newsletter Subscribe
-app.post('/api/subscribe', (req, res) => {
+app.post('/api/subscribe', formLimiter, (req, res) => {
   try {
     const { email, first_name } = req.body;
     if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
@@ -109,7 +155,7 @@ app.get('/api/products', (req, res) => {
 });
 
 // Submit a product review (held for admin approval)
-app.post('/api/reviews', (req, res) => {
+app.post('/api/reviews', formLimiter, (req, res) => {
   try {
     const { product_id, name, rating, text } = req.body;
     const pid = parseInt(product_id, 10);
@@ -271,7 +317,7 @@ function requireAdmin(req, res, next) {
   res.redirect('/admin/login.html');
 }
 
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', loginLimiter, (req, res) => {
   const { email, password } = req.body;
   const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(email);
   if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
