@@ -42,6 +42,38 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Stripe webhook ──
+// MUST be registered before express.json(): signature verification needs the
+// raw, unparsed request body. This is the authoritative order-creation path —
+// Stripe calls it server-to-server on checkout.session.completed, so an order
+// is recorded even if the customer closes the tab and never loads the success
+// page. Requires STRIPE_WEBHOOK_SECRET (from the Stripe dashboard endpoint).
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error('⚠ Stripe webhook received but STRIPE_WEBHOOK_SECRET is not set — ignoring.');
+    return res.status(500).send('Webhook not configured');
+  }
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], webhookSecret);
+  } catch (err) {
+    console.error('Stripe webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const orderNumber = recordOrderFromSession(event.data.object);
+      if (orderNumber) console.log(`✅ Order recorded via webhook: ${orderNumber}`);
+    }
+  } catch (err) {
+    console.error('Stripe webhook handler error:', err.message);
+    // 500 tells Stripe to retry later rather than dropping the order.
+    return res.status(500).send('Handler error');
+  }
+  res.json({ received: true });
+});
+
 // Middleware - larger limit for image uploads via base64
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
@@ -253,22 +285,24 @@ app.post('/api/checkout', async (req, res) => {
   }
 });
 
-app.get('/api/checkout/verify', async (req, res) => {
+// Records the order + line items and sends confirmation emails for a PAID
+// Stripe session. Idempotent and safe to call from BOTH the browser success
+// page and the Stripe webhook — the UNIQUE(stripe_session_id) constraint is the
+// gate, so an order (and its emails) is created exactly once even if both fire.
+// Returns the order_number, or null if the session isn't paid yet.
+function recordOrderFromSession(session) {
+  if (session.payment_status !== 'paid') return null;
+
+  const existing = db.prepare('SELECT order_number FROM orders WHERE stripe_session_id = ?').get(session.id);
+  if (existing) return existing.order_number;
+
+  const orderNumber = 'SW-' + Date.now().toString().slice(-8);
+  const shipping = session.shipping_details;
+  const name = shipping?.name || session.customer_details?.name || 'Customer';
+  const email = session.customer_details?.email || '';
+
+  let orderId;
   try {
-    const { session_id } = req.query;
-    if (!session_id) return res.status(400).json({ success: false, error: 'Missing session_id' });
-
-    const existing = db.prepare('SELECT * FROM orders WHERE stripe_session_id = ?').get(session_id);
-    if (existing) return res.json({ success: true, paid: true, order_number: existing.order_number });
-
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-    if (session.payment_status !== 'paid') return res.json({ success: true, paid: false });
-
-    const orderNumber = 'SW-' + Date.now().toString().slice(-8);
-    const shipping = session.shipping_details;
-    const name = shipping?.name || session.customer_details?.name || 'Customer';
-    const email = session.customer_details?.email || '';
-
     const result = db.prepare(`
       INSERT INTO orders (order_number, customer_name, customer_email, shipping_line1, shipping_city,
         shipping_province, shipping_postal, shipping_country, subtotal, total, stripe_session_id, payment_status, status)
@@ -279,29 +313,49 @@ app.get('/api/checkout/verify', async (req, res) => {
       shipping?.address?.state || null, shipping?.address?.postal_code || null,
       shipping?.address?.country || 'CA',
       session.amount_subtotal / 100, session.amount_total / 100,
-      session_id
+      session.id
     );
+    orderId = result.lastInsertRowid;
+  } catch (e) {
+    // A concurrent verify/webhook call already inserted this session — reuse it.
+    const row = db.prepare('SELECT order_number FROM orders WHERE stripe_session_id = ?').get(session.id);
+    if (row) return row.order_number;
+    throw e;
+  }
 
-    const orderId = result.lastInsertRowid;
-    if (session.metadata?.items) {
-      for (const item of JSON.parse(session.metadata.items)) {
-        const p = db.prepare('SELECT * FROM products WHERE id = ?').get(item.id);
-        if (!p) continue;
-        const unitPrice = item.p || p.price;
-        const itemName = item.s ? `${p.name} — ${item.s}` : p.name;
-        db.prepare(`
-          INSERT INTO order_items (order_id, product_id, product_name, product_category, quantity, unit_price, total_price)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(orderId, p.id, itemName, p.category, item.qty, unitPrice, unitPrice * item.qty);
-      }
+  if (session.metadata?.items) {
+    for (const item of JSON.parse(session.metadata.items)) {
+      const p = db.prepare('SELECT * FROM products WHERE id = ?').get(item.id);
+      if (!p) continue;
+      const unitPrice = item.p || p.price;
+      const itemName = item.s ? `${p.name} — ${item.s}` : p.name;
+      db.prepare(`
+        INSERT INTO order_items (order_id, product_id, product_name, product_category, quantity, unit_price, total_price)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(orderId, p.id, itemName, p.category, item.qty, unitPrice, unitPrice * item.qty);
     }
+  }
 
-    sendNotification('New Order', `Order ${orderNumber}\nCustomer: ${name} (${email})\nTotal: $${session.amount_total / 100} CAD`);
-    sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\nTotal: $${session.amount_total / 100} CAD\nEstimated delivery: ${deliveryEstimate()}\n\nWe'll process and ship your order within 1–2 business days, and you'll receive tracking by email.`);
+  sendNotification('New Order', `Order ${orderNumber}\nCustomer: ${name} (${email})\nTotal: $${session.amount_total / 100} CAD`);
+  sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\nTotal: $${session.amount_total / 100} CAD\nEstimated delivery: ${deliveryEstimate()}\n\nWe'll process and ship your order within 1–2 business days, and you'll receive tracking by email.`);
+  return orderNumber;
+}
+
+app.get('/api/checkout/verify', async (req, res) => {
+  try {
+    const { session_id } = req.query;
+    if (!session_id) return res.status(400).json({ success: false, error: 'Missing session_id' });
+
+    const existing = db.prepare('SELECT order_number FROM orders WHERE stripe_session_id = ?').get(session_id);
+    if (existing) return res.json({ success: true, paid: true, order_number: existing.order_number });
+
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const orderNumber = recordOrderFromSession(session);
+    if (!orderNumber) return res.json({ success: true, paid: false });
     res.json({ success: true, paid: true, order_number: orderNumber });
   } catch (err) {
     console.error('Verify error:', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Could not verify payment. Please contact us if you were charged.' });
   }
 });
 
