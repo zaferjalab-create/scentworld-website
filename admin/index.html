@@ -377,7 +377,7 @@ async function loadDashboard(){
   document.getElementById('stat-products').textContent=d.stats.products.total;
   const r2=await fetch(API+'/contacts');const d2=await r2.json();
   const tbody=document.getElementById('dash-contacts');
-  tbody.innerHTML=d2.contacts.slice(0,5).map(c=>`<tr><td>${c.first_name} ${c.last_name}</td><td>${c.email}</td><td>${c.customer_type||'-'}</td><td><span class="badge badge-${c.status==='new'?'new':'done'}">${c.status}</span></td><td>${new Date(c.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No requests yet</td></tr>';
+  tbody.innerHTML=d2.contacts.slice(0,5).map(c=>`<tr><td>${esc(c.first_name)} ${esc(c.last_name)}</td><td>${esc(c.email)}</td><td>${esc(c.customer_type||'-')}</td><td><span class="badge badge-${c.status==='new'?'new':'done'}">${esc(c.status)}</span></td><td>${new Date(c.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No requests yet</td></tr>';
 }
 
 // Orders
@@ -385,11 +385,11 @@ async function loadOrders(){
   const r=await fetch(API+'/orders');const d=await r.json();
   const statuses={confirmed:'done',shipped:'active',delivered:'active',cancelled:'pending',refunded:'pending'};
   document.getElementById('tbl-orders').innerHTML=d.orders.map(o=>`<tr>
-    <td style="font-family:var(--df);color:var(--gold)">${o.order_number}</td>
-    <td>${o.customer_name||'-'}</td>
-    <td>${o.customer_email||'-'}</td>
+    <td style="font-family:var(--df);color:var(--gold)">${esc(o.order_number)}</td>
+    <td>${esc(o.customer_name||'-')}</td>
+    <td>${esc(o.customer_email||'-')}</td>
     <td style="color:var(--gold)">$${Number(o.total).toFixed(2)} CAD</td>
-    <td><span class="badge badge-${statuses[o.status]||'new'}">${o.status}</span></td>
+    <td><span class="badge badge-${statuses[o.status]||'new'}">${esc(o.status)}</span></td>
     <td>${new Date(o.created_at).toLocaleDateString()}</td>
     <td>
       <select class="btn btn-sm btn-outline" onchange="updateOrder(${o.id},this.value);this.blur()" style="cursor:pointer;padding:.3rem .5rem">
@@ -413,9 +413,9 @@ async function updateOrder(id,status){
 async function loadContacts(){
   const r=await fetch(API+'/contacts');const d=await r.json();
   document.getElementById('tbl-contacts').innerHTML=d.contacts.map(c=>`<tr>
-    <td>${c.first_name} ${c.last_name}</td><td>${c.email}</td><td>${c.phone||'-'}</td>
-    <td>${c.customer_type||'-'}</td><td>${c.product_interest||'-'}</td>
-    <td><span class="badge badge-${c.status==='new'?'new':'done'}">${c.status}</span></td>
+    <td>${esc(c.first_name)} ${esc(c.last_name)}</td><td>${esc(c.email)}</td><td>${esc(c.phone||'-')}</td>
+    <td>${esc(c.customer_type||'-')}</td><td>${esc(c.product_interest||'-')}</td>
+    <td><span class="badge badge-${c.status==='new'?'new':'done'}">${esc(c.status)}</span></td>
     <td>${new Date(c.created_at).toLocaleDateString()}</td>
     <td><button class="btn btn-sm btn-ok" onclick="updateContact(${c.id},'reviewed')">✓</button> <button class="btn btn-sm btn-err" onclick="deleteContact(${c.id})">✕</button></td>
   </tr>`).join('')||'<tr><td colspan="8" class="empty">No quote requests yet</td></tr>';
@@ -427,10 +427,10 @@ async function deleteContact(id){if(!confirm('Delete this request?'))return;awai
 async function loadBookings(){
   const r=await fetch(API+'/bookings');const d=await r.json();
   document.getElementById('tbl-bookings').innerHTML=d.bookings.map(b=>`<tr>
-    <td>${b.first_name} ${b.last_name}<br><small style="color:var(--txt2)">${b.business_name||''}</small></td>
-    <td>${b.email}<br><small style="color:var(--txt2)">${b.phone||''}</small></td>
-    <td>${b.preferred_date}</td><td>${b.preferred_time}</td><td>${b.topic||'-'}</td>
-    <td><span class="badge badge-${b.status==='pending'?'pending':b.status==='confirmed'?'done':'new'}">${b.status}</span></td>
+    <td>${esc(b.first_name)} ${esc(b.last_name)}<br><small style="color:var(--txt2)">${esc(b.business_name||'')}</small></td>
+    <td>${esc(b.email)}<br><small style="color:var(--txt2)">${esc(b.phone||'')}</small></td>
+    <td>${esc(b.preferred_date)}</td><td>${esc(b.preferred_time)}</td><td>${esc(b.topic||'-')}</td>
+    <td><span class="badge badge-${b.status==='pending'?'pending':b.status==='confirmed'?'done':'new'}">${esc(b.status)}</span></td>
     <td><button class="btn btn-sm btn-ok" onclick="updateBooking(${b.id},'confirmed')">Confirm</button> <button class="btn btn-sm btn-err" onclick="deleteBooking(${b.id})">✕</button></td>
   </tr>`).join('')||'<tr><td colspan="7" class="empty">No bookings yet</td></tr>';
 }
@@ -441,8 +441,8 @@ async function deleteBooking(id){if(!confirm('Delete this booking?'))return;awai
 async function loadSubscribers(){
   const r=await fetch(API+'/subscribers');const d=await r.json();
   document.getElementById('tbl-subs').innerHTML=d.subscribers.map(s=>`<tr>
-    <td>${s.email}</td><td>${s.first_name||'-'}</td>
-    <td><span class="badge badge-active">${s.status}</span></td>
+    <td>${esc(s.email)}</td><td>${esc(s.first_name||'-')}</td>
+    <td><span class="badge badge-active">${esc(s.status)}</span></td>
     <td>${new Date(s.created_at).toLocaleDateString()}</td>
     <td><button class="btn btn-sm btn-err" onclick="deleteSub(${s.id})">✕</button></td>
   </tr>`).join('')||'<tr><td colspan="5" class="empty">No subscribers yet</td></tr>';
@@ -454,8 +454,8 @@ async function loadProducts(){
   const r=await fetch(API+'/products');const d=await r.json();
   const cats={diffusers:'Diffusers',oils:'Fragrance Oils',home_car:'Home & Car',aerosol:'Aerosol'};
   document.getElementById('tbl-products').innerHTML=d.products.map(p=>`<tr>
-    <td>${p.name}${p.featured?' ⭐':''}</td><td>${cats[p.category]||p.category}</td>
-    <td>${p.price?'$'+p.price.toFixed(2):'-'}</td><td>${p.coverage||'-'}</td>
+    <td>${esc(p.name)}${p.featured?' ⭐':''}</td><td>${esc(cats[p.category]||p.category)}</td>
+    <td>${p.price?'$'+p.price.toFixed(2):'-'}</td><td>${esc(p.coverage||'-')}</td>
     <td><span class="badge badge-${p.active?'active':'pending'}">${p.active?'Active':'Draft'}</span></td>
     <td><button class="btn btn-sm btn-outline" onclick="editProduct(${p.id})">Edit</button> <button class="btn btn-sm btn-err" onclick="deleteProduct(${p.id})">✕</button></td>
   </tr>`).join('');
