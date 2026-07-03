@@ -570,7 +570,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
 <% if (product.full_desc) { %>
 <div class="pd-section">
   <h2>About this <em>product</em></h2>
-  <div class="pd-longdesc"><%- product.full_desc.split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin-bottom:1rem">${p}</p>`).join('') %></div>
+  <div class="pd-longdesc"><%- product.full_desc.split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin-bottom:1rem">${p.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`).join('') %></div>
 </div>
 <% } %>
 

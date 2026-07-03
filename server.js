@@ -32,6 +32,26 @@ app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Content-Security-Policy. The site relies on inline scripts/styles (GTM,
+// Facebook Pixel, Stripe.js, inline handlers) so 'unsafe-inline' is required
+// until those are externalized — but the high-value directives below still
+// harden the page: no plugins (object-src none), can't be reframed
+// (frame-ancestors self), forms can only post to us (form-action self), and
+// <base> can't be hijacked (base-uri self). Third-party origins are whitelisted.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net https://js.stripe.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: https:",
+  "connect-src 'self' https://www.google-analytics.com https://connect.facebook.net https://api.stripe.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+  "frame-src https://js.stripe.com https://hooks.stripe.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+
 // Security headers middleware
 app.use((req, res, next) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
@@ -39,6 +59,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', CSP);
   next();
 });
 
@@ -74,9 +95,16 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req,
   res.json({ received: true });
 });
 
-// Middleware - larger limit for image uploads via base64
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+// Body parsers. The global limit is deliberately small so ordinary endpoints
+// can't be fed huge payloads. Only the base64 image-upload route needs a large
+// body, and it sets its own 20mb express.json() inline, so we skip the global
+// parser for that path.
+const jsonSmall = express.json({ limit: '100kb' });
+app.use((req, res, next) => {
+  if (req.path === '/api/admin/upload-image') return next();
+  jsonSmall(req, res, next);
+});
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: SESSION_SECRET,

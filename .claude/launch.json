@@ -6,7 +6,7 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["server.js"],
       "port": 3210,
-      "env": { "PORT": "3210" }
+      "env": { "PORT": "3210", "STRIPE_SECRET_KEY": "sk_test_dummy" }
     }
   ]
 }
