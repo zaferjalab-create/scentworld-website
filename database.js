@@ -290,6 +290,11 @@ try {
   ins.run('Aerosol Dispenser Unit', 'aerosol-dispenser', 'aerosol',
     'Programmable automatic aerosol dispenser for consistent ambient scenting.',
     89, 'Single room', '/images/products/C002.jpg', 16);
+  // Live DB has these rows but deactivated, so INSERT OR IGNORE is a no-op —
+  // re-activate so they appear on /shop and in sitemap.xml for indexing.
+  const react = db.prepare("UPDATE products SET active = 1 WHERE slug IN ('aerosol-gold', 'aerosol-dispenser') AND active = 0");
+  const r = react.run();
+  if (r.changes > 0) console.log(`✅ Re-activated ${r.changes} aerosol products`);
 } catch (e) {
   console.error('❌ aerosol seed error:', e.message);
 }
