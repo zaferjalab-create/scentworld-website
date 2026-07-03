@@ -177,6 +177,11 @@ tr:hover td{background:rgba(255,255,255,.01)}
         <label>Current Password</label><input type="password" id="pw-current"><label>New Password</label><input type="password" id="pw-new">
         <div style="margin-top:1.5rem"><button class="btn btn-outline" onclick="changePassword()">Update Password</button></div>
       </div>
+      <div class="card" style="padding:2rem;margin-top:1rem">
+        <h3 style="font-family:var(--df);margin-bottom:.5rem">Database Backup</h3>
+        <p style="color:var(--txt2);font-size:.85rem;margin-bottom:1.2rem">Download a full copy of your database (orders, customers, products, subscribers). A backup is also emailed automatically every night.</p>
+        <a class="btn btn-gold" href="/api/admin/backup">Download Backup</a>
+      </div>
     </div>
   </div>
 </div>

@@ -4,6 +4,7 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const db = require('./database');
 const bcrypt = require('bcryptjs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -844,6 +845,74 @@ app.post('/api/admin/change-password', requireAdmin, (req, res) => {
   res.json({ success: true, message: 'Password updated' });
 });
 
+// ═══════════════════════════════════════
+// DATABASE BACKUP
+// ═══════════════════════════════════════
+
+// Take a consistent single-file snapshot of the DB, even while it's in use
+// (VACUUM INTO checkpoints the WAL and writes a clean copy). Returns the temp
+// path; caller is responsible for deleting it.
+function snapshotDb() {
+  const tmp = path.join(os.tmpdir(), `scentworld-backup-${Date.now()}.db`);
+  db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`);
+  return tmp;
+}
+
+// On-demand: admin downloads a fresh backup file.
+app.get('/api/admin/backup', requireAdmin, (req, res) => {
+  let tmp;
+  try {
+    tmp = snapshotDb();
+    const name = `scentworld-backup-${new Date().toISOString().slice(0, 10)}.db`;
+    res.download(tmp, name, () => { if (tmp) fs.unlink(tmp, () => {}); });
+  } catch (err) {
+    console.error('Backup download error:', err.message);
+    if (tmp) fs.unlink(tmp, () => {});
+    res.status(500).json({ success: false, error: 'Backup failed' });
+  }
+});
+
+// Automatic: email the DB snapshot as an attachment via Resend. Off-box copy of
+// order/customer data to the owner's own inbox. No-op if RESEND_API_KEY is unset.
+async function emailBackup() {
+  if (!process.env.RESEND_API_KEY) return;
+  let tmp;
+  try {
+    tmp = snapshotDb();
+    const content = fs.readFileSync(tmp).toString('base64');
+    const date = new Date().toISOString().slice(0, 10);
+    const to = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Scent World Canada <hello@scentworld.ca>',
+        to: [to],
+        subject: `[Scent World] Database backup ${date}`,
+        text: `Automated database backup attached (scentworld-${date}.db). Keep this email; it is your off-site copy of orders, customers and subscribers.`,
+        attachments: [{ filename: `scentworld-${date}.db`, content }],
+      }),
+    });
+    if (r.ok) console.log(`✅ DB backup emailed to ${to}`);
+    else console.error('DB backup email failed:', JSON.stringify(await r.json()));
+  } catch (err) {
+    console.error('emailBackup error:', err.message);
+  } finally {
+    if (tmp) fs.unlink(tmp, () => {});
+  }
+}
+
+// Schedule the first backup for the next 03:00 America/Halifax, then every 24h.
+function scheduleDailyBackup() {
+  const now = new Date();
+  // 03:00 Halifax ≈ 06:00 or 07:00 UTC depending on DST; 06:00 UTC is close enough.
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 6, 0, 0));
+  if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+  const delay = next - now;
+  setTimeout(() => { emailBackup(); setInterval(emailBackup, 24 * 60 * 60 * 1000); }, delay);
+  console.log(`🗄  Daily DB backup scheduled — first run in ${Math.round(delay / 3600000)}h`);
+}
+
 // Serve admin panel (protected)
 app.get('/admin/', requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
@@ -1136,4 +1205,5 @@ app.listen(PORT, () => {
   console.log(`   Website:  http://localhost:${PORT}`);
   console.log(`   Admin:    http://localhost:${PORT}/admin/login.html`);
   console.log(`   API:      http://localhost:${PORT}/api/products\n`);
+  scheduleDailyBackup();
 });
