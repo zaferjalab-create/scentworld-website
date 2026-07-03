@@ -233,13 +233,21 @@ function deliveryEstimate() {
 app.post('/api/checkout', async (req, res) => {
   try {
     const { items } = req.body;
-    if (!items || !items.length) return res.status(400).json({ success: false, error: 'No items in cart' });
+    if (!Array.isArray(items) || !items.length) return res.status(400).json({ success: false, error: 'No items in cart' });
+    if (items.length > 50) return res.status(400).json({ success: false, error: 'Too many items in cart' });
 
     const lineItems = [];
     const metaItems = [];
     for (const item of items) {
       const product = db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.id);
       if (!product) return res.status(400).json({ success: false, error: `Product ${item.id} not available` });
+      // Clamp quantity to a sane positive integer so a tampered cart can't send
+      // Stripe a huge, zero, negative, or non-numeric quantity.
+      const qty = Math.floor(Number(item.quantity));
+      if (!Number.isFinite(qty) || qty < 1 || qty > 100) {
+        return res.status(400).json({ success: false, error: 'Invalid quantity' });
+      }
+      item.quantity = qty;
       // Resolve price from size variant if provided, otherwise use product default
       let unitPrice = product.price;
       let productName = product.name;
@@ -281,7 +289,7 @@ app.post('/api/checkout', async (req, res) => {
     res.json({ success: true, url: session.url });
   } catch (err) {
     console.error('Checkout error:', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Could not start checkout. Please try again.' });
   }
 });
 
@@ -450,9 +458,19 @@ app.delete('/api/admin/subscribers/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// Quote every CSV field and neutralize formula-injection: a value beginning
+// with = + - @ (or tab/CR) is prefixed with ' so Excel/Sheets treats it as text,
+// not a live formula. Embedded quotes are doubled per RFC 4180.
+function csvCell(v) {
+  let s = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
 app.get('/api/admin/subscribers/export', requireAdmin, (req, res) => {
   const subscribers = db.prepare('SELECT email, first_name, status, created_at FROM subscribers ORDER BY created_at DESC').all();
-  const csv = 'Email,Name,Status,Date\n' + subscribers.map(s => `${s.email},${s.first_name || ''},${s.status},${s.created_at}`).join('\n');
+  const csv = 'Email,Name,Status,Date\n' + subscribers.map(s =>
+    [s.email, s.first_name || '', s.status, s.created_at].map(csvCell).join(',')
+  ).join('\n');
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename=subscribers.csv');
   res.send(csv);
@@ -561,11 +579,12 @@ app.post('/api/admin/upload-image', requireAdmin, express.json({ limit: '20mb' }
     const { filename, mimetype, data } = req.body;
     if (!filename || !data) return res.status(400).json({ success: false, error: 'Missing filename or data' });
 
-    // Validate extension
-    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.gif'];
+    // Validate extension. SVG is intentionally excluded — SVGs can carry inline
+    // <script> and would be served from our own origin, enabling stored XSS.
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
     const ext = path.extname(filename).toLowerCase();
     if (!allowedExts.includes(ext)) {
-      return res.status(400).json({ success: false, error: 'Only JPG, PNG, WEBP, SVG, GIF allowed' });
+      return res.status(400).json({ success: false, error: 'Only JPG, PNG, WEBP, GIF allowed' });
     }
 
     // Sanitize filename (remove path traversal, special chars)
@@ -844,15 +863,22 @@ async function resendEmail(to, subject, html, text) {
   }
 }
 
+// Escape user-supplied text before embedding it in HTML emails, so a visitor's
+// form input can't inject markup/links into the notifications we read.
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 // Admin notification
 async function sendNotification(subject, text) {
   const toEmail = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
-  await resendEmail(toEmail, `[Scent World] ${subject}`, `<pre style="font-family:sans-serif">${text}</pre>`, text);
+  await resendEmail(toEmail, `[Scent World] ${subject}`, `<pre style="font-family:sans-serif">${escapeHtml(text)}</pre>`, text);
 }
 
 // Customer confirmation email
 async function sendConfirmation(toEmail, firstName, type, details) {
-  const detailsHtml = String(details || '').replace(/\n/g, '<br>');
+  const detailsHtml = escapeHtml(details).replace(/\n/g, '<br>');
   const templates = {
     quote: {
       subject: 'We received your quote request — Scent World Canada',
