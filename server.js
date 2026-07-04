@@ -304,7 +304,13 @@ app.post('/api/checkout', async (req, res) => {
       metaItems.push({ id: item.id, qty: item.quantity, s: item.size || undefined, p: unitPrice });
     }
 
-    const base = process.env.BASE_URL || 'http://localhost:3000';
+    // Success/cancel URLs must point at the site the customer is actually on.
+    // The old fallback was http://localhost:3000 — if BASE_URL wasn't set in
+    // the environment, Stripe sent customers to localhost after paying or
+    // cancelling (dead page, and a different origin so the cart looked wiped).
+    // Deriving from the request works in dev and prod with no env var needed
+    // (trust proxy is set, so req.protocol is correct behind Railway).
+    const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
