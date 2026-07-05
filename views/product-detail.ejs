@@ -203,6 +203,15 @@ nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display
 .pd-price-row{display:flex;align-items:baseline;gap:.8rem;margin-bottom:.4rem}
 .pd-price{font-family:var(--df);font-size:2.4rem;color:var(--gold);font-weight:500;line-height:1}
 .pd-price-cur{font-size:.85rem;color:var(--cream2);letter-spacing:.1em;font-weight:300}
+/* Sticky mobile add-to-cart bar */
+.pd-sticky-bar{position:fixed;left:0;right:0;bottom:0;z-index:120;display:flex;align-items:center;gap:1rem;padding:.7rem 4vw calc(.7rem + env(safe-area-inset-bottom));background:rgba(11,9,8,.97);backdrop-filter:blur(10px);border-top:1px solid var(--bdr);transform:translateY(110%);transition:transform .3s ease;pointer-events:none}
+.pd-sticky-bar.show{transform:translateY(0);pointer-events:auto}
+.pd-sticky-info{display:flex;flex-direction:column;min-width:0;flex:1}
+.pd-sticky-name{font-size:.72rem;color:var(--cream2);font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd-sticky-price{font-family:var(--df);font-size:1.25rem;color:var(--gold);font-weight:500;line-height:1.1}
+.pd-sticky-atc{flex-shrink:0;background:var(--gold);color:var(--bg);border:none;padding:.85rem 1.6rem;font-family:var(--bf);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:2px;transition:background .3s}
+.pd-sticky-atc:active{background:var(--gold2,#e0ca8e)}
+@media(min-width:769px){.pd-sticky-bar{display:none}}
 .pd-shipping{font-size:.78rem;color:var(--cream2);font-weight:300;margin-bottom:.4rem}
 .pd-eta{font-size:.74rem;color:var(--txt);font-weight:300;margin-bottom:1.8rem}
 .pd-eta strong{color:var(--gold);font-weight:500}
@@ -440,7 +449,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
       <span class="pd-rating-txt"><%= ratingAvg.toFixed(1) %> · <a href="#reviews"><%= reviews.length %> review<%= reviews.length === 1 ? '' : 's' %></a></span>
       <% } else { %>
       <span class="pd-stars">★★★★★</span>
-      <span class="pd-rating-txt">5.0 · <a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">18+ verified reviews</a></span>
+      <span class="pd-rating-txt"><a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">Review us on Google</a></span>
       <% } %>
     </div>
 
@@ -636,8 +645,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
   </div>
   <% } else { %>
   <div class="reviews-empty">
-    <p>Be the first to review this product — or read what clients say about us on Google, rated 5.0 from 18+ reviews.</p>
-    <a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">Read Google Reviews</a>
+    <p>No reviews yet for this product — be the first to leave one below. You can also read what clients say about us on Google.</p>
+    <a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">Review us on Google</a>
   </div>
   <% } %>
 
@@ -674,6 +683,15 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
   </div>
 </div>
 <% } %>
+
+<!-- STICKY MOBILE ADD-TO-CART (appears once the main buy button scrolls off screen) -->
+<div class="pd-sticky-bar" id="pdStickyBar" aria-hidden="true">
+  <div class="pd-sticky-info">
+    <span class="pd-sticky-name"><%= product.name %></span>
+    <span class="pd-sticky-price" id="stickyPrice">$<%= startPrice.toFixed(2) %></span>
+  </div>
+  <button class="pd-sticky-atc" onclick="addToCart()">Add to Cart</button>
+</div>
 
 <!-- CART DRAWER -->
 <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
@@ -747,7 +765,25 @@ function selectSize(btn) {
   document.querySelectorAll('#sizeButtons .pd-size-btn').forEach(b => b.classList.toggle('active', b === btn));
   document.getElementById('priceDisplay').textContent = '$' + selectedSize.price.toFixed(2);
   document.getElementById('sizeLabel').textContent = selectedSize.label;
+  const sp = document.getElementById('stickyPrice');
+  if (sp) sp.textContent = '$' + selectedSize.price.toFixed(2);
 }
+
+// Sticky mobile add-to-cart: reveal it only once the main buy button is off-screen.
+(function () {
+  const bar = document.getElementById('pdStickyBar');
+  const anchor = document.querySelector('.pd-purchase');
+  if (!bar || !anchor) return;
+  function update() {
+    const r = anchor.getBoundingClientRect();
+    const visible = r.bottom > 0 && r.top < window.innerHeight;
+    bar.classList.toggle('show', !visible);
+    bar.setAttribute('aria-hidden', visible ? 'true' : 'false');
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
+})();
 function selectThumb(el) {
   document.getElementById('mainImg').src = el.dataset.src;
   document.querySelectorAll('.pd-thumb').forEach(t => t.classList.toggle('active', t === el));
