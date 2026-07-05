@@ -443,15 +443,12 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
   <div class="pd-info">
     <span class="pd-cat"><%= catLabel %></span>
     <h1 class="pd-name"><%= product.name %></h1>
+    <% if (reviews.length) { %>
     <div class="pd-rating" id="reviews-summary">
-      <% if (reviews.length) { %>
       <span class="pd-stars"><%= '★'.repeat(Math.round(ratingAvg)) + '☆'.repeat(5 - Math.round(ratingAvg)) %></span>
       <span class="pd-rating-txt"><%= ratingAvg.toFixed(1) %> · <a href="#reviews"><%= reviews.length %> review<%= reviews.length === 1 ? '' : 's' %></a></span>
-      <% } else { %>
-      <span class="pd-stars">★★★★★</span>
-      <span class="pd-rating-txt"><a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">Review us on Google</a></span>
-      <% } %>
     </div>
+    <% } %>
 
     <div class="pd-price-row">
       <span class="pd-price" id="priceDisplay">$<%= startPrice.toFixed(2) %></span>
@@ -645,8 +642,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
   </div>
   <% } else { %>
   <div class="reviews-empty">
-    <p>No reviews yet for this product — be the first to leave one below. You can also read what clients say about us on Google.</p>
-    <a href="https://g.page/r/CVI4mIs6HAAREBM/review" target="_blank" rel="noopener">Review us on Google</a>
+    <p>No reviews yet for this product — be the first to leave one below.</p>
   </div>
   <% } %>
 
