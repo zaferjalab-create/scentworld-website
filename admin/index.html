@@ -509,7 +509,7 @@ let pickerMode='main'; // 'main' or 'gallery'
 function updateImagePreview(){
   const url=document.getElementById('prod-image_url').value;
   const preview=document.getElementById('prod-image-preview');
-  if(url){preview.innerHTML=`<img src="${url}" style="max-width:140px;max-height:140px;border:1px solid #c9a55c;border-radius:4px;object-fit:cover">`;}
+  if(url){const img=document.createElement('img');img.src=url;img.style.cssText='max-width:140px;max-height:140px;border:1px solid #c9a55c;border-radius:4px;object-fit:cover';preview.innerHTML='';preview.appendChild(img);}
   else{preview.innerHTML='';}
 }
 

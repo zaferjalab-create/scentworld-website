@@ -414,15 +414,24 @@ function requireAdmin(req, res, next) {
   res.redirect('/admin/login.html');
 }
 
-app.post('/api/admin/login', loginLimiter, (req, res) => {
+app.post('/api/admin/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(email);
-  if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
+  // bcrypt.compare with a string guard (undefined password would throw).
+  if (!admin || !(await bcrypt.compare(String(password || ''), admin.password_hash))) {
     return res.status(401).json({ success: false, error: 'Invalid credentials' });
   }
-  req.session.adminId = admin.id;
-  req.session.adminEmail = admin.email;
-  res.json({ success: true, redirect: '/admin/' });
+  // Regenerate the session on login so a pre-set session id can't be reused
+  // to ride the authenticated session (session fixation).
+  req.session.regenerate(err => {
+    if (err) {
+      console.error('Session regenerate error:', err.message);
+      return res.status(500).json({ success: false, error: 'Login failed. Please try again.' });
+    }
+    req.session.adminId = admin.id;
+    req.session.adminEmail = admin.email;
+    res.json({ success: true, redirect: '/admin/' });
+  });
 });
 
 app.post('/api/admin/logout', (req, res) => {
@@ -536,7 +545,7 @@ app.get('/catalog.csv', (req, res) => {
         const id = v.label ? `${p.slug}-${v.label}` : p.slug;
         const title = (v.label ? `${p.name} (${v.label})` : p.name).replace(/"/g, '""');
         const desc = (p.short_desc || p.name).replace(/"/g, '""').replace(/\n/g, ' ');
-        const link = `${BASE}/product.html?slug=${p.slug}`;
+        const link = `${BASE}/products/${p.slug}`;
         const img = p.image_url ? (p.image_url.startsWith('http') ? p.image_url : `${BASE}${p.image_url}`) : `${BASE}/images/logo.png`;
         const price = `${(v.price || p.price || 0).toFixed(2)} CAD`;
         const category = p.category === 'oils' ? 'Health & Beauty > Personal Care > Fragrance' :
@@ -647,6 +656,12 @@ app.post('/api/admin/upload-image', requireAdmin, express.json({ limit: '20mb' }
       return res.status(400).json({ success: false, error: 'File too large (max 10MB)' });
     }
 
+    // Verify the bytes actually are an image (don't trust the extension). Blocks
+    // a renamed script/HTML polyglot from being stored under an image name.
+    if (!looksLikeImage(buffer)) {
+      return res.status(400).json({ success: false, error: 'File does not look like a valid image' });
+    }
+
     // Write file
     fs.writeFileSync(path.join(dir, finalName), buffer);
 
@@ -658,9 +673,20 @@ app.post('/api/admin/upload-image', requireAdmin, express.json({ limit: '20mb' }
     });
   } catch (err) {
     console.error('Upload error:', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Upload failed' });
   }
 });
+
+// Magic-number sniff for the image formats we accept (JPEG, PNG, GIF, WEBP).
+function looksLikeImage(b) {
+  if (!b || b.length < 12) return false;
+  if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return true;                       // JPEG
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return true;       // PNG
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return true;                        // GIF
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+      b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return true;     // WEBP (RIFF….WEBP)
+  return false;
+}
 
 // Delete a product image
 app.delete('/api/admin/product-images/:filename', requireAdmin, (req, res) => {
@@ -672,7 +698,8 @@ app.delete('/api/admin/product-images/:filename', requireAdmin, (req, res) => {
     fs.unlinkSync(filePath);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('Delete image error:', err.message);
+    res.status(500).json({ success: false, error: 'Could not delete image' });
   }
 });
 
@@ -681,13 +708,15 @@ app.get('/api/admin/product-images', requireAdmin, (req, res) => {
   try {
     const dir = path.join(__dirname, 'public', 'images', 'products');
     if (!fs.existsSync(dir)) return res.json({ success: true, images: [] });
+    // SVG intentionally excluded here too — we no longer accept SVG uploads.
     const files = fs.readdirSync(dir)
-      .filter(f => /\.(jpe?g|png|webp|svg)$/i.test(f))
+      .filter(f => /\.(jpe?g|png|webp|gif)$/i.test(f))
       .sort()
       .map(f => ({ name: f, url: `/images/products/${f}` }));
     res.json({ success: true, images: files });
   } catch (err) {
-    res.json({ success: false, error: err.message });
+    console.error('List images error:', err.message);
+    res.json({ success: false, error: 'Could not list images' });
   }
 });
 
@@ -840,15 +869,25 @@ app.delete('/api/admin/testimonials/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/admin/change-password', requireAdmin, (req, res) => {
+app.post('/api/admin/change-password', requireAdmin, async (req, res) => {
   const { current_password, new_password } = req.body;
+  if (typeof new_password !== 'string' || new_password.length < 8) {
+    return res.status(400).json({ success: false, error: 'New password must be at least 8 characters' });
+  }
   const admin = db.prepare('SELECT * FROM admins WHERE id = ?').get(req.session.adminId);
-  if (!bcrypt.compareSync(current_password, admin.password_hash)) {
+  if (!admin || !(await bcrypt.compare(String(current_password || ''), admin.password_hash))) {
     return res.status(400).json({ success: false, error: 'Current password is incorrect' });
   }
-  const hash = bcrypt.hashSync(new_password, 10);
+  const hash = await bcrypt.hash(new_password, 10);
   db.prepare('UPDATE admins SET password_hash = ? WHERE id = ?').run(hash, admin.id);
-  res.json({ success: true, message: 'Password updated' });
+  // Regenerate the session after a credential change so any other copy of the
+  // old session id is invalidated; keep this browser logged in.
+  const adminId = admin.id, adminEmail = admin.email;
+  req.session.regenerate(err => {
+    if (err) console.error('Session regenerate error:', err.message);
+    else { req.session.adminId = adminId; req.session.adminEmail = adminEmail; }
+    res.json({ success: true, message: 'Password updated' });
+  });
 });
 
 // ═══════════════════════════════════════
@@ -878,6 +917,22 @@ app.get('/api/admin/backup', requireAdmin, (req, res) => {
   }
 });
 
+// Encrypt a backup buffer with AES-256-GCM when BACKUP_PASSPHRASE is set, so the
+// customer PII in the emailed attachment isn't readable if the inbox is breached.
+// Output layout: salt(16) | iv(12) | authTag(16) | ciphertext. Decrypt with the
+// bundled decrypt-backup.js. If no passphrase is set, returns the file as-is so
+// backups never silently stop — set BACKUP_PASSPHRASE to enable encryption.
+function maybeEncryptBackup(buf) {
+  const pass = process.env.BACKUP_PASSPHRASE;
+  if (!pass) return { data: buf, ext: 'db', encrypted: false };
+  const salt = crypto.randomBytes(16);
+  const iv = crypto.randomBytes(12);
+  const key = crypto.scryptSync(pass, salt, 32);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const enc = Buffer.concat([cipher.update(buf), cipher.final()]);
+  return { data: Buffer.concat([salt, iv, cipher.getAuthTag(), enc]), ext: 'db.enc', encrypted: true };
+}
+
 // Automatic: email the DB snapshot as an attachment via Resend. Off-box copy of
 // order/customer data to the owner's own inbox. No-op if RESEND_API_KEY is unset.
 async function emailBackup() {
@@ -885,9 +940,13 @@ async function emailBackup() {
   let tmp;
   try {
     tmp = snapshotDb();
-    const content = fs.readFileSync(tmp).toString('base64');
+    const { data, ext, encrypted } = maybeEncryptBackup(fs.readFileSync(tmp));
+    const content = data.toString('base64');
     const date = new Date().toISOString().slice(0, 10);
     const to = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+    const encNote = encrypted
+      ? ` This file is encrypted (AES-256-GCM); decrypt it with: node decrypt-backup.js scentworld-${date}.${ext} (requires BACKUP_PASSPHRASE).`
+      : ' TIP: set BACKUP_PASSPHRASE in the environment to encrypt future backups.';
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -895,8 +954,8 @@ async function emailBackup() {
         from: 'Scent World Canada <hello@scentworld.ca>',
         to: [to],
         subject: `[Scent World] Database backup ${date}`,
-        text: `Automated database backup attached (scentworld-${date}.db). Keep this email; it is your off-site copy of orders, customers and subscribers.`,
-        attachments: [{ filename: `scentworld-${date}.db`, content }],
+        text: `Automated database backup attached (scentworld-${date}.${ext}). Keep this email; it is your off-site copy of orders, customers and subscribers.${encNote}`,
+        attachments: [{ filename: `scentworld-${date}.${ext}`, content }],
       }),
     });
     if (r.ok) console.log(`✅ DB backup emailed to ${to}`);
