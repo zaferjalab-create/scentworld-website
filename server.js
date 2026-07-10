@@ -25,6 +25,20 @@ if (!SESSION_SECRET) {
   SESSION_SECRET = crypto.randomBytes(32).toString('hex');
 }
 
+// The admin panel + login page live under a configurable, secret path segment
+// so they aren't sitting at the obvious /admin/ for bots to find. Set ADMIN_PATH
+// to a random string in the environment (NOT in this public repo). Falls back to
+// 'admin' if unset. Only URL-safe characters are allowed.
+let ADMIN_PATH = process.env.ADMIN_PATH || 'admin';
+if (!/^[a-zA-Z0-9_-]+$/.test(ADMIN_PATH)) {
+  console.warn(`⚠ ADMIN_PATH "${ADMIN_PATH}" has invalid characters — falling back to 'admin'.`);
+  ADMIN_PATH = 'admin';
+}
+if (ADMIN_PATH === 'admin') {
+  console.warn('⚠ ADMIN_PATH not set — admin panel is at the default /admin/. Set ADMIN_PATH to a secret string to hide it.');
+}
+const ADMIN_BASE = '/' + ADMIN_PATH;
+
 // Railway terminates TLS at its proxy; trust it so secure cookies work and
 // rate limiting sees the real client IP (via X-Forwarded-For) instead of the proxy.
 app.set('trust proxy', 1);
@@ -411,7 +425,7 @@ function requireAdmin(req, res, next) {
   if (req.headers.accept && req.headers.accept.includes('application/json')) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
-  res.redirect('/admin/login.html');
+  res.redirect(ADMIN_BASE + '/login.html');
 }
 
 app.post('/api/admin/login', loginLimiter, async (req, res) => {
@@ -430,7 +444,7 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     }
     req.session.adminId = admin.id;
     req.session.adminEmail = admin.email;
-    res.json({ success: true, redirect: '/admin/' });
+    res.json({ success: true, redirect: ADMIN_BASE + '/' });
   });
 });
 
@@ -978,16 +992,18 @@ function scheduleDailyBackup() {
   console.log(`🗄  Daily DB backup scheduled — first run in ${Math.round(delay / 3600000)}h`);
 }
 
-// Serve admin panel (protected)
-app.get('/admin/', requireAdmin, (req, res) => {
+// Serve admin panel (protected) — mounted under the secret ADMIN_BASE path.
+app.get(ADMIN_BASE + '/', requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
 });
-app.get('/admin/index.html', requireAdmin, (req, res) => {
+app.get(ADMIN_BASE + '/index.html', requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
 });
 
-// Serve admin login (public)
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
+// Serve admin login + static assets under the secret path (login page itself is
+// public, but only reachable if you know ADMIN_PATH). The old /admin/ path is not
+// mounted, so it 404s like any unknown URL.
+app.use(ADMIN_BASE, express.static(path.join(__dirname, 'admin')));
 
 // ═══════════════════════════════════════
 // EMAIL NOTIFICATIONS (optional)

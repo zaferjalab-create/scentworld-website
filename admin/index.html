@@ -279,7 +279,7 @@ const API = '/api/admin';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 // Auth check
-fetch(API+'/check').then(r=>{if(!r.ok)window.location.href='/admin/login.html'});
+fetch(API+'/check').then(r=>{if(!r.ok)window.location.href='login.html'});
 
 // Navigation
 document.querySelectorAll('.nav-item[data-page]').forEach(item=>{
@@ -761,7 +761,7 @@ async function changePassword(){
   if(d.success){document.getElementById('pw-current').value='';document.getElementById('pw-new').value='';}
 }
 
-async function logout(){await fetch(API+'/logout',{method:'POST'});window.location.href='/admin/login.html';}
+async function logout(){await fetch(API+'/logout',{method:'POST'});window.location.href='login.html';}
 
 // Init
 loadDashboard();
