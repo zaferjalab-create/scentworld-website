@@ -1203,6 +1203,15 @@ function shopLocals(products) {
   const sales = getSalesCounts();
   return withRatings(products).map(p => ({ ...p, _bucket: coverageBucket(p), _sold: sales[p.id] || 0 }));
 }
+// Curated homepage grid: show every non-oil product plus a taste of the oils
+// (the full 56-oil catalog lives on /shop) so the homepage stays a highlights
+// reel, not an endless scroll.
+function homepageProducts() {
+  const all = getActiveProducts();
+  const oils = all.filter(p => p.category === 'oils').slice(0, 8);
+  const oilIds = new Set(oils.map(p => p.id));
+  return all.filter(p => p.category !== 'oils' || oilIds.has(p.id));
+}
 function getTestimonials() {
   try {
     return db.prepare('SELECT * FROM testimonials WHERE active = 1 ORDER BY sort_order, id').all();
@@ -1213,7 +1222,7 @@ function getTestimonials() {
 // ?cart=open is legacy; redirect to / so Google doesn't flag it as a redirect page
 app.get('/', (req, res) => {
   if (req.query.cart === 'open') return res.redirect(301, '/');
-  res.render('index', { products: withRatings(getActiveProducts()), testimonials: getTestimonials() });
+  res.render('index', { products: withRatings(homepageProducts()), testimonials: getTestimonials() });
 });
 
 // Clean product detail URLs: /products/:slug (SSR)

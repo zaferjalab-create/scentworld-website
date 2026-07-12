@@ -361,6 +361,12 @@ try {
     updSizes.run(OIL_SIZES, slug);
   }
   if (added > 0) console.log(`✅ Seeded ${added} fragrance oils`);
+
+  // Trademark-safe naming: recognizable brand/house names become "Inspired by …".
+  // Guarded so it applies once and doesn't clobber later admin renames.
+  const INSPIRED = { chanel: 'Inspired by Chanel', 'al-haramain': 'Inspired by Al Haramain', kalemat: 'Inspired by Kalemat' };
+  const rn = db.prepare("UPDATE products SET name = ? WHERE slug = ? AND name NOT LIKE 'Inspired by%'");
+  for (const [slug, name] of Object.entries(INSPIRED)) rn.run(name, slug);
 } catch (e) {
   console.error('❌ oil catalog seed error:', e.message);
 }
