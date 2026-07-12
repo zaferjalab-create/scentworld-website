@@ -1,0 +1,180 @@
+<%
+const BEST_FOR = {
+  small: 'Home offices · Boutiques · Personal rooms',
+  large: 'Cafés · Salons · Retail floors',
+  commercial: 'Hotel lobbies · Gyms · Restaurants',
+  hvac: 'Whole buildings · Large venues (HVAC)',
+};
+const SIZE_LABEL = {
+  small: 'Up to 500 sq ft', large: '500–3,000 sq ft',
+  commercial: '3,000–5,000 sq ft', hvac: '5,000+ sq ft',
+};
+%><!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+  gtag('config', 'AW-16607372924');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Diffusers | Scent World Canada</title>
+<meta name="description" content="Compare Scent World's nano diffusers side by side — coverage, best-fit space, and price — to find the right system for your space.">
+<link rel="canonical" href="https://www.scentworld.ca/compare">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--bg4:#211e1a;
+  --gold:#c9a55c;--gold-l:#e0ca8e;--gold-d:#9a7d3e;
+  --cream:#f5f0e6;--cream2:#cdc5b8;
+  --txt:#958e85;--txt2:#635d55;
+  --bdr:rgba(201,165,92,.1);--bdr2:rgba(255,255,255,0.06);
+  --df:'Playfair Display',serif;--bf:'Outfit',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--bf);background:var(--bg);color:var(--cream);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+.cmp-head{padding:8.5rem 4vw 1.5rem;max-width:1320px;margin:0 auto}
+.cmp-eyebrow{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
+.cmp-head h1{font-family:var(--df);font-size:clamp(1.9rem,4vw,3rem);font-weight:500;line-height:1.15}
+.cmp-sub{color:var(--txt);font-size:.85rem;font-weight:300;margin-top:.6rem;max-width:60ch}
+.cmp-wrap{max-width:1320px;margin:1.5rem auto 4rem;padding:0 4vw}
+.cmp-scroll{overflow-x:auto;border:1px solid var(--bdr);border-radius:4px}
+table.cmp{border-collapse:collapse;width:100%;min-width:720px;font-size:.86rem}
+.cmp th,.cmp td{text-align:left;padding:1rem 1.1rem;border-bottom:1px solid var(--bdr);vertical-align:top}
+.cmp thead th{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:500;
+  white-space:nowrap;background:var(--bg2);position:sticky;top:0}
+.cmp tbody tr:hover{background:var(--bg2)}
+.cmp tbody tr:last-child td{border-bottom:none}
+.cmp-prod{min-width:210px}
+.cmp-prod-inner{display:flex;align-items:center;gap:.9rem}
+.cmp-thumb{width:56px;height:56px;flex-shrink:0;background:var(--bg3);border:1px solid var(--bdr);border-radius:3px;overflow:hidden}
+.cmp-thumb img{width:100%;height:100%;object-fit:cover}
+.cmp-name{font-family:var(--df);font-size:1rem;color:var(--cream);font-weight:500;line-height:1.2}
+.cmp-name a{color:var(--cream)}
+.cmp-name a:hover{color:var(--gold)}
+.cmp-tier{display:inline-block;margin-top:.3rem;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);border:1px solid var(--bdr);padding:.15rem .5rem;border-radius:20px}
+.cmp-cov{font-family:var(--df);font-size:1.05rem;color:var(--cream);font-weight:500}
+.cmp-cov small{display:block;font-family:var(--bf);font-size:.66rem;color:var(--txt);font-weight:300;letter-spacing:.04em;margin-top:.15rem}
+.cmp-best{color:var(--cream2);font-weight:300;line-height:1.5;max-width:26ch}
+.cmp-note{color:var(--txt);font-weight:300;line-height:1.5;max-width:30ch}
+.cmp-price{font-family:var(--df);color:var(--gold);font-size:1.15rem;font-weight:500;white-space:nowrap}
+.cmp-actions{display:flex;flex-direction:column;gap:.5rem;min-width:130px}
+.cmp-btn{padding:.55rem .9rem;font-family:var(--bf);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;
+  text-align:center;cursor:pointer;transition:all .3s;white-space:nowrap;border-radius:2px}
+.cmp-btn.buy{background:var(--gold);color:var(--bg);border:1px solid var(--gold);font-weight:600}
+.cmp-btn.buy:hover{background:var(--gold-l);border-color:var(--gold-l)}
+.cmp-btn.view{background:transparent;color:var(--gold);border:1px solid var(--bdr)}
+.cmp-btn.view:hover{border-color:var(--gold)}
+.cmp-foot{max-width:1320px;margin:0 auto;padding:0 4vw;text-align:center}
+.cmp-foot a.quote{display:inline-block;margin-top:1.4rem;padding:.9rem 2.2rem;border:1px solid var(--gold);color:var(--gold);
+  font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;transition:all .3s}
+.cmp-foot a.quote:hover{background:var(--gold);color:var(--bg)}
+.cmp-foot p{color:var(--txt);font-size:.82rem;font-weight:300;margin-top:1rem}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg3);
+  border:1px solid var(--gold);color:var(--cream);padding:1rem 2rem;font-size:.85rem;opacity:0;
+  transition:all .4s cubic-bezier(.16,1,.3,1);z-index:9999;border-radius:2px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:600px){.cmp-head{padding-top:7rem}}
+</style>
+</head>
+<body>
+
+<%- include('partials/header', {cartLive: false}) %>
+
+<header class="cmp-head">
+  <p class="cmp-eyebrow">Compare</p>
+  <h1>Find your <em style="font-style:italic;color:var(--gold)">perfect diffuser</em></h1>
+  <p class="cmp-sub">Every Scent World diffuser uses the same cold-air nano technology — they differ mainly by how much space they cover. Match your square footage to the right unit.</p>
+</header>
+
+<div class="cmp-wrap">
+  <div class="cmp-scroll">
+    <table class="cmp">
+      <thead>
+        <tr>
+          <th>Diffuser</th>
+          <th>Coverage</th>
+          <th>Best for</th>
+          <th>Highlight</th>
+          <th>Price</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% products.forEach(p => {
+             const bucket = p._bucket || '';
+             const coverage = p.spec_coverage || p.coverage || '—';
+        %>
+        <tr>
+          <td class="cmp-prod">
+            <div class="cmp-prod-inner">
+              <div class="cmp-thumb"><img src="<%= p.image_url || '/images/placeholder.svg' %>" alt="<%= p.name %>" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'"></div>
+              <div>
+                <div class="cmp-name"><a href="/products/<%= p.slug %>"><%= p.name %></a></div>
+                <% if (SIZE_LABEL[bucket]) { %><span class="cmp-tier"><%= SIZE_LABEL[bucket] %></span><% } %>
+              </div>
+            </div>
+          </td>
+          <td><span class="cmp-cov"><%= coverage %></span></td>
+          <td class="cmp-best"><%= BEST_FOR[bucket] || 'Any space' %></td>
+          <td class="cmp-note"><%= p.short_desc || '' %></td>
+          <td><span class="cmp-price">$<%= (p.price || 0).toFixed(2) %></span></td>
+          <td>
+            <div class="cmp-actions">
+              <button class="cmp-btn buy" onclick='addToCart(<%- JSON.stringify({id: p.id, slug: p.slug, name: p.name, price: p.price, category: p.category, image_url: p.image_url}) %>, this)'>Add to Cart</button>
+              <a class="cmp-btn view" href="/products/<%= p.slug %>">Details</a>
+            </div>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cmp-foot">
+    <a class="quote" href="/#contact">Not sure? Get a free recommendation</a>
+    <p>Tell us your space and we'll suggest the ideal unit — complimentary 30-minute consultation.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<%- include('partials/footer') %>
+
+<script>
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem('sw_cart') || '[]'); } catch(e) {}
+function saveCart() {
+  localStorage.setItem('sw_cart', JSON.stringify(cart));
+  const n = cart.reduce((s, i) => s + (i.qty || 1), 0);
+  document.querySelectorAll('.cart-badge').forEach(b => { b.textContent = n; b.classList.toggle('show', n > 0); });
+}
+function addToCart(p, btn) {
+  const key = String(p.id);
+  const ex = cart.find(i => i.cartKey === key);
+  if (ex) ex.qty += 1;
+  else cart.push({ cartKey: key, id: p.id, slug: p.slug, name: p.name, price: p.price, category: p.category, size: null, image_url: p.image_url, qty: 1 });
+  saveCart();
+  if (typeof gtag === 'function') gtag('event', 'add_to_cart', { currency: 'CAD', value: p.price, items: [{ item_id: p.id, item_name: p.name, price: p.price, quantity: 1 }] });
+  if (btn) { const t = btn.textContent; btn.textContent = 'Added ✓'; setTimeout(() => btn.textContent = t, 1600); }
+  showToast(p.name + ' added to cart');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+saveCart();
+</script>
+</body>
+</html>

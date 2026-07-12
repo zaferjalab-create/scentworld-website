@@ -1148,8 +1148,10 @@ function coverageBucket(p) {
   if (/hvac/i.test(p.name) || /hvac/i.test(p.short_desc || '')) return 'hvac';
   const sq = parseCoverageSqft(p);
   if (sq == null) return '';
+  // Thresholds tuned so every space-size filter option actually returns
+  // products in the current catalog (300 / ~3,000 / 17,945 sq ft clusters).
   if (sq > 5000) return 'hvac';
-  if (sq > 1500) return 'commercial';
+  if (sq >= 3000) return 'commercial';
   if (sq >= 500) return 'large';
   return 'small';
 }
@@ -1207,6 +1209,13 @@ app.get(['/product', '/product.html'], (req, res) => {
 // /shop — all products with filters & sort
 app.get(['/shop', '/shop.html'], (req, res) => {
   res.render('shop', { products: shopLocals(getActiveProducts()), q: null });
+});
+
+// /compare — side-by-side diffuser comparison
+app.get('/compare', (req, res) => {
+  const diffusers = withRatings(getActiveProducts().filter(p => p.category === 'diffusers'))
+    .map(p => ({ ...p, _bucket: coverageBucket(p) }));
+  res.render('compare', { products: diffusers });
 });
 
 // /search — name + description search
