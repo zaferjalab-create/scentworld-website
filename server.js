@@ -326,10 +326,15 @@ app.post('/api/checkout', async (req, res) => {
     // (trust proxy is set, so req.protocol is correct behind Railway).
     const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      // Let Stripe show every method enabled on the account for the customer's
+      // device — card plus Apple Pay / Google Pay wallets on mobile. (Wallets
+      // require the domain to be registered in the Stripe dashboard, which
+      // Stripe Checkout does automatically for Checkout-hosted pages.)
+      automatic_payment_methods: { enabled: true },
       line_items: lineItems,
       mode: 'payment',
       shipping_address_collection: { allowed_countries: ['CA', 'US'] },
+      allow_promotion_codes: true,   // customers can enter promo/discount codes
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/#products`,
       metadata: { items: JSON.stringify(metaItems) },
