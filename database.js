@@ -381,4 +381,19 @@ try {
   console.error('❌ oil catalog seed error:', e.message);
 }
 
+// Fill real product descriptions for the oils we have write-ups for (from the
+// ScentWorld oil docs). Only fills oils that don't yet have a full_desc, so any
+// description edited later via the admin is preserved.
+try {
+  const oilContent = require('./oil-content.json');
+  const upd = db.prepare("UPDATE products SET short_desc = ?, full_desc = ? WHERE slug = ? AND category = 'oils' AND (full_desc IS NULL OR full_desc = '')");
+  let n = 0;
+  for (const [slug, c] of Object.entries(oilContent)) {
+    n += upd.run(c.short, c.full, slug).changes;
+  }
+  if (n > 0) console.log(`✅ Filled ${n} oil descriptions`);
+} catch (e) {
+  console.error('❌ oil descriptions error:', e.message);
+}
+
 module.exports = db;
