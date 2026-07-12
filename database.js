@@ -396,4 +396,33 @@ try {
   console.error('❌ oil descriptions error:', e.message);
 }
 
+// Fill diffuser device descriptions + real technical specs (from the ScentWorld
+// device docs) and the car-diffuser / gift-set photos. Descriptions/specs only
+// fill where empty; car photos replace old png/jpg images with the new webp.
+try {
+  const diff = require('./diffuser-content.json');
+  const setIfEmpty = (col, val, slug) => {
+    if (val == null) return;
+    db.prepare(`UPDATE products SET ${col} = ? WHERE slug = ? AND (${col} IS NULL OR ${col} = '')`).run(val, slug);
+  };
+  let n = 0;
+  for (const [slug, c] of Object.entries(diff)) {
+    if (c.full) {
+      n += db.prepare("UPDATE products SET short_desc = ?, full_desc = ? WHERE slug = ? AND (full_desc IS NULL OR full_desc = '')").run(c.short, c.full, slug).changes;
+    }
+    setIfEmpty('spec_coverage', c.spec_coverage, slug);
+    setIfEmpty('spec_oil_capacity', c.spec_oil_capacity, slug);
+    setIfEmpty('spec_noise', c.spec_noise, slug);
+    setIfEmpty('spec_power', c.spec_power, slug);
+    setIfEmpty('spec_dimensions', c.spec_dimensions, slug);
+    setIfEmpty('spec_weight', c.spec_weight, slug);
+    if (c.box) setIfEmpty('box_contents', JSON.stringify(c.box), slug);
+    if (c.image) db.prepare("UPDATE products SET image_url = ? WHERE slug = ? AND (image_url IS NULL OR image_url NOT LIKE '%.webp')").run(c.image, slug);
+    if (c.gallery) db.prepare("UPDATE products SET gallery_images = ? WHERE slug = ? AND (gallery_images IS NULL OR gallery_images = '' OR gallery_images = '[]')").run(JSON.stringify(c.gallery), slug);
+  }
+  if (n > 0) console.log(`✅ Filled ${n} diffuser descriptions`);
+} catch (e) {
+  console.error('❌ diffuser content error:', e.message);
+}
+
 module.exports = db;
