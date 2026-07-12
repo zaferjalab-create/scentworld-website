@@ -367,6 +367,16 @@ try {
   const INSPIRED = { chanel: 'Inspired by Chanel', 'al-haramain': 'Inspired by Al Haramain', kalemat: 'Inspired by Kalemat' };
   const rn = db.prepare("UPDATE products SET name = ? WHERE slug = ? AND name NOT LIKE 'Inspired by%'");
   for (const [slug, name] of Object.entries(INSPIRED)) rn.run(name, slug);
+
+  // Shared packaging photos for every oil: main = white-background bottle,
+  // gallery = the three sizes. Only touches oils still on the placeholder or an
+  // old SW-numbered image, so any custom image set later via the admin survives.
+  const OIL_MAIN = '/images/products/sw-oil-main.webp';
+  const OIL_TRIO = '/images/products/sw-oil-trio.webp';
+  db.prepare(`UPDATE products SET image_url = ? WHERE category = 'oils'
+    AND (image_url IS NULL OR image_url = '' OR image_url = '/images/placeholder.svg' OR image_url LIKE '/images/products/SW1%')`).run(OIL_MAIN);
+  db.prepare(`UPDATE products SET gallery_images = ? WHERE category = 'oils'
+    AND (gallery_images IS NULL OR gallery_images = '' OR gallery_images = '[]')`).run(JSON.stringify([OIL_TRIO]));
 } catch (e) {
   console.error('❌ oil catalog seed error:', e.message);
 }
