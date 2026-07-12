@@ -277,6 +277,18 @@ try {
   console.error('❌ reviews/testimonials migration error:', e.message);
 }
 
+// Migration: track whether a post-purchase review-request email has been sent
+// for an order, so the daily job never emails the same customer twice.
+try {
+  const cols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
+  if (!cols.includes('review_request_sent_at')) {
+    db.exec('ALTER TABLE orders ADD COLUMN review_request_sent_at DATETIME');
+    console.log('✅ Added orders.review_request_sent_at column');
+  }
+} catch (e) {
+  console.error('❌ review_request column migration error:', e.message);
+}
+
 // Seed aerosol products if missing (added locally but not on Railway)
 try {
   const ins = db.prepare(`
