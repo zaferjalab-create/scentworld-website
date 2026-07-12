@@ -46,5 +46,181 @@
   "lacco": {
     "short": "Refined signature scent — a citrus burst over floral and woody notes.",
     "full": "Fragrance family: Citrus / Woody. Best for boutiques, showrooms, offices and premium interiors.\nScentWorld Lacco Fragrance Oil is a captivating, luxurious creation designed for spaces that need a polished, branded scent direction.\nIt opens with a refreshing burst of citrus for a bright, energizing start, then reveals a heart of floral and woody notes.\nThis sophisticated formulation adds an elegant touch to any environment, leaving guests refreshed and invigorated — the perfect signature fragrance oil for a memorable, luxurious impression."
+  },
+  "sense": {
+    "short": "Clean and contemporary — soft musk balanced with airy freshness.",
+    "full": "Fragrance family: Fresh / Musky. Best for modern offices, retail spaces and reception areas.\nScentWorld Sense Fragrance Oil suits interiors that want a clean, modern scent that feels effortless and welcoming.\nIt balances soft white musk with an airy, transparent freshness for an understated, professional presence.\nA versatile choice where a light, uncomplicated ambient scent keeps a space feeling fresh all day."
+  },
+  "for-you": {
+    "short": "Warm and romantic — soft florals wrapped in sweet fruit.",
+    "full": "Fragrance family: Floral / Fruity. Best for boutiques, salons and gift shops.\nScentWorld For You Fragrance Oil is made for spaces that want a warm, inviting and affectionate scent character.\nIt blends soft petals with sweet, ripe fruit for a tender, feel-good aroma.\nA charming choice for interiors that want to feel personal, comforting and memorable."
+  },
+  "platinum": {
+    "short": "Crisp and refined — fresh spice over clean, polished musk.",
+    "full": "Fragrance family: Aromatic / Fresh. Best for executive offices, luxury retail and showrooms.\nScentWorld Platinum Fragrance Oil suits interiors that want a sharp, premium and confident scent identity.\nA crisp aromatic opening meets fresh spice and a clean musk base for a sleek, modern finish.\nA strong choice where a refined, understated sense of luxury sets the tone."
+  },
+  "gold": {
+    "short": "Warm and luxurious — a golden amber-woody glow.",
+    "full": "Fragrance family: Amber / Woody. Best for luxury hotels, lounges and premium retail.\nScentWorld Gold Fragrance Oil is built for spaces that want a rich, opulent and enveloping presence.\nWarm amber and smooth woods create a resinous, golden depth that feels indulgent without being heavy.\nA fitting choice for interiors that want to signal warmth, quality and quiet luxury."
+  },
+  "harmoney": {
+    "short": "Gentle and balanced — soft florals meeting warm musk.",
+    "full": "Fragrance family: Floral / Musky. Best for spas, wellness centres and quiet interiors.\nScentWorld Harmoney Fragrance Oil suits spaces that want a calm, well-rounded and soothing scent.\nSoft florals settle into a warm musk for a gentle, harmonious balance.\nA comforting choice where a relaxed, easy-going atmosphere matters most."
+  },
+  "chanel": {
+    "short": "Timeless and elegant — powdery aldehydes over refined florals.",
+    "full": "Fragrance family: Floral / Aldehydic. Best for luxury boutiques, hotels and refined retail.\nInspired by the iconic style of classic French perfumery, this oil brings a timeless, sophisticated floral to any space.\nSoft aldehydes and powdery blooms create an elegant, unmistakably luxurious signature.\nA refined choice for interiors that want understated glamour and lasting class."
+  },
+  "assala": {
+    "short": "Rich oriental floral — velvety rose wrapped in warm amber.",
+    "full": "Fragrance family: Floral / Oriental. Best for premium retail, majlis-style interiors and hotels.\nScentWorld Assala Fragrance Oil suits spaces that want a deep, opulent floral with Middle-Eastern warmth.\nVelvety rose is layered over warm amber and soft spice for a rich, luxurious character.\nA striking choice where a bold, elegant and memorable ambience is the goal."
+  },
+  "sensitive": {
+    "short": "Soft and skin-like — a clean, comforting musk.",
+    "full": "Fragrance family: Musky / Clean. Best for clinics, spas and wellness centres.\nScentWorld Sensitive Fragrance Oil is made for spaces that want a gentle, unobtrusive and calming scent.\nA soft, skin-like musk gives a clean, comforting freshness that never overwhelms.\nAn ideal choice for sensitive settings where subtle, reassuring cleanliness matters."
+  },
+  "passion": {
+    "short": "Vibrant and seductive — ripe red fruits and warm florals.",
+    "full": "Fragrance family: Fruity / Floral. Best for boutiques, lounges and retail.\nScentWorld Passion Fragrance Oil suits spaces that want an energetic, sensual and eye-catching scent.\nJuicy red fruits meet warm florals for a bold, romantic and lively character.\nA confident choice for interiors that want to feel vibrant and full of life."
+  },
+  "melano": {
+    "short": "Smooth and modern — warm woods with a subtle sweetness.",
+    "full": "Fragrance family: Woody / Sweet. Best for lounges, retail and hospitality.\nScentWorld Melano Fragrance Oil is built for spaces that want a contemporary, easy-to-wear scent identity.\nWarm woods carry a gentle sweetness for a smooth, refined and approachable character.\nA versatile choice where a modern, comfortable ambience is the aim."
+  },
+  "carpex": {
+    "short": "Crisp and versatile — clean citrus over a light woody base.",
+    "full": "Fragrance family: Aromatic / Fresh. Best for offices, gyms and commercial interiors.\nScentWorld Carpex Fragrance Oil suits busy spaces that want a clean, dependable everyday scent.\nBright citrus and fresh aromatics settle onto a light woody base for an uplifting, tidy feel.\nA practical choice where a fresh, professional atmosphere is needed throughout the day."
+  },
+  "adress": {
+    "short": "Confident and refined — a smooth, polished woody-aromatic.",
+    "full": "Fragrance family: Woody / Aromatic. Best for executive offices, showrooms and premium retail.\nScentWorld Adress Fragrance Oil is made for spaces that want a composed, masculine-leaning signature.\nSmooth woods and clean aromatics create a polished, self-assured character.\nA strong choice for interiors that want to feel established and quietly sophisticated."
+  },
+  "spark-honey": {
+    "short": "Sweet and vibrant — a bright honey-citrus glow.",
+    "full": "Fragrance family: Sweet / Gourmand. Best for cafés, bakeries and lively retail.\nScentWorld Spark Honey Fragrance Oil suits spaces that want a warm, cheerful and energizing scent.\nGolden honey meets bright citrus for a sweet, mouth-watering lift.\nA welcoming choice where a cosy yet uplifting atmosphere draws people in."
+  },
+  "latinya": {
+    "short": "Sweet and radiant — iris and praline over warm vanilla.",
+    "full": "Fragrance family: Floral / Gourmand. Best for boutiques, salons and retail.\nScentWorld Latinya Fragrance Oil is made for spaces that want a modern, feel-good gourmand floral.\nPowdery iris and sweet praline melt into warm vanilla for a radiant, comforting character.\nA charming choice where a soft, inviting and contemporary scent sets the mood."
+  },
+  "pearl": {
+    "short": "Luminous and soft — a powdery floral with pearly musk.",
+    "full": "Fragrance family: Floral / Musky. Best for spas, boutiques and wellness interiors.\nScentWorld Pearl Fragrance Oil suits spaces that want a delicate, elegant and refined scent.\nSoft florals shimmer over a powdery musk for a luminous, understated beauty.\nA graceful choice where a gentle, polished ambience is the goal."
+  },
+  "amber": {
+    "short": "Warm and resinous — sweet, enveloping amber with golden depth.",
+    "full": "Fragrance family: Amber / Oriental. Best for lounges, hotels and premium retail.\nScentWorld Amber Fragrance Oil is built for spaces that want a warm, cosy and luxurious presence.\nRich, resinous amber gives a sweet, enveloping glow with an oriental depth.\nA fitting choice for interiors that want to feel inviting, plush and refined."
+  },
+  "beauty": {
+    "short": "Glamorous and radiant — a feminine floral-fruity bouquet.",
+    "full": "Fragrance family: Floral / Fruity. Best for salons, boutiques and spas.\nScentWorld Beauty Fragrance Oil suits spaces that want a bright, flattering and elegant scent.\nRadiant florals meet soft fruit for a glamorous, feel-good character.\nA lovely choice where a polished, feminine atmosphere is the aim."
+  },
+  "huboss": {
+    "short": "Polished and crisp — fresh apple, warm spice and smooth cedar.",
+    "full": "Fragrance family: Fruity / Woody. Best for offices, retail and hospitality.\nScentWorld Huboss Fragrance Oil is made for spaces that want a sharp, confident everyday signature.\nCrisp apple and warm spice settle onto smooth cedar for a clean, masculine-leaning finish.\nA dependable choice where a professional, put-together atmosphere matters."
+  },
+  "classic-oud": {
+    "short": "Deep and traditional — smoky agarwood with warm amber and spice.",
+    "full": "Fragrance family: Woody / Oriental. Best for hotels, majlis-style interiors and premium retail.\nScentWorld Classic Oud Fragrance Oil suits spaces that want the deepest, most traditional oud character.\nSmoky agarwood is layered with warm amber and soft spice for a rich, opulent depth.\nA powerful choice where an unmistakably luxurious, Middle-Eastern ambience is the goal."
+  },
+  "vienna": {
+    "short": "Sophisticated and warm — amber, soft spice and refined woods.",
+    "full": "Fragrance family: Oriental / Woody. Best for luxury hotels, executive offices and premium retail.\nScentWorld Vienna Fragrance Oil is a sophisticated, European-inspired blend for spaces that want quiet opulence.\nWarm amber and soft spice rest on refined woods for an elegant, enveloping character.\nA refined choice for interiors that want to feel established, warm and distinctly premium."
+  },
+  "flowers": {
+    "short": "A full floral bouquet — fresh-cut blooms, bright and romantic.",
+    "full": "Fragrance family: Floral. Best for wedding venues, spas and retail.\nScentWorld Flowers Fragrance Oil suits spaces that want a generous, uplifting floral presence.\nA bouquet of fresh-cut blooms feels bright, romantic and full of life.\nA cheerful choice where a garden-fresh, welcoming ambience is the aim."
+  },
+  "crestal": {
+    "short": "Crisp and crystalline — clean aquatic and airy freshness.",
+    "full": "Fragrance family: Fresh / Aquatic. Best for spas, clinics and modern interiors.\nScentWorld Crestal Fragrance Oil is made for spaces that want a pure, transparent and cooling scent.\nClean aquatic notes and airy freshness create a crisp, crystalline clarity.\nA refreshing choice where a clean, contemporary atmosphere is preferred over heavier profiles."
+  },
+  "arabian-rose": {
+    "short": "Rich Arabian rose — velvety petals wrapped in oud and amber.",
+    "full": "Fragrance family: Floral / Oriental. Best for majlis-style interiors, hotels and premium retail.\nScentWorld Arabian Rose Fragrance Oil suits spaces that want a lavish, deeply floral character.\nVelvety rose is wrapped in smoky oud and warm amber for an opulent, romantic richness.\nA striking choice where a bold, luxurious and unforgettable ambience is the goal."
+  },
+  "wooden": {
+    "short": "Warm and natural — cedar and sandalwood with a dry finish.",
+    "full": "Fragrance family: Woody. Best for offices, showrooms and lounges.\nScentWorld Wooden Fragrance Oil is built for spaces that want a grounded, natural and refined scent.\nCedar and sandalwood give a warm, dry woodiness that feels calm and confident.\nA versatile choice where an understated, sophisticated atmosphere is the aim."
+  },
+  "al-haramain": {
+    "short": "Luxurious oriental — rich amber and smoky oud over warm spice.",
+    "full": "Fragrance family: Amber / Oud. Best for hotels, majlis-style interiors and premium retail.\nInspired by classic Arabian perfumery, this oil brings a rich, opulent oriental character to any space.\nWarm amber and smoky oud rest on soft spice for a deep, enveloping luxury.\nA powerful choice where a bold, refined and distinctly premium ambience is the goal."
+  },
+  "aldehddy": {
+    "short": "Clean and airy — a soapy aldehydic floral, bright and elegant.",
+    "full": "Fragrance family: Aldehydic / Floral. Best for clinics, spas and boutique hotels.\nScentWorld Aldehddy Fragrance Oil suits spaces that want a fresh, immaculately clean scent.\nBright aldehydes lift soft florals for a soapy, airy and elegantly fresh character.\nA polished choice where a crisp, spotless sense of freshness sets the tone."
+  },
+  "kalemat": {
+    "short": "Sweet oriental — honeyed amber with soft oud and warm spice.",
+    "full": "Fragrance family: Oriental / Sweet. Best for hotels, lounges and premium retail.\nInspired by a modern Arabian classic, this oil brings a warm, sweet oriental character to any space.\nHoneyed amber meets soft oud and gentle spice for an inviting, indulgent depth.\nA luxurious choice where a cosy yet opulent ambience is the goal."
+  },
+  "up-parilt": {
+    "short": "Lively and green — a crisp, uplifting aromatic.",
+    "full": "Fragrance family: Aromatic / Green. Best for gyms, offices and commercial interiors.\nScentWorld Up-Parilt Fragrance Oil is made for spaces that want an energizing, fresh-green lift.\nCrisp green aromatics feel clean, active and invigorating.\nA practical choice where a bright, motivating atmosphere is needed throughout the day."
+  },
+  "garden": {
+    "short": "Fresh garden greens — dewy leaves and light blossoms.",
+    "full": "Fragrance family: Floral / Green. Best for spas, wellness centres and residential interiors.\nScentWorld Garden Fragrance Oil suits spaces that want a natural, outdoors-fresh scent.\nDewy green leaves and light blossoms create a calm, garden-fresh character.\nA soothing choice where a clean, natural and restful ambience is the aim."
+  },
+  "jasmine": {
+    "short": "Lush and heady — sweet white jasmine petals, rich and intoxicating.",
+    "full": "Fragrance family: Floral. Best for spas, hotels and wedding venues.\nScentWorld Jasmine Fragrance Oil is built for spaces that want a full, romantic floral presence.\nSweet white jasmine petals feel lush, heady and beautifully intoxicating.\nA captivating choice where an elegant, memorable floral ambience is the goal."
+  },
+  "tropical": {
+    "short": "Juicy and sun-warm — coconut, pineapple and ripe tropical fruits.",
+    "full": "Fragrance family: Fruity / Fresh. Best for salons, retail and leisure spaces.\nScentWorld Tropical Fragrance Oil suits spaces that want a fun, holiday-bright scent.\nCoconut, pineapple and ripe fruits create a juicy, sun-warm escape.\nA cheerful choice where a relaxed, feel-good atmosphere draws people in."
+  },
+  "fema": {
+    "short": "Soft and feminine — a delicate floral-musk, comforting and light.",
+    "full": "Fragrance family: Floral / Musky. Best for boutiques, salons and spas.\nScentWorld Fema Fragrance Oil is made for spaces that want a gentle, flattering and refined scent.\nDelicate florals settle into a soft musk for a comforting, feminine character.\nA graceful choice where a light, welcoming ambience is the aim."
+  },
+  "peel": {
+    "short": "Zesty citrus peel — bright, tangy and invigorating.",
+    "full": "Fragrance family: Citrus / Fresh. Best for kitchens, gyms and offices.\nScentWorld Peel Fragrance Oil suits spaces that want a sharp, clean and energizing citrus lift.\nBright, tangy citrus peel feels fresh, zingy and wide-awake.\nA practical choice where a crisp, spotless freshness is needed throughout the day."
+  },
+  "cinnamon": {
+    "short": "Warm and cosy — sweet cinnamon spice with a comforting depth.",
+    "full": "Fragrance family: Spicy / Warm. Best for cafés, retail and seasonal interiors.\nScentWorld Cinnamon Fragrance Oil is built for spaces that want a warm, inviting and comforting scent.\nSweet cinnamon spice creates a cosy, homely depth that feels instantly welcoming.\nA lovely choice where a warm, seasonal ambience draws people in and keeps them lingering."
+  },
+  "blue": {
+    "short": "Cool and clean — crisp marine freshness with airy citrus.",
+    "full": "Fragrance family: Aquatic / Fresh. Best for spas, clinics and gyms.\nScentWorld Blue Fragrance Oil suits spaces that want a refreshing, wide-open and clean scent.\nCrisp marine notes and airy citrus create a cool, breezy clarity.\nA revitalizing choice where a fresh, uncomplicated atmosphere is the aim."
+  },
+  "love": {
+    "short": "Tender and romantic — soft roses over gentle fruit.",
+    "full": "Fragrance family: Floral / Fruity. Best for boutiques, salons and gift shops.\nScentWorld Love Fragrance Oil is made for spaces that want a warm, affectionate and pretty scent.\nSoft roses rest on gentle fruit for a tender, feel-good romance.\nA charming choice where a sweet, welcoming ambience is the goal."
+  },
+  "crazy-love": {
+    "short": "Bold and playful — ripe berries and warm florals.",
+    "full": "Fragrance family: Fruity / Floral. Best for boutiques, lounges and retail.\nScentWorld Crazy Love Fragrance Oil suits spaces that want a fun, flirtatious and lively scent.\nRipe berries and warm florals create a bold, playful romance.\nA vibrant choice where an energetic, youthful atmosphere is the aim."
+  },
+  "eucalyptus": {
+    "short": "Cool and invigorating — crisp, camphorous and clarifying.",
+    "full": "Fragrance family: Herbal / Fresh. Best for spas, clinics, wellness centres and gyms.\nScentWorld Eucalyptus Fragrance Oil is built for spaces that want a clean, restorative and clearing scent.\nCrisp, camphorous eucalyptus feels cool, purifying and wide-awake.\nA refreshing choice where a clarifying, spa-like atmosphere supports focus and calm."
+  },
+  "black": {
+    "short": "Bold and dark — smoky woods, black pepper and leathery warmth.",
+    "full": "Fragrance family: Woody / Spicy. Best for lounges, showrooms and executive spaces.\nScentWorld Black Fragrance Oil is made for spaces that want a striking, confident and moody signature.\nSmoky woods, black pepper and a touch of leather create a bold, sophisticated depth.\nA powerful choice where a dramatic, upscale atmosphere sets the tone."
+  },
+  "melody": {
+    "short": "Gentle and harmonious — a smooth, easy-to-love floral-musk.",
+    "full": "Fragrance family: Floral / Musky. Best for spas, retail and hospitality.\nScentWorld Melody Fragrance Oil suits spaces that want a soft, agreeable and universally pleasant scent.\nGentle florals settle into a smooth musk for an effortless, harmonious character.\nA versatile choice where a calm, welcoming ambience keeps a space feeling pleasant."
+  },
+  "mango": {
+    "short": "Juicy and ripe — sweet, tropical, mouth-watering mango.",
+    "full": "Fragrance family: Fruity. Best for cafés, salons and leisure spaces.\nScentWorld Mango Fragrance Oil is built for spaces that want a fun, juicy and cheerful scent.\nRipe, sweet mango feels tropical and irresistibly mouth-watering.\nA playful choice where a bright, feel-good atmosphere draws people in."
+  },
+  "lime": {
+    "short": "Sharp and sparkling — zesty, cool and refreshing lime.",
+    "full": "Fragrance family: Citrus / Fresh. Best for kitchens, gyms and offices.\nScentWorld Lime Fragrance Oil suits spaces that want a crisp, energizing citrus lift.\nSparkling lime feels sharp, cool and wide-awake.\nA practical choice where a clean, invigorating freshness is needed throughout the day."
+  },
+  "juniper": {
+    "short": "Crisp and green — resinous juniper berry, bracing and clean.",
+    "full": "Fragrance family: Aromatic / Green. Best for bars, lounges and modern interiors.\nScentWorld Juniper Fragrance Oil is made for spaces that want a distinctive, fresh-green character.\nResinous juniper berry feels crisp, green and bracing.\nA smart choice where a modern, sophisticated and clean-cut atmosphere is the aim."
+  },
+  "defne": {
+    "short": "Fresh bay laurel — green, herbal and lightly woody.",
+    "full": "Fragrance family: Green / Aromatic. Best for spas, offices and wellness centres.\nScentWorld Defne Fragrance Oil suits spaces that want a natural, calming green-aromatic scent.\nFresh bay laurel feels green, herbal and softly woody.\nA soothing choice where a clean, natural and restful ambience is the aim."
   }
 }
