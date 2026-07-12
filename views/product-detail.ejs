@@ -212,6 +212,10 @@ nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display
 .pd-sticky-atc{flex-shrink:0;background:var(--gold);color:var(--bg);border:none;padding:.85rem 1.6rem;font-family:var(--bf);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:2px;transition:background .3s}
 .pd-sticky-atc:active{background:var(--gold2,#e0ca8e)}
 @media(min-width:769px){.pd-sticky-bar{display:none}}
+.pd-stock{display:flex;align-items:center;gap:.55rem;font-size:.82rem;color:var(--ok);font-weight:500;margin-bottom:.55rem;letter-spacing:.02em}
+.pd-stock-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(39,174,96,.5);animation:stockPulse 2.2s ease-out infinite}
+@keyframes stockPulse{0%{box-shadow:0 0 0 0 rgba(39,174,96,.45)}70%{box-shadow:0 0 0 6px rgba(39,174,96,0)}100%{box-shadow:0 0 0 0 rgba(39,174,96,0)}}
+@media(prefers-reduced-motion:reduce){.pd-stock-dot{animation:none}}
 .pd-shipping{font-size:.78rem;color:var(--cream2);font-weight:300;margin-bottom:.4rem}
 .pd-eta{font-size:.74rem;color:var(--txt);font-weight:300;margin-bottom:1.8rem}
 .pd-eta strong{color:var(--gold);font-weight:500}
@@ -454,6 +458,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
       <span class="pd-price" id="priceDisplay">$<%= startPrice.toFixed(2) %></span>
       <span class="pd-price-cur">CAD</span>
     </div>
+    <div class="pd-stock"><span class="pd-stock-dot"></span>In Stock — ready to ship</div>
     <div class="pd-shipping">
       Ships from Halifax in <strong>1–2 business days</strong> · <strong>Free shipping</strong> over $150 CAD
     </div>
