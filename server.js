@@ -1219,6 +1219,29 @@ app.get('/search', (req, res) => {
   res.render('shop', { products: shopLocals(products), q });
 });
 
+// Live search suggestions (JSON) for the header type-ahead. Returns a few
+// matching products with just what the dropdown needs.
+app.get('/api/search', (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 80);
+  if (q.length < 2) return res.json({ success: true, results: [] });
+  const like = `%${q}%`;
+  const rows = db.prepare(
+    `SELECT slug, name, price, image_url, category FROM products
+     WHERE active = 1 AND (name LIKE ? OR short_desc LIKE ?)
+     ORDER BY sort_order LIMIT 6`
+  ).all(like, like);
+  const CAT = { diffusers: 'Diffuser', oils: 'Fragrance Oil', home_car: 'Home & Car', aerosol: 'Aerosol' };
+  res.json({
+    success: true,
+    results: rows.map(p => ({
+      slug: p.slug, name: p.name,
+      price: p.price != null ? Number(p.price) : null,
+      image_url: p.image_url || '/images/placeholder.svg',
+      category: CAT[p.category] || p.category,
+    })),
+  });
+});
+
 // Dynamic sitemap.xml (DB-driven)
 app.get('/sitemap.xml', (req, res) => {
   const BASE = 'https://www.scentworld.ca';

@@ -41,14 +41,27 @@ a.cart-btn{text-decoration:none}
 .nav-search-btn{background:none;border:none;cursor:pointer;color:var(--cream2);padding:4px 6px;display:flex;align-items:center;transition:color .3s}
 .nav-search-btn:hover{color:var(--gold)}
 .nav-search-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6}
-.nav-search-form{position:absolute;right:0;top:calc(100% + 12px);display:none;background:var(--bg2);border:1px solid var(--gold);padding:.4rem;border-radius:2px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.nav-search-form{position:absolute;right:0;top:calc(100% + 12px);display:none;flex-direction:column;background:var(--bg2);border:1px solid var(--gold);padding:.4rem;border-radius:2px;box-shadow:0 14px 40px rgba(0,0,0,.5);width:290px}
 .nav-search.open .nav-search-form{display:flex}
-.nav-search-form input{width:230px;padding:.6rem .8rem;background:transparent;border:none;outline:none;color:var(--cream);font-family:var(--bf);font-size:.82rem}
+.nav-search-row{display:flex}
+.nav-search-form input{flex:1;padding:.6rem .8rem;background:transparent;border:none;outline:none;color:var(--cream);font-family:var(--bf);font-size:.82rem}
 .nav-search-form input::placeholder{color:var(--txt2)}
-.nav-search-form button{padding:.55rem 1rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;font-family:var(--bf);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500}
-.mn-search{display:flex;width:min(78vw,320px);margin-bottom:.6rem;background:var(--bg2);border:1px solid var(--bdr);border-radius:2px}
+.nav-search-form .go-btn{padding:.55rem 1rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;font-family:var(--bf);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500}
+.mn-search{display:flex;width:min(78vw,320px);margin-bottom:.4rem;background:var(--bg2);border:1px solid var(--bdr);border-radius:2px}
 .mn-search input{flex:1;padding:.75rem .9rem;background:transparent;border:none;outline:none;color:var(--cream);font-family:var(--bf);font-size:.88rem}
 .mn-search button{padding:.6rem 1rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;font-size:.85rem}
+/* Live search suggestions dropdown (shared desktop + mobile) */
+.search-suggest{display:none;flex-direction:column;margin-top:.35rem}
+.search-suggest.show{display:flex}
+.mn-suggest{width:min(78vw,320px);max-height:46vh;overflow-y:auto}
+.search-suggest a{display:flex;align-items:center;gap:.7rem;padding:.5rem .55rem;text-decoration:none;border-radius:2px;transition:background .2s}
+.search-suggest a:hover{background:var(--bg3)}
+.search-suggest img{width:38px;height:38px;object-fit:cover;border-radius:3px;background:var(--bg4);flex-shrink:0}
+.ss-info{display:flex;flex-direction:column;min-width:0}
+.ss-name{font-family:var(--bf);font-size:.8rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-meta{font-size:.62rem;letter-spacing:.06em;color:var(--txt);text-transform:uppercase}
+.ss-price{margin-left:auto;font-family:var(--df);font-size:.85rem;color:var(--gold);flex-shrink:0;padding-left:.4rem}
+.ss-empty{padding:.6rem .55rem;font-size:.76rem;color:var(--txt);font-family:var(--bf)}
 </style>
 <nav id="nav">
   <a href="/" class="nl">
@@ -65,8 +78,11 @@ a.cart-btn{text-decoration:none}
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
       <form class="nav-search-form" action="/search" method="get">
-        <input type="search" name="q" id="navSearchInput" placeholder="Search products…" maxlength="80" required>
-        <button type="submit">Go</button>
+        <div class="nav-search-row">
+          <input type="search" name="q" id="navSearchInput" placeholder="Search products…" maxlength="80" autocomplete="off" required>
+          <button type="submit" class="go-btn">Go</button>
+        </div>
+        <div class="search-suggest" id="navSearchSuggest"></div>
       </form>
     </div>
     <% if (typeof cartLive !== 'undefined' && cartLive) { %>
@@ -103,9 +119,10 @@ a.cart-btn{text-decoration:none}
 <div class="mn" id="mn">
   <button class="mc" onclick="cm()">&#10005;</button>
   <form class="mn-search" action="/search" method="get">
-    <input type="search" name="q" placeholder="Search products…" maxlength="80" required>
+    <input type="search" name="q" id="mnSearchInput" placeholder="Search products…" maxlength="80" autocomplete="off" required>
     <button type="submit" aria-label="Search">→</button>
   </form>
+  <div class="search-suggest mn-suggest" id="mnSearchSuggest"></div>
   <a href="/shop" onclick="cm()">Shop</a>
   <a href="/#spaces" onclick="cm()">Industries</a>
   <a href="/#about" onclick="cm()">About</a>
@@ -118,4 +135,42 @@ a.cart-btn{text-decoration:none}
 window.addEventListener('scroll', function() { var n = document.getElementById('nav'); if (n) n.classList.toggle('sc', window.scrollY > 50); });
 function cm() { var m = document.getElementById('mn'); if (m) m.classList.remove('op'); }
 document.getElementById('mbBtn').onclick = function() { document.getElementById('mn').classList.add('op'); };
+
+// Live search type-ahead: debounced fetch to /api/search, render a small
+// product dropdown. Shared by the desktop and mobile search inputs.
+(function () {
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function money(n) { return n == null ? '' : '$' + Number(n).toFixed(2); }
+  function wire(input, box) {
+    if (!input || !box) return;
+    var timer, lastQ = '';
+    function render(results) {
+      if (!results.length) { box.innerHTML = '<div class="ss-empty">No matches — press Enter to search all.</div>'; box.classList.add('show'); return; }
+      box.innerHTML = results.map(function (r) {
+        return '<a href="/products/' + encodeURIComponent(r.slug) + '">' +
+          '<img src="' + esc(r.image_url) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+          '<span class="ss-info"><span class="ss-name">' + esc(r.name) + '</span>' +
+          '<span class="ss-meta">' + esc(r.category) + '</span></span>' +
+          '<span class="ss-price">' + money(r.price) + '</span></a>';
+      }).join('');
+      box.classList.add('show');
+    }
+    input.addEventListener('input', function () {
+      var q = input.value.trim();
+      if (q === lastQ) return; lastQ = q;
+      clearTimeout(timer);
+      if (q.length < 2) { box.classList.remove('show'); box.innerHTML = ''; return; }
+      timer = setTimeout(function () {
+        fetch('/api/search?q=' + encodeURIComponent(q))
+          .then(function (r) { return r.json(); })
+          .then(function (d) { if (input.value.trim().length >= 2) render(d.results || []); })
+          .catch(function () {});
+      }, 180);
+    });
+    input.addEventListener('blur', function () { setTimeout(function () { box.classList.remove('show'); }, 160); });
+    input.addEventListener('focus', function () { if (box.innerHTML) box.classList.add('show'); });
+  }
+  wire(document.getElementById('navSearchInput'), document.getElementById('navSearchSuggest'));
+  wire(document.getElementById('mnSearchInput'), document.getElementById('mnSearchSuggest'));
+})();
 </script>
