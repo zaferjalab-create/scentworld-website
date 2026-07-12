@@ -311,4 +311,58 @@ try {
   console.error('❌ aerosol seed error:', e.message);
 }
 
+// Migration: fragrance-oil country of origin (Turkey / Italy / Spain)
+try {
+  const cols = db.prepare('PRAGMA table_info(products)').all().map(c => c.name);
+  if (!cols.includes('origin')) {
+    db.exec('ALTER TABLE products ADD COLUMN origin TEXT');
+    console.log('✅ Added products.origin column');
+  }
+} catch (e) {
+  console.error('❌ origin column migration error:', e.message);
+}
+
+// Seed the 2026 fragrance-oil catalog. All oils share the same packaging and the
+// standard 100/200/500 ml pricing. Origin code: t = Turkey, i = Italy, s = Spain.
+// Idempotent: INSERT OR IGNORE by slug, and origin/sizes back-filled for the few
+// oils that already existed (white-tea, oud, vienna, spark-honey).
+try {
+  const ORIGIN = { t: 'Turkey', i: 'Italy', s: 'Spain' };
+  const OIL_SIZES = JSON.stringify([{ label: '100ml', price: 49 }, { label: '200ml', price: 89 }, { label: '500ml', price: 189 }]);
+  // [listNumber, displayName, originCode]
+  const OILS = [
+    [1, 'Sense', 'i'], [2, 'For You', 'i'], [3, 'Platinum', 'i'], [4, 'Gold', 'i'], [5, 'Sole', 't'],
+    [6, 'Harmoney', 's'], [7, 'Green Tea', 'i'], [8, 'Luxury', 'i'], [9, 'Chanel', 's'], [10, 'Assala', 'i'],
+    [11, 'Sensitive', 'i'], [12, 'Passion', 'i'], [13, 'Melano', 'i'], [14, 'Carpex', 'i'], [15, 'Adress', 's'],
+    [16, 'Spark Honey', 't'], [17, 'Latinya', 't'], [18, 'Lacco', 't'], [19, 'Pacivictus', 't'], [20, 'Pearl', 'i'],
+    [21, 'Amber', 't'], [22, 'Beauty', 't'], [23, 'Oud', 'i'], [24, 'Huboss', 't'], [25, 'Classic Oud', 'i'],
+    [26, 'Vienna', 's'], [27, 'Flowers', 't'], [28, 'Crestal', 'i'], [29, 'Arabian Rose', 'i'], [30, 'Wooden', 'i'],
+    [31, 'White Tea', 't'], [32, 'Al Haramain', 'i'],
+    [36, 'Lavender', 't'], [37, 'Secret', 't'], [38, 'Aldehddy', 't'], [39, 'Kalemat', 't'], [40, 'Up-Parilt', 't'],
+    [41, 'Garden', 'i'], [42, 'Jasmine', 't'], [43, 'Gardenia', 't'], [44, 'Lemon Grass', 'i'], [45, 'Tropical', 't'],
+    [46, 'Fema', 't'], [47, 'Peel', 'i'],
+    [51, 'Cinnamon', 't'], [52, 'Blue', 't'], [53, 'Love', 'i'], [54, 'Crazy Love', 't'], [55, 'Eucalyptus', 't'],
+    [56, 'Black', 't'], [57, 'Melody', 't'], [58, 'Mango', 'i'], [59, 'Lime', 't'], [60, 'Juniper', 'i'], [62, 'Defne', 't'],
+  ];
+  const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const ins = db.prepare(`INSERT OR IGNORE INTO products
+    (name, slug, category, short_desc, price, coverage, image_url, sizes, origin, active, sort_order)
+    VALUES (?, ?, 'oils', ?, 49, NULL, '/images/placeholder.svg', ?, ?, 1, ?)`);
+  const updOrigin = db.prepare("UPDATE products SET origin = ? WHERE slug = ? AND (origin IS NULL OR origin = '')");
+  const updSizes = db.prepare("UPDATE products SET sizes = ? WHERE slug = ? AND (sizes IS NULL OR sizes = '')");
+  let added = 0;
+  for (const [num, name, code] of OILS) {
+    const slug = slugify(name);
+    const origin = ORIGIN[code] || null;
+    const desc = `Signature fragrance oil${origin ? ' — sourced from ' + origin : ''}. Available in 100 ml, 200 ml and 500 ml.`;
+    const r = ins.run(name + ' Oil', slug, desc, OIL_SIZES, origin, 100 + num);
+    if (r.changes > 0) added++;
+    updOrigin.run(origin, slug);   // back-fill origin on any that already existed
+    updSizes.run(OIL_SIZES, slug);
+  }
+  if (added > 0) console.log(`✅ Seeded ${added} fragrance oils`);
+} catch (e) {
+  console.error('❌ oil catalog seed error:', e.message);
+}
+
 module.exports = db;

@@ -16,6 +16,7 @@ let box = [];
 try { const b = JSON.parse(product.box_contents || '[]'); if (Array.isArray(b)) box = b; } catch(e) {}
 
 const specs = [
+  ['Origin', product.origin],
   ['Coverage area', product.spec_coverage || product.coverage],
   ['Oil capacity', product.spec_oil_capacity],
   ['Noise level', product.spec_noise],
