@@ -421,6 +421,34 @@ app.get('/api/checkout/verify', async (req, res) => {
   }
 });
 
+// Order status lookup — customer enters order number + the email on the order.
+// Requiring both (and rate limiting) prevents order-number enumeration.
+app.post('/api/order-lookup', formLimiter, (req, res) => {
+  const orderNumber = String(req.body.order_number || '').trim().toUpperCase();
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!orderNumber || !email) {
+    return res.status(400).json({ success: false, error: 'Please enter your order number and email.' });
+  }
+  const order = db.prepare('SELECT * FROM orders WHERE order_number = ? AND lower(customer_email) = ?').get(orderNumber, email);
+  if (!order) {
+    return res.status(404).json({ success: false, error: 'No order found with that number and email. Double-check both, or contact us.' });
+  }
+  const items = db.prepare('SELECT product_name, quantity, total_price FROM order_items WHERE order_id = ?').all(order.id);
+  res.json({
+    success: true,
+    order: {
+      order_number: order.order_number,
+      status: order.status,
+      payment_status: order.payment_status,
+      created_at: order.created_at,
+      total: order.total,
+      city: order.shipping_city || null,
+      province: order.shipping_province || null,
+      items: items.map(i => ({ name: i.product_name, qty: i.quantity, total: i.total_price })),
+    },
+  });
+});
+
 // ═══════════════════════════════════════
 // ADMIN AUTH
 // ═══════════════════════════════════════
@@ -1213,6 +1241,9 @@ app.get(['/shop', '/shop.html'], (req, res) => {
 
 // /wishlist — client-rendered saved items (from localStorage)
 app.get('/wishlist', (req, res) => res.render('wishlist'));
+
+// /track — order status lookup
+app.get(['/track', '/track-order'], (req, res) => res.render('track'));
 
 // /compare — side-by-side diffuser comparison
 app.get('/compare', (req, res) => {

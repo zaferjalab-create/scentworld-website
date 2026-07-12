@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Your Order | Scent World Canada</title>
+<meta name="description" content="Check the status of your Scent World order.">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--bg4:#211e1a;
+  --gold:#c9a55c;--gold-l:#e0ca8e;--gold-d:#9a7d3e;
+  --cream:#f5f0e6;--cream2:#cdc5b8;--txt:#958e85;--txt2:#635d55;
+  --bdr:rgba(201,165,92,.1);--err:#c0392b;--ok:#27ae60;
+  --df:'Playfair Display',serif;--bf:'Outfit',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--bf);background:var(--bg);color:var(--cream);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+.tr-wrap{max-width:620px;margin:0 auto;padding:9rem 5vw 5rem}
+.tr-eyebrow{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem;text-align:center}
+.tr-wrap h1{font-family:var(--df);font-size:clamp(1.9rem,4vw,2.7rem);font-weight:500;line-height:1.15;text-align:center}
+.tr-sub{color:var(--txt);font-size:.85rem;font-weight:300;margin:.6rem 0 2.4rem;text-align:center}
+.tr-form{display:flex;flex-direction:column;gap:1rem;background:var(--bg2);border:1px solid var(--bdr);border-radius:3px;padding:1.8rem}
+.tr-form label{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;display:block}
+.tr-form input{width:100%;padding:.85rem 1rem;background:var(--bg);border:1px solid var(--bdr);color:var(--cream);
+  font-family:var(--bf);font-size:.9rem;outline:none;transition:border-color .3s}
+.tr-form input:focus{border-color:var(--gold)}
+.tr-form button{padding:.95rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;font-family:var(--bf);
+  font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;font-weight:600;transition:background .3s;margin-top:.4rem}
+.tr-form button:hover{background:var(--gold-l)}
+.tr-form button:disabled{opacity:.5;cursor:not-allowed}
+.tr-msg{text-align:center;font-size:.85rem;margin-top:1.2rem;font-weight:300}
+.tr-msg.err{color:var(--err)}
+.tr-result{margin-top:1.8rem;background:var(--bg2);border:1px solid var(--bdr);border-radius:3px;padding:1.8rem;display:none}
+.tr-result.show{display:block}
+.tr-row{display:flex;justify-content:space-between;align-items:baseline;padding:.55rem 0;border-bottom:1px solid var(--bdr);font-size:.85rem}
+.tr-row:last-of-type{border-bottom:none}
+.tr-row .k{color:var(--txt);font-weight:300}
+.tr-row .v{color:var(--cream);font-weight:400;text-align:right}
+.tr-badge{display:inline-block;padding:.25rem .8rem;border-radius:20px;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.tr-badge.confirmed{background:rgba(201,165,92,.16);color:var(--gold)}
+.tr-badge.shipped,.tr-badge.delivered{background:rgba(39,174,96,.16);color:var(--ok)}
+.tr-badge.cancelled,.tr-badge.refunded{background:rgba(192,57,43,.16);color:var(--err)}
+.tr-items{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--bdr)}
+.tr-items h4{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.7rem}
+.tr-item{display:flex;justify-content:space-between;font-size:.82rem;color:var(--cream2);padding:.3rem 0}
+.tr-help{text-align:center;font-size:.78rem;color:var(--txt);margin-top:1.4rem;font-weight:300}
+</style>
+</head>
+<body>
+
+<%- include('partials/header', {cartLive: false}) %>
+
+<div class="tr-wrap">
+  <p class="tr-eyebrow">Order Status</p>
+  <h1>Track Your <em style="font-style:italic;color:var(--gold)">Order</em></h1>
+  <p class="tr-sub">Enter your order number and the email you used at checkout.</p>
+
+  <form class="tr-form" id="trForm">
+    <div>
+      <label for="trNum">Order number</label>
+      <input type="text" id="trNum" placeholder="SW-12345678" autocomplete="off" required>
+    </div>
+    <div>
+      <label for="trEmail">Email</label>
+      <input type="email" id="trEmail" placeholder="you@email.com" autocomplete="email" required>
+    </div>
+    <button type="submit" id="trBtn">Check Status</button>
+  </form>
+
+  <div class="tr-msg" id="trMsg"></div>
+  <div class="tr-result" id="trResult"></div>
+
+  <p class="tr-help">Can't find your order? <a href="/#contact">Contact us</a> and we'll help.</p>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);}
+function money(n){return '$' + (Number(n)||0).toFixed(2) + ' CAD';}
+function fmtDate(s){try{return new Date((s||'').replace(' ','T')+'Z').toLocaleDateString('en-CA',{year:'numeric',month:'long',day:'numeric'});}catch(e){return s||'';}}
+var STATUS_TEXT = { confirmed:'Confirmed — preparing your order', shipped:'Shipped — on its way', delivered:'Delivered', cancelled:'Cancelled', refunded:'Refunded' };
+
+document.getElementById('trForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var num = document.getElementById('trNum').value.trim();
+  var email = document.getElementById('trEmail').value.trim();
+  var msg = document.getElementById('trMsg'), result = document.getElementById('trResult'), btn = document.getElementById('trBtn');
+  msg.textContent = ''; msg.className = 'tr-msg'; result.classList.remove('show'); result.innerHTML = '';
+  btn.disabled = true; btn.textContent = 'Checking…';
+  fetch('/api/order-lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_number: num, email: email }) })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+      btn.disabled = false; btn.textContent = 'Check Status';
+      if (!res.ok || !res.d.success) { msg.textContent = res.d.error || 'Something went wrong.'; msg.className = 'tr-msg err'; return; }
+      var o = res.d.order;
+      var st = (o.status || 'confirmed').toLowerCase();
+      var loc = [o.city, o.province].filter(Boolean).join(', ');
+      var itemsHtml = (o.items || []).map(function (it) {
+        return '<div class="tr-item"><span>' + esc(it.name) + ' × ' + (it.qty || 1) + '</span><span>' + money(it.total) + '</span></div>';
+      }).join('');
+      result.innerHTML =
+        '<div class="tr-row"><span class="k">Order</span><span class="v">' + esc(o.order_number) + '</span></div>' +
+        '<div class="tr-row"><span class="k">Status</span><span class="v"><span class="tr-badge ' + esc(st) + '">' + esc(STATUS_TEXT[st] || st) + '</span></span></div>' +
+        '<div class="tr-row"><span class="k">Placed</span><span class="v">' + esc(fmtDate(o.created_at)) + '</span></div>' +
+        (loc ? '<div class="tr-row"><span class="k">Shipping to</span><span class="v">' + esc(loc) + '</span></div>' : '') +
+        '<div class="tr-row"><span class="k">Total</span><span class="v">' + money(o.total) + '</span></div>' +
+        (itemsHtml ? '<div class="tr-items"><h4>Items</h4>' + itemsHtml + '</div>' : '');
+      result.classList.add('show');
+    })
+    .catch(function () { btn.disabled = false; btn.textContent = 'Check Status'; msg.textContent = 'Connection error — please try again.'; msg.className = 'tr-msg err'; });
+});
+</script>
+</body>
+</html>
