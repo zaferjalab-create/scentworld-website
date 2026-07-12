@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+  gtag('config', 'AW-16607372924');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Wishlist | Scent World Canada</title>
+<meta name="description" content="Your saved Scent World products.">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--bg4:#211e1a;
+  --gold:#c9a55c;--gold-l:#e0ca8e;--gold-d:#9a7d3e;
+  --cream:#f5f0e6;--cream2:#cdc5b8;--txt:#958e85;--txt2:#635d55;
+  --bdr:rgba(201,165,92,.1);--df:'Playfair Display',serif;--bf:'Outfit',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--bf);background:var(--bg);color:var(--cream);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+.wl-head{padding:8.5rem 4vw 1rem;max-width:1320px;margin:0 auto}
+.wl-eyebrow{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
+.wl-head h1{font-family:var(--df);font-size:clamp(1.9rem,4vw,3rem);font-weight:500;line-height:1.15}
+.wl-head p{color:var(--txt);font-size:.85rem;font-weight:300;margin-top:.6rem}
+.wl-wrap{max-width:1320px;margin:1.5rem auto 5rem;padding:0 4vw}
+.wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.5rem}
+.wl-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:2px;overflow:hidden;display:flex;flex-direction:column}
+.wl-img{aspect-ratio:1/1;background:var(--bg3);display:block}
+.wl-img img{width:100%;height:100%;object-fit:cover}
+.wl-body{padding:1.1rem 1.2rem 1.3rem;display:flex;flex-direction:column;flex:1}
+.wl-cat{font-size:.55rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.wl-name{font-size:.95rem;color:var(--cream);font-weight:400;line-height:1.35;margin-bottom:.4rem}
+.wl-name a{color:var(--cream)}.wl-name a:hover{color:var(--gold)}
+.wl-price{font-family:var(--df);color:var(--gold);font-size:1.05rem;font-weight:500;margin-bottom:1rem}
+.wl-actions{margin-top:auto;display:flex;gap:.5rem}
+.wl-add{flex:1;padding:.6rem;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:var(--bf);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .3s}
+.wl-add:hover{background:var(--gold);color:var(--bg)}
+.wl-remove{padding:.6rem .8rem;background:transparent;border:1px solid var(--bdr);color:var(--txt);cursor:pointer;transition:all .3s;font-size:.9rem;line-height:1}
+.wl-remove:hover{border-color:var(--gold);color:var(--gold)}
+.wl-empty{text-align:center;padding:4rem 1rem}
+.wl-empty svg{width:44px;height:44px;stroke:var(--gold-d);fill:none;stroke-width:1.3;margin-bottom:1.2rem}
+.wl-empty h2{font-family:var(--df);font-size:1.5rem;font-weight:500;margin-bottom:.6rem}
+.wl-empty p{color:var(--txt);font-size:.9rem;font-weight:300;margin-bottom:1.6rem}
+.wl-empty a{display:inline-block;padding:.85rem 2.2rem;border:1px solid var(--gold);color:var(--gold);font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;transition:all .3s}
+.wl-empty a:hover{background:var(--gold);color:var(--bg)}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg3);border:1px solid var(--gold);color:var(--cream);padding:1rem 2rem;font-size:.85rem;opacity:0;transition:all .4s cubic-bezier(.16,1,.3,1);z-index:9999;border-radius:2px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:600px){.wl-head{padding-top:7rem}}
+</style>
+</head>
+<body>
+
+<%- include('partials/header', {cartLive: false}) %>
+
+<header class="wl-head">
+  <p class="wl-eyebrow">Saved for later</p>
+  <h1>Your <em style="font-style:italic;color:var(--gold)">Wishlist</em></h1>
+  <p id="wlCountLine"></p>
+</header>
+
+<div class="wl-wrap">
+  <div class="wl-grid" id="wlGrid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<%- include('partials/footer') %>
+
+<script>
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem('sw_cart') || '[]'); } catch(e) {}
+function saveCart() {
+  localStorage.setItem('sw_cart', JSON.stringify(cart));
+  const n = cart.reduce((s, i) => s + (i.qty || 1), 0);
+  document.querySelectorAll('.cart-badge:not(.wish-count)').forEach(b => { b.textContent = n; b.classList.toggle('show', n > 0); });
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);}
+function money(n){return '$' + (Number(n)||0).toFixed(2);}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+function render() {
+  const items = window.swWishlist ? window.swWishlist.read() : [];
+  const grid = document.getElementById('wlGrid');
+  const line = document.getElementById('wlCountLine');
+  if (!items.length) {
+    line.textContent = '';
+    grid.innerHTML = '<div class="wl-empty">' +
+      '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>' +
+      '<h2>Nothing saved yet</h2><p>Tap the heart on any product to save it here for later.</p>' +
+      '<a href="/shop">Browse the shop</a></div>';
+    return;
+  }
+  line.textContent = items.length + (items.length === 1 ? ' item saved' : ' items saved');
+  grid.innerHTML = items.map(function (p) {
+    return '<div class="wl-card">' +
+      '<a class="wl-img" href="/products/' + encodeURIComponent(p.slug) + '"><img src="' + esc(p.image_url || '/images/placeholder.svg') + '" alt="" onerror="this.onerror=null;this.src=\'/images/placeholder.svg\'"></a>' +
+      '<div class="wl-body">' +
+        '<div class="wl-cat">' + esc(p.category || '') + '</div>' +
+        '<div class="wl-name"><a href="/products/' + encodeURIComponent(p.slug) + '">' + esc(p.name) + '</a></div>' +
+        '<div class="wl-price">' + money(p.price) + '</div>' +
+        '<div class="wl-actions">' +
+          '<button class="wl-add" data-id="' + esc(p.id) + '">Add to Cart</button>' +
+          '<button class="wl-remove" data-id="' + esc(p.id) + '" aria-label="Remove">&times;</button>' +
+        '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+document.addEventListener('click', function (e) {
+  const add = e.target.closest('.wl-add');
+  const rem = e.target.closest('.wl-remove');
+  if (add) {
+    const items = window.swWishlist.read();
+    const p = items.find(i => String(i.id) === String(add.dataset.id));
+    if (!p) return;
+    const key = String(p.id);
+    const ex = cart.find(i => i.cartKey === key);
+    if (ex) ex.qty += 1; else cart.push({ cartKey: key, id: p.id, slug: p.slug, name: p.name, price: p.price, category: p.category, size: null, image_url: p.image_url, qty: 1 });
+    saveCart();
+    if (typeof gtag === 'function') gtag('event', 'add_to_cart', { currency: 'CAD', value: p.price, items: [{ item_id: p.id, item_name: p.name, price: p.price, quantity: 1 }] });
+    showToast(p.name + ' added to cart');
+  }
+  if (rem) { window.swWishlist.remove(rem.dataset.id); render(); }
+});
+
+saveCart();
+// wishlist.js (from header) may still be loading; wait for it.
+if (window.swWishlist) render();
+else window.addEventListener('load', render);
+</script>
+</body>
+</html>

@@ -62,6 +62,17 @@ a.cart-btn{text-decoration:none}
 .ss-meta{font-size:.62rem;letter-spacing:.06em;color:var(--txt);text-transform:uppercase}
 .ss-price{margin-left:auto;font-family:var(--df);font-size:.85rem;color:var(--gold);flex-shrink:0;padding-left:.4rem}
 .ss-empty{padding:.6rem .55rem;font-size:.76rem;color:var(--txt);font-family:var(--bf)}
+/* Wishlist heart — nav icon + card toggle button (shared, site-wide) */
+.wish-nav svg{fill:none;stroke:currentColor}
+.wish-btn{position:absolute;top:.7rem;right:.7rem;z-index:3;width:34px;height:34px;border-radius:50%;
+  background:rgba(11,9,8,.55);border:1px solid rgba(201,165,92,.28);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;padding:0}
+.wish-btn svg{width:16px;height:16px;fill:none;stroke:var(--cream2);stroke-width:1.8;transition:all .2s}
+.wish-btn:hover{border-color:var(--gold);transform:scale(1.08)}
+.wish-btn:hover svg{stroke:var(--gold)}
+.wish-btn.on{background:rgba(201,165,92,.16);border-color:var(--gold)}
+.wish-btn.on svg{fill:var(--gold);stroke:var(--gold)}
+.wish-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 </style>
 <nav id="nav">
   <a href="/" class="nl">
@@ -85,6 +96,10 @@ a.cart-btn{text-decoration:none}
         <div class="search-suggest" id="navSearchSuggest"></div>
       </form>
     </div>
+    <a href="/wishlist" class="cart-btn wish-nav" aria-label="Wishlist">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>
+      <span class="cart-badge wish-count">0</span>
+    </a>
     <% if (typeof cartLive !== 'undefined' && cartLive) { %>
     <button class="cart-btn" id="cartBtn" aria-label="Cart">
       <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -124,6 +139,7 @@ a.cart-btn{text-decoration:none}
   </form>
   <div class="search-suggest mn-suggest" id="mnSearchSuggest"></div>
   <a href="/shop" onclick="cm()">Shop</a>
+  <a href="/wishlist" onclick="cm()">Wishlist</a>
   <a href="/#spaces" onclick="cm()">Industries</a>
   <a href="/#about" onclick="cm()">About</a>
   <a href="/#services" onclick="cm()">Services</a>
@@ -131,6 +147,7 @@ a.cart-btn{text-decoration:none}
   <a href="/#contact" onclick="cm()">Contact</a>
   <a href="/#booking" onclick="cm()">Book Consultation</a>
 </div>
+<script src="/wishlist.js" defer></script>
 <script>
 window.addEventListener('scroll', function() { var n = document.getElementById('nav'); if (n) n.classList.toggle('sc', window.scrollY > 50); });
 function cm() { var m = document.getElementById('mn'); if (m) m.classList.remove('op'); }

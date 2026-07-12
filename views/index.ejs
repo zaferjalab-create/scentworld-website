@@ -713,6 +713,9 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
       const label = HP_LABELS[p.category] || p.category;
     %>
     <div class="pc rv<%= i < 4 ? ' d' + Math.min(i + 1, 4) : '' %>">
+      <button class="wish-btn" data-id="<%= p.id %>" data-slug="<%= p.slug %>" data-name="<%= p.name %>" data-price="<%= p.price || 0 %>" data-image="<%= p.image_url || '' %>" data-category="<%= p.category %>" aria-label="Save <%= p.name %> to wishlist">
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>
+      </button>
       <a href="/products/<%= p.slug %>" class="pi" style="display:block;text-decoration:none">
         <% if (p.image_url && gal.length) { %>
           <img src="<%= p.image_url %>" alt="<%= p.name %>" class="pi-main" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'"><img src="<%= gal[0] %>" alt="<%= p.name %>" class="pi-hover" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'">

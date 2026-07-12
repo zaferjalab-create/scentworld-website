@@ -1211,6 +1211,9 @@ app.get(['/shop', '/shop.html'], (req, res) => {
   res.render('shop', { products: shopLocals(getActiveProducts()), q: null });
 });
 
+// /wishlist — client-rendered saved items (from localStorage)
+app.get('/wishlist', (req, res) => res.render('wishlist'));
+
 // /compare — side-by-side diffuser comparison
 app.get('/compare', (req, res) => {
   const diffusers = withRatings(getActiveProducts().filter(p => p.category === 'diffusers'))
