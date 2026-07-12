@@ -425,4 +425,30 @@ try {
   console.error('❌ diffuser content error:', e.message);
 }
 
+// Product display order: Diffusers → Aerosol → Home & Car → Fragrance Oils.
+// Diffusers keep their existing 1–7; aerosol/car set explicitly; oils pushed last.
+try {
+  db.prepare("UPDATE products SET sort_order = 8  WHERE slug = 'aerosol-gold'").run();
+  db.prepare("UPDATE products SET sort_order = 9  WHERE slug = 'aerosol-dispenser'").run();
+  db.prepare("UPDATE products SET sort_order = 10 WHERE slug = 'car-diffuser'").run();
+  db.prepare("UPDATE products SET sort_order = 11 WHERE slug = 'car-gift-set'").run();
+  db.prepare("UPDATE products SET sort_order = sort_order + 100 WHERE category = 'oils' AND sort_order < 100").run();
+} catch (e) {
+  console.error('❌ sort order error:', e.message);
+}
+
+// Hide the placeholder diffusers that don't have real photos/devices yet (owner
+// will re-activate later). One-time, guarded by a settings flag so a later
+// re-activation via the admin is never overwritten on the next deploy.
+try {
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'hid_placeholder_diffusers'").get();
+  if (!done) {
+    const r = db.prepare("UPDATE products SET active = 0 WHERE slug IN ('s100','l100','l100-ad','l200')").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('hid_placeholder_diffusers', '1')").run();
+    if (r.changes) console.log(`✅ Hid ${r.changes} placeholder diffusers (re-activate anytime in admin)`);
+  }
+} catch (e) {
+  console.error('❌ hide diffusers error:', e.message);
+}
+
 module.exports = db;

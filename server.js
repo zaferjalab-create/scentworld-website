@@ -1168,12 +1168,18 @@ function getActiveProducts() {
   return db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all();
 }
 function parseCoverageSqft(p) {
-  const src = p.spec_coverage || p.coverage || '';
-  const m = String(src).replace(/,/g, '').match(/([\d.]+)\s*sq\s*ft/i);
-  return m ? parseFloat(m[1]) : null;
+  // Bucket on whichever field carries a sq-ft figure. spec_coverage may hold a
+  // metric value (e.g. "400–800 m³"), so fall through to the sq-ft coverage.
+  for (const src of [p.coverage, p.spec_coverage]) {
+    const m = String(src || '').replace(/,/g, '').match(/([\d.]+)\s*sq\s*ft/i);
+    if (m) return parseFloat(m[1]);
+  }
+  return null;
 }
 function coverageBucket(p) {
-  if (/hvac/i.test(p.name) || /hvac/i.test(p.short_desc || '')) return 'hvac';
+  // Name-only HVAC check — descriptions now mention "HVAC-ready/compatible" for
+  // mid-size units, which shouldn't force them into the whole-building bucket.
+  if (/hvac/i.test(p.name)) return 'hvac';
   const sq = parseCoverageSqft(p);
   if (sq == null) return '';
   // Thresholds tuned so every space-size filter option actually returns
