@@ -11,8 +11,8 @@
   },
   "s30": {
     "short": "Air-pump nano diffuser for medium spaces — 400–800 m³, 200 ml, HVAC-ready.",
-    "full": "The Scent World S30 Nano Diffuser uses air-pump nebulization for even, waterless scenting across 400–800 m³.\nA 200 ml bottle and low consumption (0.03–1.00 ml/hour) make it efficient for high-traffic spaces, with HVAC or portable installation.\nBest for big living rooms, spas, clinics, shops and high-traffic commercial spaces — quiet at under 40 dB.",
-    "spec_coverage": "400–800 m³",
+    "full": "The Scent World S30 Nano Diffuser uses air-pump nebulization for even, waterless scenting across 1,435–2,870 sq ft.\nA 200 ml bottle and low consumption (0.03–1.00 ml/hour) make it efficient for high-traffic spaces, with HVAC or portable installation.\nBest for big living rooms, spas, clinics, shops and high-traffic commercial spaces — quiet at under 40 dB.",
+    "spec_coverage": "1,435–2,870 sq ft",
     "spec_oil_capacity": "200 ml",
     "spec_noise": "< 40 dB",
     "spec_power": "8W · DC 12V",
@@ -20,16 +20,16 @@
   },
   "s200": {
     "short": "Commercial HVAC diffuser with smart app control — up to 5000 m³, 500 ml, anti-theft lock.",
-    "full": "The Scent World S200 Commercial Aroma Diffuser is a medium-capacity system with smart app control and built-in HVAC compatibility, covering up to 5000 m³.\nSchedule diffusion and adjust intensity remotely; a 500 ml bottle and anti-theft lock make it practical for unattended commercial use.\nBest for offices, clinics, reception areas, boutique shops and other medium commercial spaces.",
-    "spec_coverage": "Up to 5000 m³",
+    "full": "The Scent World S200 Commercial Aroma Diffuser is a medium-capacity system with smart app control and built-in HVAC compatibility, covering up to 17,945 sq ft.\nSchedule diffusion and adjust intensity remotely; a 500 ml bottle and anti-theft lock make it practical for unattended commercial use.\nBest for offices, clinics, reception areas, boutique shops and other medium commercial spaces.",
+    "spec_coverage": "Up to 17,945 sq ft",
     "spec_oil_capacity": "500 ml",
     "spec_power": "12W · DC 12V 1A",
     "spec_dimensions": "350 × 250 × 140 mm"
   },
   "car-diffuser": {
     "short": "Compact in-car diffuser with automatic activation — durable metal body, USB-powered, multiple colours.",
-    "full": "The SW Car Scent Diffuser is a compact in-car fragrance diffuser with automatic activation and a durable metal body, covering small spaces from 10–50 m³.\nDesigned for convenient daily scenting on the go, it runs on DC 5V and comes in several colour options — Blue, Gold, Green, Red and Rose Gold.\nBest for car interiors and other very small personal spaces.",
-    "spec_coverage": "10–50 m³ (vehicle interior)",
+    "full": "The SW Car Scent Diffuser is a compact in-car fragrance diffuser with automatic activation and a durable metal body, covering small spaces up to ~180 sq ft.\nDesigned for convenient daily scenting on the go, it runs on DC 5V and comes in several colour options — Blue, Gold, Green, Red and Rose Gold.\nBest for car interiors and other very small personal spaces.",
+    "spec_coverage": "Vehicle interior · up to ~180 sq ft",
     "spec_oil_capacity": "10 / 20 ml",
     "spec_power": "2W · DC 5V",
     "spec_dimensions": "72 × 72 × 145 mm",
@@ -38,8 +38,8 @@
   },
   "car-gift-set": {
     "short": "The Car Scent Diffuser paired with 5 curated fragrance oils in a luxury gift box.",
-    "full": "The Scent World Car Diffuser Gift Set pairs our compact in-car diffuser with five curated fragrance oils, presented in a premium magnetic gift box.\nWith automatic activation and a durable metal body, the diffuser covers small spaces from 10–50 m³ — ideal for the car or a personal nook.\nA thoughtful, ready-to-gift introduction to Scent World fragrance.",
-    "spec_coverage": "Vehicle interior (10–50 m³)",
+    "full": "The Scent World Car Diffuser Gift Set pairs our compact in-car diffuser with five curated fragrance oils, presented in a premium magnetic gift box.\nWith automatic activation and a durable metal body, the diffuser covers small spaces up to ~180 sq ft — ideal for the car or a personal nook.\nA thoughtful, ready-to-gift introduction to Scent World fragrance.",
+    "spec_coverage": "Vehicle interior · up to ~180 sq ft",
     "spec_power": "2W · DC 5V",
     "box": ["1 × SW Car Scent Diffuser", "5 × Curated fragrance oils", "Luxury magnetic gift box", "USB charging cable"],
     "image": "/images/products/car-gift-set.webp"
