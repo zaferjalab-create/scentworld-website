@@ -409,8 +409,11 @@ try {
   for (const [slug, c] of Object.entries(diff)) {
     if (c.full) {
       n += db.prepare("UPDATE products SET short_desc = ?, full_desc = ? WHERE slug = ? AND (full_desc IS NULL OR full_desc = '')").run(c.short, c.full, slug).changes;
-      // Also refresh descriptions still carrying metric coverage (m² / m³).
-      db.prepare("UPDATE products SET short_desc = ?, full_desc = ? WHERE slug = ? AND (full_desc LIKE '%m³%' OR full_desc LIKE '%m²%' OR full_desc LIKE '%m3%' OR full_desc LIKE '%m2%')").run(c.short, c.full, slug);
+      // Also refresh descriptions still carrying metric coverage (m² / m³) in
+      // either the short or the full text.
+      db.prepare(`UPDATE products SET short_desc = ?, full_desc = ? WHERE slug = ? AND (
+        short_desc LIKE '%m³%' OR short_desc LIKE '%m²%' OR short_desc LIKE '%m3%' OR short_desc LIKE '%m2%' OR
+        full_desc LIKE '%m³%' OR full_desc LIKE '%m²%' OR full_desc LIKE '%m3%' OR full_desc LIKE '%m2%')`).run(c.short, c.full, slug);
     }
     setIfEmpty('spec_coverage', c.spec_coverage, slug);
     // Convert any metric coverage (m² / m³) already stored to the sq-ft value.
