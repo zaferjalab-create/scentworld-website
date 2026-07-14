@@ -408,13 +408,13 @@ app.get('/api/checkout/verify', async (req, res) => {
     const { session_id } = req.query;
     if (!session_id) return res.status(400).json({ success: false, error: 'Missing session_id' });
 
-    const existing = db.prepare('SELECT order_number FROM orders WHERE stripe_session_id = ?').get(session_id);
-    if (existing) return res.json({ success: true, paid: true, order_number: existing.order_number });
+    const existing = db.prepare('SELECT order_number, total FROM orders WHERE stripe_session_id = ?').get(session_id);
+    if (existing) return res.json({ success: true, paid: true, order_number: existing.order_number, total: existing.total });
 
     const session = await stripe.checkout.sessions.retrieve(session_id);
     const orderNumber = recordOrderFromSession(session);
     if (!orderNumber) return res.json({ success: true, paid: false });
-    res.json({ success: true, paid: true, order_number: orderNumber });
+    res.json({ success: true, paid: true, order_number: orderNumber, total: session.amount_total / 100 });
   } catch (err) {
     console.error('Verify error:', err.message);
     res.status(500).json({ success: false, error: 'Could not verify payment. Please contact us if you were charged.' });

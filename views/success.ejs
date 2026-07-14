@@ -9,8 +9,8 @@
   gtag('js', new Date());
   gtag('config', 'G-SW3F0J9C88');
   gtag('config', 'AW-16607372924');
-  gtag('event', 'purchase_completed', {currency: 'CAD'});
-  // Meta Pixel Purchase event fires after verifying with the server (see script below)
+  // Purchase events (GA4 + Google Ads + Meta) fire only after the server
+  // verifies the Stripe session is paid — see the script at the bottom.
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,10 +123,18 @@ function etaRange() {
       });
     }
     if (typeof gtag === 'function') {
+      // GA4 purchase (analytics)
       gtag('event', 'purchase', {
         transaction_id: data.order_number,
         currency: 'CAD',
         value: data.total || 0
+      });
+      // Google Ads "Purchase" conversion — transaction_id dedupes repeat loads
+      gtag('event', 'conversion', {
+        send_to: 'AW-16607372924/-aQrCNicj9AcEPzMge89',
+        value: data.total || 0,
+        currency: 'CAD',
+        transaction_id: data.order_number
       });
     }
     icon.className = 'icon';
