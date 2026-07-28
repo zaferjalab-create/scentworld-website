@@ -990,7 +990,10 @@ async function emailBackup() {
     const { data, ext, encrypted } = maybeEncryptBackup(fs.readFileSync(tmp));
     const content = data.toString('base64');
     const date = new Date().toISOString().slice(0, 10);
-    const to = process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+    // Backups can go to a dedicated inbox (BACKUP_EMAIL) so the daily archive
+    // doesn't clutter the address that gets order/quote notifications.
+    // Falls back to NOTIFY_EMAIL, then the site default.
+    const to = process.env.BACKUP_EMAIL || process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
     const encNote = encrypted
       ? ` This file is encrypted (AES-256-GCM); decrypt it with: node decrypt-backup.js scentworld-${date}.${ext} (requires BACKUP_PASSPHRASE).`
       : ' TIP: set BACKUP_PASSPHRASE in the environment to encrypt future backups.';
