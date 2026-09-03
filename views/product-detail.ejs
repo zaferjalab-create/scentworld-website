@@ -181,6 +181,11 @@ nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display
 
 /* LEFT: GALLERY */
 .pd-gallery{position:sticky;top:6rem}
+/* Below 980px .pd-wrap collapses to one column, so the gallery sits directly
+   above the product text. Left sticky it pins to the top of the viewport and —
+   being a positioned element painting over static content — covers the copy
+   scrolling underneath it. Must come after the rule above to win the cascade. */
+@media (max-width:980px){.pd-gallery{position:static;top:auto}}
 .pd-main-img{width:100%;aspect-ratio:1/1;background:var(--bg2);border:1px solid var(--bdr);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;border-radius:2px}
 .pd-main-img img{width:100%;height:100%;object-fit:cover;transition:opacity .3s;cursor:zoom-in}
 .pd-main-img .placeholder{width:100%;height:100%;background:linear-gradient(135deg,var(--bg3),var(--bg2));display:flex;align-items:center;justify-content:center;color:var(--txt);font-size:.85rem;letter-spacing:.2em;text-transform:uppercase}
@@ -213,6 +218,10 @@ nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display
 .pd-sticky-atc{flex-shrink:0;background:var(--gold);color:var(--bg);border:none;padding:.85rem 1.6rem;font-family:var(--bf);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:2px;transition:background .3s}
 .pd-sticky-atc:active{background:var(--gold2,#e0ca8e)}
 @media(min-width:769px){.pd-sticky-bar{display:none}}
+/* Lift the support FAB above the sticky buy bar so it stops covering "Add to Cart".
+   The FAB is a later sibling of the bar in the footer partial, so it only moves
+   while the bar is actually on screen. */
+@media(max-width:768px){.pd-sticky-bar.show ~ .sw-fab{bottom:calc(5.4rem + env(safe-area-inset-bottom))}}
 .pd-stock{display:flex;align-items:center;gap:.55rem;font-size:.82rem;color:var(--ok);font-weight:500;margin-bottom:.55rem;letter-spacing:.02em}
 .pd-stock-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(39,174,96,.5);animation:stockPulse 2.2s ease-out infinite}
 @keyframes stockPulse{0%{box-shadow:0 0 0 0 rgba(39,174,96,.45)}70%{box-shadow:0 0 0 6px rgba(39,174,96,0)}100%{box-shadow:0 0 0 0 rgba(39,174,96,0)}}
