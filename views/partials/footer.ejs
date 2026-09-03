@@ -169,6 +169,8 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
   var seen = false;
   try { seen = localStorage.getItem(KEY) === '1' || (JSON.parse(localStorage.getItem('sw_subscribed') || 'false')); } catch (e) {}
   if (seen) return;
+  // Don't interrupt a shopper mid-decision: no popup on product pages.
+  if (location.pathname.indexOf('/products/') === 0) return;
   var opened = false;
   function open() {
     if (opened) return; opened = true;
@@ -178,8 +180,8 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     pop.classList.remove('show'); pop.setAttribute('aria-hidden', 'true');
     try { localStorage.setItem(KEY, '1'); } catch (e) {}
   }
-  // Show after 12s, or on exit-intent (mouse leaves toward the top).
-  var t = setTimeout(open, 12000);
+  // Show after 35s, or on exit-intent (mouse leaves toward the top).
+  var t = setTimeout(open, 35000);
   document.addEventListener('mouseout', function (e) {
     if (e.clientY <= 0 && !e.relatedTarget) { clearTimeout(t); open(); }
   });
