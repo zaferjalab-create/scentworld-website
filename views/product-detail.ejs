@@ -83,7 +83,9 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
 <meta property="og:image" content="<%= imgAbs(images[0]) %>">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json"><%
-const offerExtra = {
+// Shipping per offer price, same rule as checkout + the product feed.
+const shipCost = price => (shipping && shipping.rate && price < shipping.threshold) ? shipping.rate : 0;
+const offerExtra = price => ({
   hasMerchantReturnPolicy: {
     '@type': 'MerchantReturnPolicy',
     applicableCountry: 'CA',
@@ -94,7 +96,7 @@ const offerExtra = {
   },
   shippingDetails: {
     '@type': 'OfferShippingDetails',
-    shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'CAD' },
+    shippingRate: { '@type': 'MonetaryAmount', value: shipCost(price).toFixed(2), currency: 'CAD' },
     shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'CA' },
     deliveryTime: {
       '@type': 'ShippingDeliveryTime',
@@ -102,7 +104,14 @@ const offerExtra = {
       transitTime:  { '@type': 'QuantitativeValue', minValue: 3, maxValue: 8, unitCode: 'DAY' }
     }
   }
-};
+});
+// One Offer per size (Google Shopping needs a concrete price, not a range);
+// skus match the product feed ids so crawled and feed items line up.
+const offerFor = (price, extra) => ({
+  '@type': 'Offer', price: price.toFixed(2), priceCurrency: 'CAD',
+  availability: 'https://schema.org/InStock', url: pageUrl,
+  ...extra, ...offerExtra(price)
+});
 %><%- JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -111,15 +120,9 @@ const offerExtra = {
   description: product.short_desc || product.name,
   sku: product.slug,
   brand: { '@type': 'Brand', name: 'Scent World Canada' },
-  offers: sizes ? {
-    '@type': 'AggregateOffer', lowPrice: minPrice.toFixed(2), highPrice: maxPrice.toFixed(2),
-    priceCurrency: 'CAD', offerCount: sizes.length, availability: 'https://schema.org/InStock', url: pageUrl,
-    ...offerExtra
-  } : {
-    '@type': 'Offer', price: (product.price || 0).toFixed(2), priceCurrency: 'CAD',
-    availability: 'https://schema.org/InStock', url: pageUrl,
-    ...offerExtra
-  },
+  offers: sizes
+    ? sizes.map(s => offerFor(s.price, { sku: `${product.slug}-${s.label}`, name: `${product.name} (${s.label})` }))
+    : offerFor(product.price || 0, {}),
   ...(reviews.length ? {
     aggregateRating: { '@type': 'AggregateRating', ratingValue: ratingAvg, reviewCount: reviews.length },
     review: reviews.slice(0, 5).map(r => ({

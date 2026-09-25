@@ -626,7 +626,7 @@ app.get('/products/:slug', (req, res, next) => {
   const oils = all.filter(p => p.category === 'oils');
   const reviews = db.prepare('SELECT name, rating, text, created_at FROM reviews WHERE product_id = ? AND approved = 1 ORDER BY created_at DESC').all(product.id);
   const ratingAvg = reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 10) / 10 : null;
-  res.render('product-detail', { product, related, oils, all, reviews, ratingAvg });
+  res.render('product-detail', { product, related, oils, all, reviews, ratingAvg, shipping: shippingRules() });
 });
 
 // Legacy product page → 301 to clean URL

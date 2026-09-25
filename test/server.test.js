@@ -76,6 +76,26 @@ test('main pages render', async () => {
   assert.equal((await get('/products/does-not-exist')).status, 404);
 });
 
+test('product structured data: a concrete price per size + shipping that matches checkout', async () => {
+  const ld = async slug => {
+    const html = await (await get('/products/' + slug)).text();
+    const blocks = html.split('<script type="application/ld+json">').slice(1).map(b => JSON.parse(b.split('</script>')[0]));
+    return blocks.find(b => b['@type'] === 'Product');
+  };
+  const oil = db.prepare("SELECT slug FROM products WHERE category = 'oils' AND active = 1 AND sizes IS NOT NULL LIMIT 1").get();
+  const offers = (await ld(oil.slug)).offers;
+  assert.ok(Array.isArray(offers) && offers.length > 1, 'one Offer per size');
+  for (const o of offers) {
+    assert.equal(o['@type'], 'Offer');
+    assert.ok(Number(o.price) > 0 && o.sku.startsWith(oil.slug + '-'));
+    const expected = Number(o.price) < 150 ? '12.99' : '0.00';
+    assert.equal(o.shippingDetails.shippingRate.value, expected, `shipping for ${o.price}`);
+  }
+  const s200 = (await ld('s200')).offers; // $899 -> ships free
+  assert.equal(s200['@type'], 'Offer');
+  assert.equal(s200.shippingDetails.shippingRate.value, '0.00');
+});
+
 test('hidden products redirect to their shop category; robots skips the API', async () => {
   db.prepare("UPDATE products SET active = 0 WHERE slug = 's100'").run();
   const r = await get('/products/s100', { redirect: 'manual' });
