@@ -140,7 +140,7 @@ const paidSession = id => ({
 test('health check answers and bad JSON gets a clean 400 (no crash, no alert)', async () => {
   const h = await get('/healthz');
   assert.equal(h.status, 200);
-  assert.deepEqual(await h.json(), { ok: true });
+  assert.equal((await h.json()).ok, true);
   const r = await fetch(BASE + '/api/subscribe', { method: 'POST', body: '{not json', headers: { 'Content-Type': 'application/json' } });
   assert.equal(r.status, 400);
   assert.equal((await r.json()).success, false);

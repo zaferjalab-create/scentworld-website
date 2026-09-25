@@ -102,7 +102,10 @@ app.use(compression());
 app.get('/healthz', (req, res) => {
   try {
     db.prepare('SELECT 1').get();
-    res.set('Cache-Control', 'no-store').json({ ok: true });
+    // version = deployed git commit (Railway sets RAILWAY_GIT_COMMIT_SHA), so a
+    // deploy can be confirmed from outside.
+    const version = (process.env.RAILWAY_GIT_COMMIT_SHA || 'local').slice(0, 7);
+    res.set('Cache-Control', 'no-store').json({ ok: true, version });
   } catch (err) {
     res.status(503).json({ ok: false });
   }
