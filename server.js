@@ -605,7 +605,10 @@ app.get('/catalog.csv', (req, res) => {
     const csvHeader = [
       'id', 'title', 'description', 'availability', 'condition', 'price', 'link',
       'image_link', 'brand', 'google_product_category', 'product_type', 'sale_price',
-      'inventory', 'gtin', 'mpn', 'shipping', 'currency'
+      'inventory', 'gtin', 'mpn', 'shipping', 'currency',
+      // Size variants of one product share item_group_id so Google Shopping
+      // groups them (100/200/500 ml) instead of listing unrelated items.
+      'item_group_id', 'size'
     ].join(',');
     const rows = [csvHeader];
 
@@ -645,7 +648,9 @@ app.get('/catalog.csv', (req, res) => {
           '', // gtin
           `"${id}"`, // mpn
           '"CA::Standard:0.00 CAD"',
-          'CAD'
+          'CAD',
+          v.label ? `"${p.slug}"` : '',
+          v.label ? `"${String(v.label).replace(/"/g, '""')}"` : ''
         ];
         rows.push(row.join(','));
       }
