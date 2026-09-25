@@ -46,7 +46,7 @@ const ADMIN_BASE = '/' + ADMIN_PATH;
 // uploads saved there were wiped by the next push. Both folders are served
 // under the same /images/products/ URL.
 const REPO_IMG_DIR = path.join(__dirname, 'public', 'images', 'products');
-const UPLOAD_IMG_DIR = path.join(__dirname, 'data', 'uploads');
+const UPLOAD_IMG_DIR = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'uploads');
 if (!fs.existsSync(UPLOAD_IMG_DIR)) fs.mkdirSync(UPLOAD_IMG_DIR, { recursive: true });
 
 // Railway terminates TLS at its proxy; trust it so secure cookies work and
@@ -1491,7 +1491,9 @@ function scheduleReviewRequests() {
 // START SERVER
 // ═══════════════════════════════════════
 
-app.listen(PORT, () => {
+// Only bind a port when run directly (npm start); the test suite imports the
+// app and listens on an ephemeral port itself.
+if (require.main === module) app.listen(PORT, () => {
   console.log(`\n🌿 Scent World Canada`);
   console.log(`   Website:  http://localhost:${PORT}`);
   console.log(`   Admin:    http://localhost:${PORT}/admin/login.html`);
@@ -1499,3 +1501,5 @@ app.listen(PORT, () => {
   scheduleDailyBackup();
   scheduleReviewRequests();
 });
+
+module.exports = app;
