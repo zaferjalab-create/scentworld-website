@@ -106,8 +106,8 @@ test('product images are WebP and all resolve', async () => {
 });
 
 test('size finder shows a size group only when it has active products', async () => {
-  // 3,000-5,000 sq ft units: s100 / l100 / l100-ad (3,230 sq ft)
-  const commercial = ['s100', 'l100', 'l100-ad'];
+  // 3,000-5,000 sq ft units: s200 (3,000–4,000) and l200 (4,000–5,000)
+  const commercial = ['s200', 'l200'];
   const setActive = v => commercial.forEach(slug => db.prepare('UPDATE products SET active = ? WHERE slug = ?').run(v, slug));
   const tile = async () => (await (await get('/')).text()).includes('/shop?size=commercial');
   try {
@@ -118,6 +118,7 @@ test('size finder shows a size group only when it has active products', async ()
     assert.equal(await tile(), true, 'tile comes back when re-activated');
   } finally {
     setActive(0);
+    db.prepare("UPDATE products SET active = 1 WHERE slug = 's200'").run();
   }
   assert.ok((await (await get('/')).text()).includes('/shop?size=small'));
 });

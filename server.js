@@ -542,11 +542,12 @@ function coverageBucket(p) {
   if (/hvac/i.test(p.name)) return 'hvac';
   const sq = parseCoverageSqft(p);
   if (sq == null) return '';
-  // Thresholds tuned so every space-size filter option actually returns
-  // products in the current catalog (300 / ~3,000 / 17,945 sq ft clusters).
+  // Grouped by the top of the device's range, matching the finder labels:
+  // up to 500 / 500–3,000 / 3,000–5,000 / 5,000+ sq ft. (S20 300–500 -> small,
+  // S30 & S100 -> large, S200 / L200 / S300 -> commercial.)
   if (sq > 5000) return 'hvac';
-  if (sq >= 3000) return 'commercial';
-  if (sq >= 500) return 'large';
+  if (sq > 3000) return 'commercial';
+  if (sq > 500) return 'large';
   return 'small';
 }
 // Size groups that currently have at least one active product. The homepage

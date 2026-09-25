@@ -187,13 +187,13 @@ try {
 // mean existing rows (and anything edited in the admin) are never overwritten.
 try {
   const products = [
-    { name: 'S20 Nano Diffuser', slug: 's20', category: 'diffusers', short_desc: 'Compact nano diffuser for personal spaces up to 300 sq ft.', price: 199.00, coverage: 'Up to 300 sq ft', sort_order: 1, image_url: '/images/products/S20-Black.webp' },
-    { name: 'S30 Nano Diffuser', slug: 's30', category: 'diffusers', short_desc: 'Mid-size nano diffuser with programmable timer. Coverage up to 2,870 sq ft.', price: 349.00, coverage: 'Up to 2,870 sq ft', sort_order: 2, image_url: '/images/products/S30-Black.webp' },
-    { name: 'S100 Commercial Diffuser', slug: 's100', category: 'diffusers', short_desc: 'Professional-grade cold-air diffuser for commercial spaces up to 3,230 sq ft.', price: 599.00, coverage: 'Up to 3,230 sq ft', sort_order: 3, image_url: '/images/products/S100.webp' },
-    { name: 'S200 Commercial Diffuser', slug: 's200', category: 'diffusers', short_desc: 'High-capacity nano diffuser for large commercial environments up to 17,945 sq ft.', price: 899.00, coverage: 'Up to 17,945 sq ft', sort_order: 4, image_url: '/images/products/S200.webp' },
-    { name: 'L100 Luxury Diffuser', slug: 'l100', category: 'diffusers', short_desc: 'Premium luxury diffuser with elegant design and smart controls.', price: 749.00, coverage: 'Up to 3,230 sq ft', sort_order: 5, image_url: '/images/products/SW110.webp' },
-    { name: 'L100 AD Display Diffuser', slug: 'l100-ad', category: 'diffusers', short_desc: 'Luxury diffuser with built-in digital display for branding.', price: 999.00, coverage: 'Up to 3,230 sq ft', sort_order: 6, image_url: '/images/products/SW114.webp' },
-    { name: 'L200 Luxury Diffuser', slug: 'l200', category: 'diffusers', short_desc: 'Top-tier luxury diffuser with diamond-pattern design for premium venues.', price: 1299.00, coverage: 'Up to 17,945 sq ft', sort_order: 7, image_url: '/images/products/SW127.webp' },
+    { name: 'S20 Nano Diffuser', slug: 's20', category: 'diffusers', short_desc: 'Compact nano diffuser for personal spaces of 300–500 sq ft.', price: 199.00, coverage: '300–500 sq ft', sort_order: 1, image_url: '/images/products/S20-Black.webp' },
+    { name: 'S30 Nano Diffuser', slug: 's30', category: 'diffusers', short_desc: 'Mid-size nano diffuser with programmable timer. Coverage 500–1,500 sq ft.', price: 349.00, coverage: '500–1,500 sq ft', sort_order: 2, image_url: '/images/products/S30-Black.webp' },
+    { name: 'S100 Commercial Diffuser', slug: 's100', category: 'diffusers', short_desc: 'Professional-grade cold-air diffuser for commercial spaces of 1,500–3,000 sq ft.', price: 599.00, coverage: '1,500–3,000 sq ft', sort_order: 3, image_url: '/images/products/S100.webp' },
+    { name: 'S200 Commercial Diffuser', slug: 's200', category: 'diffusers', short_desc: 'High-capacity nano diffuser for commercial environments of 3,000–4,000 sq ft.', price: 899.00, coverage: '3,000–4,000 sq ft', sort_order: 4, image_url: '/images/products/S200.webp' },
+    { name: 'L100 Luxury Diffuser', slug: 'l100', category: 'diffusers', short_desc: 'Premium luxury diffuser with elegant design and smart controls.', price: 749.00, coverage: '1,500–3,000 sq ft', sort_order: 5, image_url: '/images/products/SW110.webp' },
+    { name: 'L100 AD Display Diffuser', slug: 'l100-ad', category: 'diffusers', short_desc: 'Luxury diffuser with built-in digital display for branding.', price: 999.00, coverage: '1,500–3,000 sq ft', sort_order: 6, image_url: '/images/products/SW114.webp' },
+    { name: 'L200 Luxury Diffuser', slug: 'l200', category: 'diffusers', short_desc: 'Top-tier luxury diffuser with diamond-pattern design for premium venues.', price: 1299.00, coverage: '4,000–5,000 sq ft', sort_order: 7, image_url: '/images/products/SW127.webp' },
     { name: 'Car Scent Diffuser', slug: 'car-diffuser', category: 'home_car', short_desc: 'Premium car diffuser with USB-C power and nano mist technology.', price: 149.00, coverage: 'Vehicle interior', sort_order: 8, image_url: '/images/products/Car-Scent-Diffuser.webp' },
     { name: 'Car Diffuser Gift Set', slug: 'car-gift-set', category: 'home_car', short_desc: 'Car diffuser with 5 curated fragrance oils in luxury packaging.', price: 249.00, coverage: 'Vehicle interior', sort_order: 9, featured: 1, image_url: '/images/products/H1_02.jpg' },
     { name: 'Fresh Blossom Oil', slug: 'fresh-blossom', category: 'oils', short_desc: 'Light floral blend with notes of spring blossoms and green leaves.', price: 49.00, coverage: null, sort_order: 10, image_url: '/images/products/SW101-430x430-1.webp', sizes: '[{"label":"100ml","price":49},{"label":"200ml","price":89},{"label":"500ml","price":189}]' },
@@ -527,6 +527,46 @@ try {
   if (n) console.log(`✅ Switched ${n} product image fields to WebP`);
 } catch (e) {
   console.error('❌ webp migration error:', e.message);
+}
+
+// Coverage ladder set by the owner (2026-09-24): S20 300–500 sq ft up to the
+// S300 at 5,000 sq ft, with the range divided between the devices in between.
+// Applied once (settings flag) so later edits in the admin panel are kept. In
+// descriptions only the old coverage phrase is swapped, preserving any other
+// wording edited in the admin. The S300 value is picked up from
+// diffuser-content.json when that product is added.
+try {
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'coverage_ladder_v1'").get();
+  if (!done) {
+    const LADDER = {
+      "s20": "300–500 sq ft",
+      "s30": "500–1,500 sq ft",
+      "s100": "1,500–3,000 sq ft",
+      "l100": "1,500–3,000 sq ft",
+      "l100-ad": "1,500–3,000 sq ft",
+      "s200": "3,000–4,000 sq ft",
+      "l200": "4,000–5,000 sq ft",
+      "s300": "4,000–5,000 sq ft"
+    };
+    const PHRASES = {
+      s20: [['up to 300 sq ft', '300–500 sq ft']],
+      s30: [['1,435–2,870 sq ft', '500–1,500 sq ft'], ['up to 2,870 sq ft', '500–1,500 sq ft']],
+      s100: [['spaces up to 3,230 sq ft', 'spaces of 1,500–3,000 sq ft']],
+      s200: [['covering up to 17,945 sq ft', 'covering 3,000–4,000 sq ft'], ['up to 17,945 sq ft', '3,000–4,000 sq ft']],
+    };
+    let n = 0;
+    for (const [slug, cov] of Object.entries(LADDER)) {
+      n += db.prepare('UPDATE products SET coverage = ?, spec_coverage = ? WHERE slug = ?').run(cov, cov, slug).changes;
+      for (const [from, to] of PHRASES[slug] || []) {
+        db.prepare('UPDATE products SET short_desc = replace(short_desc, ?, ?), full_desc = replace(full_desc, ?, ?) WHERE slug = ?')
+          .run(from, to, from, to, slug);
+      }
+    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('coverage_ladder_v1', '1')").run();
+    if (n) console.log(`✅ Applied coverage ladder to ${n} diffusers`);
+  }
+} catch (e) {
+  console.error('❌ coverage ladder error:', e.message);
 }
 
 module.exports = db;
