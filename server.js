@@ -4,6 +4,7 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression');
 const os = require('os');
 const db = require('./database');
 const bcrypt = require('bcryptjs');
@@ -38,6 +39,15 @@ if (ADMIN_PATH === 'admin') {
   console.warn('⚠ ADMIN_PATH not set — admin panel is at the default /admin/. Set ADMIN_PATH to a secret string to hide it.');
 }
 const ADMIN_BASE = '/' + ADMIN_PATH;
+
+// Product images shipped in the repo live in public/images/products. Images
+// uploaded through the admin panel go to data/uploads instead: data/ is the
+// Railway volume, while public/ is rebuilt from git on every deploy, so
+// uploads saved there were wiped by the next push. Both folders are served
+// under the same /images/products/ URL.
+const REPO_IMG_DIR = path.join(__dirname, 'public', 'images', 'products');
+const UPLOAD_IMG_DIR = path.join(__dirname, 'data', 'uploads');
+if (!fs.existsSync(UPLOAD_IMG_DIR)) fs.mkdirSync(UPLOAD_IMG_DIR, { recursive: true });
 
 // Railway terminates TLS at its proxy; trust it so secure cookies work and
 // rate limiting sees the real client IP (via X-Forwarded-For) instead of the proxy.
@@ -83,6 +93,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// gzip/deflate responses — HTML pages are 100-170KB uncompressed.
+app.use(compression());
+
 // ── Stripe webhook ──
 // MUST be registered before express.json(): signature verification needs the
 // raw, unparsed request body. This is the authoritative order-creation path —
@@ -125,7 +138,19 @@ app.use((req, res, next) => {
   jsonSmall(req, res, next);
 });
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Images/fonts are cached for 30 days: uploads never overwrite an existing
+// filename, so a URL's content doesn't change (give a replaced repo image a
+// new filename). Everything else (CSS/JS) revalidates hourly.
+const STATIC_OPTS = {
+  maxAge: '1h',
+  setHeaders(res, filePath) {
+    if (/\.(png|jpe?g|webp|gif|ico|woff2?)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=2592000');
+    }
+  },
+};
+app.use(express.static(path.join(__dirname, 'public'), STATIC_OPTS));
+app.use('/images/products', express.static(UPLOAD_IMG_DIR, STATIC_OPTS));
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
@@ -686,15 +711,14 @@ app.post('/api/admin/upload-image', requireAdmin, express.json({ limit: '20mb' }
     // Sanitize filename (remove path traversal, special chars)
     let safeName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
 
-    // Ensure directory exists
-    const dir = path.join(__dirname, 'public', 'images', 'products');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const dir = UPLOAD_IMG_DIR;
+    const taken = n => fs.existsSync(path.join(UPLOAD_IMG_DIR, n)) || fs.existsSync(path.join(REPO_IMG_DIR, n));
 
     // Handle name conflicts: file.jpg → file_1.jpg, file_2.jpg, etc.
     let finalName = safeName;
     let counter = 1;
     const base = safeName.replace(ext, '');
-    while (fs.existsSync(path.join(dir, finalName))) {
+    while (taken(finalName)) {
       finalName = `${base}_${counter}${ext}`;
       counter++;
     }
@@ -745,8 +769,14 @@ app.delete('/api/admin/product-images/:filename', requireAdmin, (req, res) => {
   try {
     const name = path.basename(req.params.filename);
     if (!/^[a-zA-Z0-9._-]+$/.test(name)) return res.status(400).json({ success: false, error: 'Invalid filename' });
-    const filePath = path.join(__dirname, 'public', 'images', 'products', name);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'File not found' });
+    const filePath = path.join(UPLOAD_IMG_DIR, name);
+    if (!fs.existsSync(filePath)) {
+      // Repo-shipped images come back on every deploy, so deleting them here would be a no-op.
+      if (fs.existsSync(path.join(REPO_IMG_DIR, name))) {
+        return res.status(400).json({ success: false, error: 'Built-in image — remove it from the code repository instead' });
+      }
+      return res.status(404).json({ success: false, error: 'File not found' });
+    }
     fs.unlinkSync(filePath);
     res.json({ success: true });
   } catch (err) {
@@ -758,10 +788,12 @@ app.delete('/api/admin/product-images/:filename', requireAdmin, (req, res) => {
 // List available product images
 app.get('/api/admin/product-images', requireAdmin, (req, res) => {
   try {
-    const dir = path.join(__dirname, 'public', 'images', 'products');
-    if (!fs.existsSync(dir)) return res.json({ success: true, images: [] });
+    const names = new Set();
+    for (const d of [REPO_IMG_DIR, UPLOAD_IMG_DIR]) {
+      if (fs.existsSync(d)) fs.readdirSync(d).forEach(n => names.add(n));
+    }
     // SVG intentionally excluded here too — we no longer accept SVG uploads.
-    const files = fs.readdirSync(dir)
+    const files = [...names]
       .filter(f => /\.(jpe?g|png|webp|gif)$/i.test(f))
       .sort()
       .map(f => ({ name: f, url: `/images/products/${f}` }));
