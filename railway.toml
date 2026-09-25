@@ -1,2 +1,6 @@
 [deploy]
 startCommand = "node setup.js && node server.js"
+# A new deploy only receives traffic once /healthz answers 200, so a build
+# that fails to boot never replaces the working site.
+healthcheckPath = "/healthz"
+healthcheckTimeout = 120

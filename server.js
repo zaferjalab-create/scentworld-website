@@ -96,6 +96,17 @@ app.use((req, res, next) => {
 // gzip/deflate responses — HTML pages are 100-170KB uncompressed.
 app.use(compression());
 
+// Health check for Railway (railway.toml healthcheckPath) and uptime monitors:
+// a deploy only goes live once this answers, and it proves the DB is readable.
+app.get('/healthz', (req, res) => {
+  try {
+    db.prepare('SELECT 1').get();
+    res.set('Cache-Control', 'no-store').json({ ok: true });
+  } catch (err) {
+    res.status(503).json({ ok: false });
+  }
+});
+
 // ── Stripe webhook ──
 // MUST be registered before express.json(): signature verification needs the
 // raw, unparsed request body. This is the authoritative order-creation path —
@@ -1415,6 +1426,45 @@ app.use((req, res) => {
     return res.status(404).json({ success: false, error: 'Not found' });
   }
   res.status(404).render('404');
+});
+
+// ═══════════════════════════════════════
+// ERROR HANDLING + ALERTS
+// ═══════════════════════════════════════
+// Unexpected errors are logged and emailed to the ops inbox (ALERT_EMAIL, else
+// BACKUP_EMAIL, else NOTIFY_EMAIL) — kept off the order/quote inbox. At most one
+// email per distinct error per hour, so a crash loop can't flood the inbox.
+const alertLastSent = new Map();
+function alertError(where, err) {
+  const detail = (err && err.stack) || String(err);
+  console.error(`✖ ${where}:`, detail);
+  const key = where + '|' + String((err && err.message) || err).slice(0, 200);
+  const now = Date.now();
+  if (alertLastSent.get(key) > now - 60 * 60 * 1000) return;
+  alertLastSent.set(key, now);
+  const to = process.env.ALERT_EMAIL || process.env.BACKUP_EMAIL || process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+  resendEmail(to, `[Scent World] Site error: ${where}`,
+    `<pre style="font-family:monospace;white-space:pre-wrap">${escapeHtml(detail)}</pre>`, detail).catch(() => {});
+}
+
+// Last-resort Express error handler. Client errors (bad JSON, oversized body)
+// keep their 4xx status and don't alert; anything else is a real fault.
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  if (status >= 500) alertError(`${req.method} ${req.path}`, err);
+  if (res.headersSent) return next(err);
+  if (req.path.startsWith('/api/')) {
+    return res.status(status).json({ success: false, error: status >= 500 ? 'Something went wrong' : 'Bad request' });
+  }
+  res.status(status).send(status >= 500 ? 'Something went wrong on our side — please try again in a moment.' : 'Bad request');
+});
+
+process.on('unhandledRejection', err => alertError('unhandledRejection', err));
+// After an uncaught exception the process state is unreliable: alert, give the
+// email a moment to send, then exit so Railway restarts a clean instance.
+process.on('uncaughtException', err => {
+  alertError('uncaughtException', err);
+  setTimeout(() => process.exit(1), 3000).unref();
 });
 
 // ═══════════════════════════════════════
