@@ -8,5 +8,6 @@ Sitemap: https://www.scentworld.ca/sitemap.xml
 # Crawl delay (optional - allows 1 second between requests)
 Crawl-delay: 1
 
-# Disallow admin pages from being indexed
+# Keep crawlers out of the admin and the JSON API endpoints
 Disallow: /admin/
+Disallow: /api/

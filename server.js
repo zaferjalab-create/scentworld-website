@@ -600,7 +600,14 @@ app.get('/', (req, res) => {
 // Clean product detail URLs: /products/:slug (SSR)
 app.get('/products/:slug', (req, res, next) => {
   const product = db.prepare('SELECT * FROM products WHERE slug = ? AND active = 1').get(req.params.slug);
-  if (!product) return next(); // falls through to 404
+  if (!product) {
+    // A hidden (inactive) product sends visitors to its category in the shop
+    // instead of a dead-end 404. 302 = temporary, so Google keeps the URL and the
+    // page simply returns when the product is re-activated in the admin.
+    const hidden = db.prepare('SELECT category FROM products WHERE slug = ? AND active = 0').get(req.params.slug);
+    if (hidden) return res.redirect(302, `/shop?filter=${encodeURIComponent(hidden.category)}`);
+    return next(); // unknown slug -> 404
+  }
   const all = getActiveProducts();
   const related = all.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
   const oils = all.filter(p => p.category === 'oils');

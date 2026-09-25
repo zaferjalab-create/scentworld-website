@@ -60,6 +60,15 @@ test('main pages render', async () => {
   assert.equal((await get('/products/does-not-exist')).status, 404);
 });
 
+test('hidden products redirect to their shop category; robots skips the API', async () => {
+  db.prepare("UPDATE products SET active = 0 WHERE slug = 's100'").run();
+  const r = await get('/products/s100', { redirect: 'manual' });
+  assert.equal(r.status, 302);
+  assert.equal(r.headers.get('location'), '/shop?filter=diffusers');
+  assert.equal((await get('/products/no-such-thing')).status, 404);
+  assert.ok((await (await get('/robots.txt')).text()).includes('Disallow: /api/'));
+});
+
 test('security headers and a CSP that allows GA4 + Google Ads collection', async () => {
   const r = await get('/');
   const csp = r.headers.get('content-security-policy');
