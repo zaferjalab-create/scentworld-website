@@ -125,8 +125,13 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
 
   <h2>Shipping Rates</h2>
   <ul>
-    <li><strong>Free shipping</strong> on all orders over $150 CAD</li>
-    <li><strong>Standard shipping</strong> rates apply for orders under $150 CAD — calculated at checkout based on your location</li>
+<% const thr = shipping.threshold % 1 ? shipping.threshold.toFixed(2) : shipping.threshold; %>
+<% if (shipping.rate) { %>
+    <li><strong>Free shipping</strong> on all orders of $<%= thr %> CAD or more</li>
+    <li><strong>Standard shipping</strong> is a flat <strong>$<%= shipping.rate.toFixed(2) %> CAD</strong> on orders under $<%= thr %> CAD</li>
+<% } else { %>
+    <li><strong>Free shipping</strong> on all orders</li>
+<% } %>
   </ul>
 
   <h2>Delivery Timeframes</h2>

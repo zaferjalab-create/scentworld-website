@@ -15,7 +15,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, stripeApi
 const { resendEmail, escapeHtml, sendNotification, sendConfirmation } = require('./lib/email');
 const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
-const { stripeShippingOption } = require('./lib/shipping');
+const { stripeShippingOption, shippingRules } = require('./lib/shipping');
 
 const crypto = require('crypto');
 const app = express();
@@ -738,7 +738,7 @@ for (const [route, view] of Object.entries(PAGE_VIEWS)) {
   const paths = route === '/' ? ['/'] : [route, route + '.html'];
   if (route === '/industries') paths.push('/industries/');
   if (route === '/blog') paths.push('/blog/');
-  app.get(paths, (req, res) => res.render(view));
+  app.get(paths, (req, res) => res.render(view, { shipping: shippingRules() }));
 }
 app.get('/index.html', (req, res) => res.redirect(301, '/'));
 

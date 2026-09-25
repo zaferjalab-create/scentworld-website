@@ -569,4 +569,19 @@ try {
   console.error('❌ coverage ladder error:', e.message);
 }
 
+// Shipping rate set by the owner (2026-09-24): CA$12.99 flat under the $150
+// free-shipping threshold. Applied once (settings flag) so a later change in
+// admin → Settings (including clearing it for free shipping) is kept.
+try {
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'shipping_rate_v1'").get();
+  if (!done) {
+    db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('shipping_threshold', '150')").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('shipping_flat_rate', '12.99')").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('shipping_rate_v1', '1')").run();
+    console.log('✅ Shipping set to $12.99 under the free-shipping threshold');
+  }
+} catch (e) {
+  console.error('❌ shipping default error:', e.message);
+}
+
 module.exports = db;

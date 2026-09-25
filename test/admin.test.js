@@ -150,16 +150,19 @@ test('change password: validates, then works, then old password fails', async ()
   assert.equal(oldLogin.status, 401);
 });
 
-test('shipping: free by default; flat rate below the threshold once set in admin', async () => {
+test('shipping: $12.99 under $150 by default; rate editable (or cleared) in admin', async () => {
   const { shippingCost, stripeShippingOption } = require('../lib/shipping');
   // the change-password test above rotated the session; log in with the new password
   const relog = await fetch(BASE + '/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: ADMIN_EMAIL, password: 'brand-new-pass-456' }) });
   assert.equal(relog.status, 200);
   cookie = relog.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
-  // default (no rate set): everything ships free, as before
-  assert.equal(shippingCost(49), 0);
-  assert.ok((await (await fetch(BASE + '/catalog.csv')).text()).includes('CA::Standard:0.00 CAD'));
+  // owner's default: $12.99 below $150, free at/above
+  assert.equal(shippingCost(49), 12.99);
+  assert.equal(shippingCost(150), 0);
+  assert.ok((await (await fetch(BASE + '/catalog.csv')).text()).includes('CA::Standard:12.99 CAD'));
+  const page = await (await fetch(BASE + '/shipping')).text();
+  assert.ok(page.includes('$12.99 CAD'), 'shipping policy shows the rate');
 
   await ok('PUT', '/api/admin/settings', { shipping_threshold: '150', shipping_flat_rate: '14.95' });
   assert.equal(shippingCost(49), 14.95);
@@ -176,6 +179,8 @@ test('shipping: free by default; flat rate below the threshold once set in admin
   assert.ok(oil100.includes('CA::Standard:14.95 CAD'), 'feed charges shipping under the threshold');
   assert.ok(s200.includes('CA::Standard:0.00 CAD'), 'feed ships free at/above the threshold');
 
-  await ok('PUT', '/api/admin/settings', { shipping_flat_rate: '' }); // back to free
+  await ok('PUT', '/api/admin/settings', { shipping_flat_rate: '' }); // cleared = free
   assert.equal(shippingCost(49), 0);
+  assert.ok((await (await fetch(BASE + '/shipping')).text()).includes('Free shipping</strong> on all orders</li>'));
+  await ok('PUT', '/api/admin/settings', { shipping_flat_rate: '12.99' });
 });
