@@ -1229,6 +1229,12 @@ function coverageBucket(p) {
   if (sq >= 500) return 'large';
   return 'small';
 }
+// Size groups that currently have at least one active product. The homepage
+// finder and the shop size filter hide the others instead of leading shoppers
+// to an empty results page (e.g. while the 3,000–5,000 sq ft units are hidden).
+function sizeBuckets() {
+  return [...new Set(getActiveProducts().map(coverageBucket).filter(Boolean))];
+}
 function getSalesCounts() {
   try {
     const rows = db.prepare('SELECT product_id, SUM(quantity) AS sold FROM order_items GROUP BY product_id').all();
@@ -1268,7 +1274,7 @@ function getTestimonials() {
 // ?cart=open is legacy; redirect to / so Google doesn't flag it as a redirect page
 app.get('/', (req, res) => {
   if (req.query.cart === 'open') return res.redirect(301, '/');
-  res.render('index', { products: withRatings(homepageProducts()), testimonials: getTestimonials() });
+  res.render('index', { products: withRatings(homepageProducts()), testimonials: getTestimonials(), buckets: sizeBuckets() });
 });
 
 // Clean product detail URLs: /products/:slug (SSR)
@@ -1291,7 +1297,7 @@ app.get(['/product', '/product.html'], (req, res) => {
 
 // /shop — all products with filters & sort
 app.get(['/shop', '/shop.html'], (req, res) => {
-  res.render('shop', { products: shopLocals(getActiveProducts()), q: null });
+  res.render('shop', { products: shopLocals(getActiveProducts()), q: null, buckets: sizeBuckets() });
 });
 
 // /wishlist — client-rendered saved items (from localStorage)
@@ -1317,7 +1323,7 @@ app.get('/search', (req, res) => {
       `SELECT * FROM products WHERE active = 1 AND (name LIKE ? OR short_desc LIKE ? OR full_desc LIKE ?) ORDER BY sort_order`
     ).all(like, like, like);
   }
-  res.render('shop', { products: shopLocals(products), q });
+  res.render('shop', { products: shopLocals(products), q, buckets: sizeBuckets() });
 });
 
 // Live search suggestions (JSON) for the header type-ahead. Returns a few

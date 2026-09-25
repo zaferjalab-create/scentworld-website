@@ -415,7 +415,7 @@ section{padding:7rem 4vw}
 .finder-opts a small{font-size:.6rem;color:var(--txt2);font-weight:200;letter-spacing:.04em}
 .finder-opts a:hover{border-color:var(--gold);color:var(--gold)}
 .finder-opts a:hover small{color:var(--txt)}
-@media(max-width:768px){.finder{flex-direction:column;align-items:stretch;gap:.8rem}.finder-opts a{min-width:calc(50% - .4rem);flex:0 0 calc(50% - .4rem)}}
+@media(max-width:768px){.finder{flex-direction:column;align-items:stretch;gap:.8rem}.finder-opts a{min-width:calc(50% - .4rem);flex:0 0 calc(50% - .4rem)}.finder-opts a:last-of-type:nth-of-type(odd){flex-basis:100%}}
 .pc-stars{display:flex;align-items:center;gap:.4rem;margin:-.2rem 0 .4rem}
 .pc-stars span{color:var(--gold);font-size:.72rem;letter-spacing:.1em}
 .pc-stars em{font-style:normal;font-size:.64rem;color:var(--txt2);font-weight:200}
@@ -698,10 +698,11 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
   <div class="finder rv">
     <span class="finder-label">Find the right diffuser for your space:</span>
     <div class="finder-opts">
-      <a href="/shop?size=small">Up to 500 sq ft<small>Home office · Boutique</small></a>
-      <a href="/shop?size=large">500–3,000 sq ft<small>Café · Salon · Retail</small></a>
-      <a href="/shop?size=commercial">3,000–5,000 sq ft<small>Hotel lobby · Gym</small></a>
-      <a href="/shop?size=hvac">5,000+ sq ft<small>HVAC · Whole building</small></a>
+      <% const hasSize = b => typeof buckets === 'undefined' || buckets.includes(b); %>
+      <% if (hasSize('small')) { %><a href="/shop?size=small">Up to 500 sq ft<small>Home office · Boutique</small></a><% } %>
+      <% if (hasSize('large')) { %><a href="/shop?size=large">500–3,000 sq ft<small>Café · Salon · Retail</small></a><% } %>
+      <% if (hasSize('commercial')) { %><a href="/shop?size=commercial">3,000–5,000 sq ft<small>Hotel lobby · Gym</small></a><% } %>
+      <% if (hasSize('hvac')) { %><a href="/shop?size=hvac">5,000+ sq ft<small>HVAC · Whole building</small></a><% } %>
     </div>
     <a href="/compare" style="white-space:nowrap;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--bdr);padding-bottom:.2rem;transition:border-color .3s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--bdr)'">Compare all →</a>
   </div>
