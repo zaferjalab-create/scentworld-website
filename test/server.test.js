@@ -10,6 +10,20 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// Fake Stripe API: records checkout-session requests and answers like Stripe.
+const http = require('http');
+const stripeCalls = [];
+const fakeStripe = http.createServer((req, res) => {
+  let body = '';
+  req.on('data', c => { body += c; });
+  req.on('end', () => {
+    stripeCalls.push({ path: req.url, params: new URLSearchParams(body) });
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ id: 'cs_test_fake', object: 'checkout.session', url: 'https://checkout.stripe.com/c/pay/cs_test_fake' }));
+  });
+}).listen(0);
+const STRIPE_API_URL = 'http://127.0.0.1:' + fakeStripe.address().port;
+
 const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'sw-test-'));
 const ADMIN_EMAIL = 'test-admin@example.com';
 const ADMIN_PASSWORD = 'test-only-password-123';
@@ -22,6 +36,7 @@ Object.assign(process.env, {
   SESSION_SECRET: 'test-session-secret',
   STRIPE_SECRET_KEY: 'sk_test_dummy',
   STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET,
+  STRIPE_API_URL,
   RESEND_API_KEY: '',
   NODE_ENV: 'test',
 });
@@ -41,6 +56,7 @@ before(async () => {
 });
 after(() => {
   server.close();
+  fakeStripe.close();
   db.close();
   fs.rmSync(DATA_DIR, { recursive: true, force: true });
 });
@@ -155,6 +171,27 @@ test('health check answers and bad JSON gets a clean 400 (no crash, no alert)', 
   assert.equal(r.status, 400);
   assert.equal((await r.json()).success, false);
   assert.equal((await get('/healthz')).status, 200, 'server still up');
+});
+
+test('checkout sends Stripe a valid session: real prices, shipping option, no invalid params', async () => {
+  const oil = db.prepare("SELECT id FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
+  const r = await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 2, size: '100ml' }] });
+  const data = await r.json();
+  assert.equal(r.status, 200, JSON.stringify(data));
+  assert.ok(data.url.startsWith('https://checkout.stripe.com/'), data.url);
+  const call = stripeCalls.find(c => c.path === '/v1/checkout/sessions');
+  assert.ok(call, 'a checkout session was requested');
+  const p = call.params;
+  const keys = [...p.keys()];
+  // automatic_payment_methods is a PaymentIntents option; Checkout rejects it.
+  assert.ok(!keys.some(k => k.startsWith('automatic_payment_methods')), 'no invalid params');
+  assert.equal(p.get('mode'), 'payment');
+  assert.equal(p.get('line_items[0][price_data][currency]'), 'cad');
+  assert.equal(p.get('line_items[0][price_data][unit_amount]'), '4900', 'price comes from the server, not the cart');
+  assert.equal(p.get('line_items[0][quantity]'), '2');
+  assert.equal(p.get('shipping_options[0][shipping_rate_data][type]'), 'fixed_amount');
+  assert.equal(p.get('allow_promotion_codes'), 'true');
+  assert.ok(p.get('success_url').includes('/success.html?session_id={CHECKOUT_SESSION_ID}'));
 });
 
 test('webhook rejects unsigned requests', async () => {

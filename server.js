@@ -6,10 +6,16 @@ const path = require('path');
 const fs = require('fs');
 const compression = require('compression');
 const db = require('./database');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// STRIPE_API_URL lets the test suite point the SDK at a local fake Stripe
+// that records exactly what checkout sends (unset in production).
+const stripeApi = process.env.STRIPE_API_URL ? new URL(process.env.STRIPE_API_URL) : null;
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, stripeApi
+  ? { host: stripeApi.hostname, port: stripeApi.port, protocol: stripeApi.protocol.replace(':', '') }
+  : undefined);
 const { resendEmail, escapeHtml, sendNotification, sendConfirmation } = require('./lib/email');
 const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
+const { stripeShippingOption } = require('./lib/shipping');
 
 const crypto = require('crypto');
 const app = express();
@@ -345,6 +351,7 @@ app.post('/api/checkout', async (req, res) => {
 
     const lineItems = [];
     const metaItems = [];
+    let subtotal = 0;
     for (const item of items) {
       const product = db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.id);
       if (!product) return res.status(400).json({ success: false, error: `Product ${item.id} not available` });
@@ -380,6 +387,7 @@ app.post('/api/checkout', async (req, res) => {
         quantity: item.quantity,
       });
       metaItems.push({ id: item.id, qty: item.quantity, s: item.size || undefined, p: unitPrice });
+      subtotal += unitPrice * item.quantity;
     }
 
     // Success/cancel URLs must point at the site the customer is actually on.
@@ -390,14 +398,16 @@ app.post('/api/checkout', async (req, res) => {
     // (trust proxy is set, so req.protocol is correct behind Railway).
     const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const session = await stripe.checkout.sessions.create({
-      // Let Stripe show every method enabled on the account for the customer's
-      // device — card plus Apple Pay / Google Pay wallets on mobile. (Wallets
-      // require the domain to be registered in the Stripe dashboard, which
-      // Stripe Checkout does automatically for Checkout-hosted pages.)
-      automatic_payment_methods: { enabled: true },
+      // No payment_method_types: hosted Checkout then offers every method
+      // enabled in the Stripe dashboard (card, Apple Pay, Google Pay…).
+      // NOTE: do not add automatic_payment_methods here — that is a
+      // PaymentIntents option, not a Checkout Session one, and Stripe rejects
+      // the whole request ("unknown parameter"), which broke checkout.
       line_items: lineItems,
       mode: 'payment',
       shipping_address_collection: { allowed_countries: ['CA', 'US'] },
+      // Free at/above the admin threshold, flat rate below it (lib/shipping.js).
+      shipping_options: [stripeShippingOption(subtotal)],
       allow_promotion_codes: true,   // customers can enter promo/discount codes
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/#products`,
@@ -407,6 +417,8 @@ app.post('/api/checkout', async (req, res) => {
     res.json({ success: true, url: session.url });
   } catch (err) {
     console.error('Checkout error:', err.message);
+    // A failing checkout means no sales at all — alert the owner right away.
+    alertError('checkout', err);
     res.status(500).json({ success: false, error: 'Could not start checkout. Please try again.' });
   }
 });

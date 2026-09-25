@@ -1,11 +1,13 @@
 // Public product feed for Google Merchant Center / Meta catalog.
 const express = require('express');
 const db = require('../database');
+const { shippingRules, shippingCost } = require('../lib/shipping');
 const router = express.Router();
 
 // Meta/Google product catalog feed (CSV format)
 router.get('/catalog.csv', (req, res) => {
   try {
+    const rules = shippingRules();
     const products = db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all();
     const BASE = 'https://www.scentworld.ca';
     const csvHeader = [
@@ -53,7 +55,7 @@ router.get('/catalog.csv', (req, res) => {
           '100', // inventory
           '', // gtin
           `"${id}"`, // mpn
-          '"CA::Standard:0.00 CAD"',
+          `"CA::Standard:${shippingCost(v.price || p.price || 0, rules).toFixed(2)} CAD"`,
           'CAD',
           v.label ? `"${p.slug}"` : '',
           v.label ? `"${String(v.label).replace(/"/g, '""')}"` : ''

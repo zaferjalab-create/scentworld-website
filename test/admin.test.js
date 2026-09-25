@@ -149,3 +149,33 @@ test('change password: validates, then works, then old password fails', async ()
     body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }) });
   assert.equal(oldLogin.status, 401);
 });
+
+test('shipping: free by default; flat rate below the threshold once set in admin', async () => {
+  const { shippingCost, stripeShippingOption } = require('../lib/shipping');
+  // the change-password test above rotated the session; log in with the new password
+  const relog = await fetch(BASE + '/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: ADMIN_EMAIL, password: 'brand-new-pass-456' }) });
+  assert.equal(relog.status, 200);
+  cookie = relog.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
+  // default (no rate set): everything ships free, as before
+  assert.equal(shippingCost(49), 0);
+  assert.ok((await (await fetch(BASE + '/catalog.csv')).text()).includes('CA::Standard:0.00 CAD'));
+
+  await ok('PUT', '/api/admin/settings', { shipping_threshold: '150', shipping_flat_rate: '14.95' });
+  assert.equal(shippingCost(49), 14.95);
+  assert.equal(shippingCost(149.99), 14.95);
+  assert.equal(shippingCost(150), 0, 'free at the threshold');
+  const opt = stripeShippingOption(49).shipping_rate_data;
+  assert.equal(opt.fixed_amount.amount, 1495);
+  assert.equal(opt.display_name, 'Standard shipping');
+  assert.equal(stripeShippingOption(200).shipping_rate_data.fixed_amount.amount, 0);
+
+  const feed = await (await fetch(BASE + '/catalog.csv')).text();
+  const oil100 = feed.split('\n').find(l => l.includes('-100ml"'));
+  const s200 = feed.split('\n').find(l => l.startsWith('"s200"'));
+  assert.ok(oil100.includes('CA::Standard:14.95 CAD'), 'feed charges shipping under the threshold');
+  assert.ok(s200.includes('CA::Standard:0.00 CAD'), 'feed ships free at/above the threshold');
+
+  await ok('PUT', '/api/admin/settings', { shipping_flat_rate: '' }); // back to free
+  assert.equal(shippingCost(49), 0);
+});

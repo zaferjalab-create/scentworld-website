@@ -169,7 +169,7 @@ tr:hover td{background:rgba(255,255,255,.01)}
       <h1 class="page-title">Settings</h1>
       <p class="page-desc">Configure your site details.</p>
       <div class="card" style="padding:2rem">
-        <label>Site Name</label><input id="set-site_name"><label>Contact Email</label><input id="set-site_email"><label>Phone Number</label><input id="set-site_phone"><label>Address</label><input id="set-site_address"><label>Free Shipping Threshold (CAD)</label><input id="set-shipping_threshold" type="number">
+        <label>Site Name</label><input id="set-site_name"><label>Contact Email</label><input id="set-site_email"><label>Phone Number</label><input id="set-site_phone"><label>Address</label><input id="set-site_address"><label>Free Shipping Threshold (CAD)</label><input id="set-shipping_threshold" type="number"><label>Shipping Rate below the threshold (CAD, leave blank for free shipping)</label><input id="set-shipping_flat_rate" type="number" step="0.01" min="0">
         <div style="margin-top:1.5rem"><button class="btn btn-gold" onclick="saveSettings()">Save Settings</button></div>
       </div>
       <div class="card" style="padding:2rem;margin-top:1rem">
@@ -747,7 +747,7 @@ async function loadSettings(){
   Object.entries(d.settings).forEach(([k,v])=>{const el=document.getElementById('set-'+k);if(el)el.value=v;});
 }
 async function saveSettings(){
-  const data={};['site_name','site_email','site_phone','site_address','shipping_threshold'].forEach(k=>{
+  const data={};['site_name','site_email','site_phone','site_address','shipping_threshold','shipping_flat_rate'].forEach(k=>{
     const el=document.getElementById('set-'+k);if(el)data[k]=el.value;
   });
   await fetch(API+'/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
