@@ -153,6 +153,9 @@ app.use((req, res, next) => {
   jsonSmall(req, res, next);
 });
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+// Express 5 leaves req.body undefined when a request has no body (Express 4
+// gave {}); keep the old behaviour so `const { x } = req.body` never throws.
+app.use((req, res, next) => { if (req.body === undefined) req.body = {}; next(); });
 // Images/fonts are cached for 30 days: uploads never overwrite an existing
 // filename, so a URL's content doesn't change (give a replaced repo image a
 // new filename). Everything else (CSS/JS) revalidates hourly.
