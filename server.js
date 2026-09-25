@@ -169,10 +169,26 @@ app.use(session({
   cookie: {
     secure: 'auto',         // HTTPS-only when the connection is HTTPS (works via trust proxy)
     httpOnly: true,         // not readable by JS (blocks cookie theft via XSS)
-    sameSite: 'lax',        // mitigates CSRF on admin mutations
+    sameSite: 'strict',     // admin-only cookie; never sent on cross-site requests (CSRF)
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
+
+// CSRF defence for the admin API — the only cookie-authenticated area. The
+// session cookie is SameSite=Strict, and state-changing requests must come from
+// our own origin: browsers always send Origin (or Referer) on a cross-site
+// POST/PUT/DELETE, so a request forged from another site is rejected here.
+// Requests with neither header are non-browser clients, which carry no session
+// cookie, so the normal admin auth check still stops them.
+app.use('/api/admin', (req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  const source = req.get('origin') || req.get('referer');
+  if (!source) return next();
+  let host = null;
+  try { host = new URL(source).host; } catch (e) { /* malformed -> blocked */ }
+  if (host && host === req.get('host')) return next();
+  return res.status(403).json({ success: false, error: 'Cross-site request blocked' });
+});
 
 // ═══════════════════════════════════════
 // RATE LIMITERS

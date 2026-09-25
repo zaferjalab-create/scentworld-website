@@ -226,6 +226,19 @@ test('admin upload lands in the data volume, is served, listed and deletable', a
   assert.equal(delRepo.status, 400, 'built-in images cannot be deleted from the panel');
 });
 
+test('admin API blocks cross-site requests but allows same-origin', async () => {
+  const cookie = await login();
+  const evil = await postJson('/api/admin/upload-image', { filename: 'x.png', data: 'AAAA' },
+    { Cookie: cookie, Origin: 'https://evil.example' });
+  assert.equal(evil.status, 403);
+  const own = await fetch(BASE + '/api/admin/product-images/nope.png',
+    { method: 'DELETE', headers: { Cookie: cookie, Origin: BASE } });
+  assert.equal(own.status, 404, 'same-origin request passes the CSRF check');
+  const login2 = await postJson('/api/admin/login', { email: ADMIN_EMAIL, password: ADMIN_PASSWORD }, { Origin: BASE });
+  assert.equal(login2.status, 200, 'login from our own page still works');
+  assert.match(login2.headers.getSetCookie().join(';'), /SameSite=Strict/i);
+});
+
 test('upload rejects non-images disguised with an image extension', async () => {
   const cookie = await login();
   const r = await postJson('/api/admin/upload-image',
