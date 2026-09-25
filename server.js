@@ -53,17 +53,22 @@ app.set('views', path.join(__dirname, 'views'));
 // harden the page: no plugins (object-src none), can't be reframed
 // (frame-ancestors self), forms can only post to us (form-action self), and
 // <base> can't be hijacked (base-uri self). Third-party origins are whitelisted.
+// Google origins follow Google's published CSP guidance for GA4 + Google Ads
+// (gtag posts hits to *.google-analytics.com, analytics.google.com,
+// www.google.<ccTLD> and several doubleclick hosts — missing any of them
+// silently drops analytics / conversion pings).
+const GOOGLE_CONNECT = 'https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://www.google.ca https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.g.doubleclick.net https://ad.doubleclick.net https://pagead2.googlesyndication.com';
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net https://js.stripe.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googletagmanager.com https://connect.facebook.net https://js.stripe.com https://*.google-analytics.com https://cdnjs.cloudflare.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com https://www.google.ca",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: https:",
-  "connect-src 'self' https://www.google-analytics.com https://connect.facebook.net https://api.stripe.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
-  "frame-src https://js.stripe.com https://hooks.stripe.com",
+  `connect-src 'self' ${GOOGLE_CONNECT} https://connect.facebook.net https://www.facebook.com https://api.stripe.com`,
+  "frame-src https://js.stripe.com https://hooks.stripe.com https://td.doubleclick.net https://*.googletagmanager.com https://www.facebook.com",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  "form-action 'self' https://www.facebook.com",
   "frame-ancestors 'self'",
 ].join('; ');
 
