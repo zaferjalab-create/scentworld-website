@@ -298,7 +298,7 @@ try {
   `);
   ins.run('Gold Aerosol Spray', 'aerosol-gold', 'aerosol',
     'Premium aerosol spray with fine mist and long-lasting Gold fragrance.',
-    30, 'Room spray', '/images/products/SW500.jpg', 15);
+    30, 'Room spray', '/images/products/SW500.webp', 15);
   ins.run('Aerosol Dispenser Unit', 'aerosol-dispenser', 'aerosol',
     'Programmable automatic aerosol dispenser for consistent ambient scenting.',
     89, 'Single room', '/images/products/C002.jpg', 16);
@@ -371,8 +371,8 @@ try {
   // Shared packaging photos for every oil: main = white-background bottle,
   // gallery = the three sizes. Only touches oils still on the placeholder or an
   // old SW-numbered image, so any custom image set later via the admin survives.
-  const OIL_MAIN = '/images/products/oil-main.png';
-  const OIL_TRIO = '/images/products/oil-trio.png';
+  const OIL_MAIN = '/images/products/oil-main.webp';
+  const OIL_TRIO = '/images/products/oil-trio.webp';
   db.prepare(`UPDATE products SET image_url = ? WHERE category = 'oils'
     AND (image_url IS NULL OR image_url != ?)`).run(OIL_MAIN, OIL_MAIN);
   db.prepare(`UPDATE products SET gallery_images = ? WHERE category = 'oils'
@@ -458,6 +458,27 @@ try {
   }
 } catch (e) {
   console.error('❌ hide diffusers error:', e.message);
+}
+
+// Product photos were converted to WebP (same image, 85-98% smaller). Point
+// any stored image_url / gallery entry at the .webp twin. Only exact old paths
+// are rewritten, so admin-chosen images are untouched; the originals stay in
+// the repo so old links keep working. Idempotent — safe on every start.
+try {
+  const WEBP_FROM = ['C300.jpg', 'Car-Scent-Diffuser.png', 'H3_03.jpg', 'oil-main.png', 'oil-trio.png',
+    'S100.png', 'S20-Black.png', 'S20-White.jpg', 'S200.jpeg', 'S30-Black.jpeg', 'S300.jpeg',
+    'SW110.png', 'SW114.png', 'SW127.png', 'SW500.jpg'];
+  let n = 0;
+  for (const f of WEBP_FROM) {
+    const from = '/images/products/' + f;
+    const to = '/images/products/' + f.replace(/\.(png|jpe?g)$/i, '.webp');
+    n += db.prepare('UPDATE products SET image_url = ? WHERE image_url = ?').run(to, from).changes;
+    n += db.prepare("UPDATE products SET gallery_images = replace(gallery_images, ?, ?) WHERE gallery_images LIKE '%' || ? || '%'")
+      .run('"' + from + '"', '"' + to + '"', '"' + from + '"').changes;
+  }
+  if (n) console.log(`✅ Switched ${n} product image fields to WebP`);
+} catch (e) {
+  console.error('❌ webp migration error:', e.message);
 }
 
 module.exports = db;
