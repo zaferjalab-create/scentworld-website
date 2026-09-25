@@ -70,7 +70,7 @@ app.set('views', path.join(__dirname, 'views'));
 const GOOGLE_CONNECT = 'https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://www.google.ca https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.g.doubleclick.net https://ad.doubleclick.net https://pagead2.googlesyndication.com';
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googletagmanager.com https://connect.facebook.net https://js.stripe.com https://*.google-analytics.com https://cdnjs.cloudflare.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com https://www.google.ca",
+  "script-src 'self' 'unsafe-inline' https://*.googletagmanager.com https://connect.facebook.net https://js.stripe.com https://*.google-analytics.com https://cdnjs.cloudflare.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com https://www.google.ca",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: https:",
@@ -1541,9 +1541,10 @@ function scheduleReviewRequests() {
 // START SERVER
 // ═══════════════════════════════════════
 
-// Only bind a port when run directly (npm start); the test suite imports the
-// app and listens on an ephemeral port itself.
-if (require.main === module) app.listen(PORT, () => {
+// Bind the port unless running under the test suite (NODE_ENV=test), which
+// imports the app and listens on an ephemeral port itself. (A require.main
+// check is not reliable: some launchers start node through a wrapper.)
+if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`\n🌿 Scent World Canada`);
   console.log(`   Website:  http://localhost:${PORT}`);
   console.log(`   Admin:    http://localhost:${PORT}/admin/login.html`);

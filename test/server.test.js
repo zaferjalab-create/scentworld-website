@@ -66,6 +66,7 @@ test('security headers and a CSP that allows GA4 + Google Ads collection', async
   for (const host of ['https://analytics.google.com', 'https://*.google-analytics.com', 'https://www.google.com', 'https://ad.doubleclick.net']) {
     assert.ok(csp.includes(host), `connect-src should allow ${host}`);
   }
+  assert.ok(!csp.includes('unsafe-eval'), 'no eval allowed in scripts');
   assert.match(r.headers.get('strict-transport-security'), /max-age=/);
   assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
 });
