@@ -20,3 +20,7 @@ data/
 !public/images/*.png
 !public/images/*.webp
 !public/images/*.svg
+
+# Web-encoded product videos + posters (see lib/videos.js). Raw footage stays out.
+!public/videos/*.mp4
+!public/videos/*.webp
