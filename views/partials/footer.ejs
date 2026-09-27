@@ -51,6 +51,10 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <div class="fs"><a href="https://www.instagram.com/scentworld.ca" target="_blank" rel="noopener" aria-label="Instagram">IG</a><a href="https://www.facebook.com/profile.php?id=61589484729828" target="_blank" rel="noopener" aria-label="Facebook">FB</a><a href="https://www.linkedin.com/company/scentworld-ca" target="_blank" rel="noopener" aria-label="LinkedIn">IN</a></div>
   </div>
 </footer>
+<% if (typeof productVideos !== 'undefined' && Object.keys(productVideos).length) { %>
+<script>window.__VIDEOS__ = <%- JSON.stringify(productVideos) %>;</script>
+<script src="/js/video-fx.js" defer></script>
+<% } %>
 <script>
 (function() {
   document.addEventListener('error', function(e) {

@@ -96,6 +96,26 @@ test('product structured data: a concrete price per size + shipping that matches
   assert.equal(s200.shippingDetails.shippingRate.value, '0.00');
 });
 
+test('product videos: gallery video + VideoObject, homepage reel, cached range-served files', async () => {
+  const { productVideos } = require('../lib/videos');
+  assert.ok(productVideos.s20 && productVideos.s20.loop === '/videos/s20-loop.mp4', 'videos found by filename');
+
+  const s20 = await (await get('/products/s20')).text();
+  assert.ok(s20.includes('id="mainVideo" src="/videos/s20.mp4"'), 'gallery video');
+  assert.ok(s20.includes('"@type":"VideoObject"'), 'video structured data');
+  const oil = db.prepare("SELECT slug FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
+  assert.ok(!(await (await get('/products/' + oil.slug)).text()).includes('id="mainVideo"'), 'no video, no player');
+
+  const home = await (await get('/')).text();
+  assert.ok(home.includes('id="in-action"') && home.includes('data-src="/videos/s20-loop.mp4"'), 'homepage reel');
+  assert.ok(home.includes('/js/video-fx.js'), 'card hover script');
+
+  const r = await get('/videos/s20-loop.mp4', { headers: { Range: 'bytes=0-99' } });
+  assert.equal(r.status, 206, 'range requests (needed by Safari/iOS)');
+  assert.equal(r.headers.get('content-type'), 'video/mp4');
+  assert.match(r.headers.get('cache-control'), /max-age=2592000/);
+});
+
 test('hidden products redirect to their shop category; robots skips the API', async () => {
   db.prepare("UPDATE products SET active = 0 WHERE slug = 's100'").run();
   const r = await get('/products/s100', { redirect: 'manual' });

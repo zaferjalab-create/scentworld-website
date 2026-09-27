@@ -432,6 +432,31 @@ section{padding:7rem 4vw}
 .spaces{background:var(--bg2);overflow:hidden}
 .spaces-head{text-align:center;max-width:600px;margin:0 auto 4rem}
 .spaces-head .sl{justify-content:center}.spaces-head .sd{margin:0 auto;text-align:center;max-width:500px}
+/* SEE IT IN ACTION reel: vertical product loops, a scroll-snap strip on small screens */
+.reel{background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%)}
+.reel-head{text-align:center;max-width:600px;margin:0 auto 3.5rem}
+.reel-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1.1rem;max-width:1200px;margin:0 auto}
+.reel-card{position:relative;display:block;aspect-ratio:9/16;overflow:hidden;background:var(--bg3);border:1px solid var(--bdr);text-decoration:none;transition:border-color .4s,transform .5s cubic-bezier(.2,.8,.2,1)}
+.reel-card video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.8,.2,1)}
+.reel-card::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(11,9,8,.92) 100%);pointer-events:none}
+.reel-card:hover{border-color:var(--gold-d);transform:translateY(-4px)}
+.reel-card:hover video{transform:scale(1.04)}
+.reel-info{position:absolute;left:0;right:0;bottom:0;z-index:1;padding:1.1rem 1rem;display:flex;flex-direction:column;gap:.3rem}
+.reel-name{font-family:var(--df);font-size:1.05rem;color:#f3ede3}
+.reel-price{font-size:.72rem;color:var(--gold);letter-spacing:.06em}
+.reel-cta{font-size:.56rem;letter-spacing:.25em;text-transform:uppercase;color:var(--txt2);margin-top:.2rem;transition:color .3s}
+.reel-card:hover .reel-cta{color:var(--gold)}
+@media(max-width:768px){.reel-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:.8rem;margin:0 -5vw;padding:0 5vw 1rem;scrollbar-width:none}.reel-row::-webkit-scrollbar{display:none}.reel-card{flex:0 0 62%;scroll-snap-align:center}}
+/* HERO scent mist: soft haze drifting up the right side of the photo, above
+   the darkening overlay but behind the text (.hero-c is z-index 2) */
+.hero-mist{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.hero-mist span{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(255,244,226,.42),rgba(255,244,226,.12) 55%,rgba(255,244,226,0));filter:blur(26px);will-change:transform,opacity;animation:mist 24s ease-in-out infinite}
+.hero-mist span:nth-child(1){width:42vw;height:32vw;right:-6vw;bottom:4vh;animation-duration:26s}
+.hero-mist span:nth-child(2){width:30vw;height:24vw;right:16vw;bottom:10vh;animation-duration:31s;animation-delay:-9s}
+.hero-mist span:nth-child(3){width:26vw;height:20vw;right:4vw;bottom:28vh;animation-duration:22s;animation-delay:-15s}
+.hero-mist span:nth-child(4){width:34vw;height:26vw;right:26vw;bottom:0;animation-duration:35s;animation-delay:-4s}
+@keyframes mist{0%{transform:translate3d(0,6vh,0) scale(.9);opacity:0}25%{opacity:1}65%{opacity:.7}100%{transform:translate3d(-8vw,-30vh,0) scale(1.35);opacity:0}}
+@media (prefers-reduced-motion:reduce){.hero-mist{display:none}.hero-bg img{animation:none}.reel-card,.reel-card video{transition:none}}
 .spaces-grid{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:280px 280px;gap:1rem}
 .sc2{position:relative;overflow:hidden;cursor:pointer}
 .sc2 img{width:100%;height:100%;object-fit:cover;transition:transform .8s,filter .5s;filter:brightness(.7)}
@@ -666,6 +691,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
 <section class="hero">
   <div class="hero-bg"><img src="/images/stock/photo-1542314831-068cd1dbfeeb.webp" alt="Luxury Hotel Lobby"></div>
   <div class="hero-ov"></div>
+  <div class="hero-mist" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   <div class="hero-c">
     <div class="hero-ey"><span>Luxury Scent Solutions</span></div>
     <h1 class="ht">Where Fragrance<br>Becomes <em>Experience</em></h1>
@@ -747,6 +773,29 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
   </div>
   <script>window.__PRODUCTS__ = <%- JSON.stringify(products) %>;</script>
 </section>
+
+<% const reel = products.filter(p => productVideos[p.slug]); %>
+<% if (reel.length) { %>
+<!-- SEE IT IN ACTION: short silent product loops, play while on screen (public/js/video-fx.js) -->
+<section class="reel" id="in-action">
+  <div class="reel-head">
+    <div class="sl rv" style="justify-content:center">See It In Action</div>
+    <h2 class="st rv d1" style="text-align:center">From Bottle to<br><em>Atmosphere</em></h2>
+  </div>
+  <div class="reel-row">
+    <% reel.forEach(p => { const v = productVideos[p.slug]; %>
+    <a class="reel-card rv" href="/products/<%= p.slug %>">
+      <video data-inview data-src="<%= v.loop %>" <% if (v.poster) { %>poster="<%= v.poster %>"<% } %> muted loop playsinline preload="none" aria-label="<%= p.name %> in action"></video>
+      <span class="reel-info">
+        <span class="reel-name"><%= p.name %></span>
+        <% if (p.price) { %><span class="reel-price">$<%= p.price.toFixed(2) %> CAD</span><% } %>
+        <span class="reel-cta">Shop now →</span>
+      </span>
+    </a>
+    <% }) %>
+  </div>
+</section>
+<% } %>
 
 <!-- SPACES -->
 <section class="spaces" id="spaces">

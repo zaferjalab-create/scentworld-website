@@ -63,6 +63,8 @@ app.set('trust proxy', 1);
 // EJS server-side templating (shared header/footer partials)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// Every view can check productVideos[slug] (lib/videos.js).
+app.locals.productVideos = require('./lib/videos').productVideos;
 
 // Content-Security-Policy. The site relies on inline scripts/styles (GTM,
 // Facebook Pixel, Stripe.js, inline handlers) so 'unsafe-inline' is required
@@ -162,13 +164,13 @@ app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 // Express 5 leaves req.body undefined when a request has no body (Express 4
 // gave {}); keep the old behaviour so `const { x } = req.body` never throws.
 app.use((req, res, next) => { if (req.body === undefined) req.body = {}; next(); });
-// Images/fonts are cached for 30 days: uploads never overwrite an existing
+// Images/fonts/videos are cached for 30 days: uploads never overwrite an existing
 // filename, so a URL's content doesn't change (give a replaced repo image a
 // new filename). Everything else (CSS/JS) revalidates hourly.
 const STATIC_OPTS = {
   maxAge: '1h',
   setHeaders(res, filePath) {
-    if (/\.(png|jpe?g|webp|gif|ico|woff2?)$/i.test(filePath)) {
+    if (/\.(png|jpe?g|webp|gif|ico|woff2?|mp4)$/i.test(filePath)) {
       res.setHeader('Cache-Control', 'public, max-age=2592000');
     }
   },
@@ -626,7 +628,8 @@ app.get('/products/:slug', (req, res, next) => {
   const oils = all.filter(p => p.category === 'oils');
   const reviews = db.prepare('SELECT name, rating, text, created_at FROM reviews WHERE product_id = ? AND approved = 1 ORDER BY created_at DESC').all(product.id);
   const ratingAvg = reviews.length ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 10) / 10 : null;
-  res.render('product-detail', { product, related, oils, all, reviews, ratingAvg, shipping: shippingRules() });
+  res.render('product-detail', { product, related, oils, all, reviews, ratingAvg, shipping: shippingRules(),
+    video: app.locals.productVideos[product.slug] || null });
 });
 
 // Legacy product page → 301 to clean URL
