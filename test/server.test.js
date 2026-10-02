@@ -76,24 +76,30 @@ test('main pages render', async () => {
   assert.equal((await get('/products/does-not-exist')).status, 404);
 });
 
-test('product structured data: a concrete price per size + shipping that matches checkout', async () => {
+test('product structured data: one priced variant per size (ids match the feed) + shipping that matches checkout', async () => {
   const ld = async slug => {
     const html = await (await get('/products/' + slug)).text();
     const blocks = html.split('<script type="application/ld+json">').slice(1).map(b => JSON.parse(b.split('</script>')[0]));
-    return blocks.find(b => b['@type'] === 'Product');
+    return blocks.find(b => b['@type'] === 'Product' || b['@type'] === 'ProductGroup');
   };
   const oil = db.prepare("SELECT slug FROM products WHERE category = 'oils' AND active = 1 AND sizes IS NOT NULL LIMIT 1").get();
-  const offers = (await ld(oil.slug)).offers;
-  assert.ok(Array.isArray(offers) && offers.length > 1, 'one Offer per size');
-  for (const o of offers) {
-    assert.equal(o['@type'], 'Offer');
-    assert.ok(Number(o.price) > 0 && o.sku.startsWith(oil.slug + '-'));
-    const expected = Number(o.price) < 150 ? '12.99' : '0.00';
-    assert.equal(o.shippingDetails.shippingRate.value, expected, `shipping for ${o.price}`);
+  const group = await ld(oil.slug);
+  assert.equal(group['@type'], 'ProductGroup');
+  assert.equal(group.productGroupID, oil.slug, 'group id = feed item_group_id');
+  assert.ok(!group.offers && group.hasVariant.length > 1, 'no price-less top-level product');
+  const feed = await (await get('/catalog.csv')).text();
+  for (const v of group.hasVariant) {
+    assert.equal(v['@type'], 'Product');
+    assert.ok(feed.includes(`"${v.sku}",`), `variant sku ${v.sku} is a feed id`);
+    assert.equal(v.offers['@type'], 'Offer');
+    assert.ok(Number(v.offers.price) > 0);
+    const expected = Number(v.offers.price) < 150 ? '12.99' : '0.00';
+    assert.equal(v.offers.shippingDetails.shippingRate.value, expected, `shipping for ${v.offers.price}`);
   }
-  const s200 = (await ld('s200')).offers; // $899 -> ships free
-  assert.equal(s200['@type'], 'Offer');
-  assert.equal(s200.shippingDetails.shippingRate.value, '0.00');
+  const s200 = await ld('s200'); // single price, $899 -> ships free
+  assert.equal(s200['@type'], 'Product');
+  assert.equal(s200.sku, 's200');
+  assert.equal(s200.offers.shippingDetails.shippingRate.value, '0.00');
 });
 
 test('product videos: gallery video + VideoObject, homepage reel, cached range-served files', async () => {

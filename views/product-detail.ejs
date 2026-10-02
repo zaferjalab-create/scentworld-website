@@ -105,21 +105,43 @@ const offerExtra = price => ({
     }
   }
 });
-// One Offer per size (Google Shopping needs a concrete price, not a range);
-// skus match the product feed ids so crawled and feed items line up.
-const offerFor = (price, extra) => ({
+const offerFor = price => ({
   '@type': 'Offer', price: price.toFixed(2), priceCurrency: 'CAD',
   availability: 'https://schema.org/InStock', url: pageUrl,
-  ...extra, ...offerExtra(price)
+  ...offerExtra(price)
 });
+const brand = { '@type': 'Brand', name: 'Scent World Canada' };
+const description = product.short_desc || product.name;
+// Products sold in sizes are a ProductGroup with one variant per size, each a
+// Product with exactly one price. Variant skus and the group id mirror the
+// product feed (id = slug-size, item_group_id = slug), so Google merges what
+// it crawls with the feed items instead of listing a second, price-less copy
+// (Merchant Center: "Missing product price").
 %><%- JSON.stringify({
   '@context': 'https://schema.org',
-  '@type': 'Product',
+  ...(sizes ? {
+    '@type': 'ProductGroup',
+    productGroupID: product.slug,
+    variesBy: ['https://schema.org/size'],
+    hasVariant: sizes.map(s => ({
+      '@type': 'Product',
+      name: `${product.name} (${s.label})`,
+      sku: `${product.slug}-${s.label}`,
+      size: s.label,
+      image: images.map(imgAbs),
+      description,
+      brand,
+      offers: offerFor(s.price)
+    }))
+  } : {
+    '@type': 'Product',
+    sku: product.slug,
+    offers: offerFor(product.price || 0)
+  }),
   name: product.name,
   image: images.map(imgAbs),
-  description: product.short_desc || product.name,
-  sku: product.slug,
-  brand: { '@type': 'Brand', name: 'Scent World Canada' },
+  description,
+  brand,
   ...(video ? { subjectOf: {
     '@type': 'VideoObject',
     name: product.name + ' — product demo',
@@ -128,9 +150,6 @@ const offerFor = (price, extra) => ({
     contentUrl: BASE + video.src,
     uploadDate: '2026-09-27'
   } } : {}),
-  offers: sizes
-    ? sizes.map(s => offerFor(s.price, { sku: `${product.slug}-${s.label}`, name: `${product.name} (${s.label})` }))
-    : offerFor(product.price || 0, {}),
   ...(reviews.length ? {
     aggregateRating: { '@type': 'AggregateRating', ratingValue: ratingAvg, reviewCount: reviews.length },
     review: reviews.slice(0, 5).map(r => ({
