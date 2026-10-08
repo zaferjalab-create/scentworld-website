@@ -16,7 +16,7 @@ const { resendEmail, escapeHtml, sendNotification, sendConfirmation } = require(
 const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
 const { stripeShippingOption, shippingRules } = require('./lib/shipping');
-const { syncOilsToStripe } = require('./lib/stripe-catalog');
+const { syncStripeCatalogue } = require('./lib/stripe-catalog');
 
 const crypto = require('crypto');
 const app = express();
@@ -825,15 +825,16 @@ process.on('uncaughtException', err => {
 // Bind the port unless running under the test suite (NODE_ENV=test), which
 // imports the app and listens on an ephemeral port itself. (A require.main
 // check is not reliable: some launchers start node through a wrapper.)
-// The oils on sale are mirrored into the Stripe product catalogue for the
-// in-person point-of-sale app (lib/stripe-catalog.js). It runs once per
+// A short list of quick-sale items (one per oil bottle size + the gift set) is
+// kept in the Stripe product catalogue for the in-person point-of-sale app
+// (lib/stripe-catalog.js). It runs once per
 // catalogue version when the live site starts, and on demand from the admin
 // panel (Settings -> Stripe catalogue). A failure is logged + emailed and
 // retried on the next start; it never affects the website itself.
-const STRIPE_SYNC_FLAG = 'stripe_oils_synced_2026_10';
+const STRIPE_SYNC_FLAG = 'stripe_catalogue_synced_2026_10b'; // 3 oil sizes + gift set
 function syncStripeCatalog() {
   const base = process.env.BASE_URL || 'https://www.scentworld.ca';
-  return syncOilsToStripe(stripe, db, base).then(result => {
+  return syncStripeCatalogue(stripe, db, base).then(result => {
     db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(STRIPE_SYNC_FLAG, new Date().toISOString());
     return result;
   });

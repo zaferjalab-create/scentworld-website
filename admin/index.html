@@ -184,8 +184,8 @@ tr:hover td{background:rgba(255,255,255,.01)}
       </div>
       <div class="card" style="padding:2rem;margin-top:1rem">
         <h3 style="font-family:var(--df);margin-bottom:.5rem">Stripe catalogue</h3>
-        <p style="color:var(--txt2);font-size:.85rem;margin-bottom:1.2rem">Copies the fragrance oils currently on sale (name, sizes and prices) into your Stripe product catalogue, so they appear in the in-person payment app. Press it after changing oil prices or which oils are active. Diffusers you added in Stripe yourself are not touched.</p>
-        <button class="btn btn-gold" id="stripeSyncBtn" onclick="syncStripeCatalog()">Sync oils to Stripe</button>
+        <p style="color:var(--txt2);font-size:.85rem;margin-bottom:1.2rem">Keeps four quick-sale items in your Stripe product catalogue for the in-person payment app: Oil 100 ml, Oil 200 ml, Oil 500 ml (at the website's standard oil prices) and the Gift Oil Set. Press it after changing oil prices on the website. Products you added in Stripe yourself are not touched.</p>
+        <button class="btn btn-gold" id="stripeSyncBtn" onclick="syncStripeCatalog()">Sync items to Stripe</button>
         <span id="stripeSyncMsg" style="margin-left:1rem;font-size:.85rem;color:var(--txt2)"></span>
       </div>
     </div>
@@ -765,7 +765,7 @@ async function syncStripeCatalog() {
   try {
     const r = await (await fetch('/api/admin/stripe-sync', { method: 'POST' })).json();
     msg.textContent = r.success
-      ? `Done: ${r.result.oils} oils — ${r.result.productsCreated} added, ${r.result.pricesCreated} prices created, ${r.result.productsArchived} retired.`
+      ? `Done: ${r.result.items.join(', ')} — ${r.result.productsCreated} added, ${r.result.pricesCreated} prices created, ${r.result.productsArchived} retired.`
       : (r.error || 'Sync failed.');
   } catch (e) {
     msg.textContent = 'Sync failed — please try again.';

@@ -443,8 +443,8 @@ router.post('/api/admin/change-password', requireAdmin, async (req, res) => {
   });
 });
 
-// On-demand: copy the oils on sale into the Stripe product catalogue (for the
-// in-person point-of-sale app). Safe to press repeatedly.
+// On-demand: refresh the quick-sale items (oil sizes + gift set) in the Stripe
+// product catalogue for the in-person point-of-sale app. Safe to press repeatedly.
 router.post('/api/admin/stripe-sync', requireAdmin, async (req, res) => {
   try {
     res.json({ success: true, result: await syncStripeCatalog() });

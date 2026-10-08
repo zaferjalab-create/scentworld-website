@@ -429,41 +429,42 @@ test('upload rejects non-images disguised with an image extension', async () => 
 });
 
 
-test('Stripe catalogue sync: 29 oils x 3 sizes, idempotent, price changes and retired oils handled', async () => {
-  const { syncOilsToStripe } = require('../lib/stripe-catalog');
+test('Stripe catalogue sync: Oil 100/200/500 ml + Gift Oil Set, idempotent, older layout archived', async () => {
+  const { syncStripeCatalogue } = require('../lib/stripe-catalog');
   const api = new URL(STRIPE_API_URL);
   const fake = require('stripe')('sk_test_dummy', { host: api.hostname, port: api.port, protocol: 'http' });
-  const run = () => syncOilsToStripe(fake, db, 'https://www.scentworld.ca');
+  const run = () => syncStripeCatalogue(fake, db, 'https://www.scentworld.ca');
+  const priceOf = id => [...fakePrices.values()].filter(x => x.product === id && x.active).map(x => x.unit_amount);
+
+  // leftovers: an older one-product-per-oil item of ours, and a product the owner made by hand
+  fakeProducts.set('sw-oil-white-tea', { id: 'sw-oil-white-tea', object: 'product', active: true, name: 'White Tea Oil' });
+  fakeProducts.set('prod_handmade', { id: 'prod_handmade', object: 'product', active: true, name: 'S20' });
 
   const first = await run();
-  assert.deepEqual([first.oils, first.productsCreated, first.pricesCreated], [29, 29, 87]);
-  const tea = fakeProducts.get('sw-oil-white-tea');
-  assert.equal(tea.name, 'White Tea Oil');
-  assert.equal(tea.tax_code, 'txcd_99999999');
-  const teaPrices = [...fakePrices.values()].filter(x => x.product === 'sw-oil-white-tea');
-  assert.deepEqual(teaPrices.map(x => [x.nickname, x.unit_amount]), [['100ml', 4900], ['200ml', 8900], ['500ml', 18900]]);
-  assert.ok(teaPrices.every(x => x.currency === 'cad' && x.tax_behavior === 'exclusive'));
-  assert.equal(tea.default_price, teaPrices[0].id, 'smallest size is the default price');
-  // created in reverse site order, so Stripe's newest-first list reads in collection order
-  assert.equal([...fakeProducts.keys()].at(-1), 'sw-oil-fresh-blossom');
+  assert.deepEqual(first.items, ['Oil 100 ml $49', 'Oil 200 ml $89', 'Oil 500 ml $189', 'Gift Oil Set $99']);
+  assert.deepEqual([first.productsCreated, first.pricesCreated, first.productsArchived], [4, 4, 1]);
+  assert.deepEqual(['sw-oil-100ml', 'sw-oil-200ml', 'sw-oil-500ml', 'sw-gift-oil-set'].map(priceOf), [[4900], [8900], [18900], [9900]]);
+  const p100 = fakeProducts.get('sw-oil-100ml');
+  assert.equal(p100.name, 'Oil 100 ml');
+  assert.ok(!p100.description, 'no description');
+  assert.ok([...fakePrices.values()].every(x => x.currency === 'cad' && x.tax_behavior === 'exclusive'));
+  assert.equal(fakeProducts.get('sw-oil-white-tea').active, false, 'old per-oil product archived');
+  assert.equal(fakeProducts.get('prod_handmade').active, true, 'hand-made Stripe products are never touched');
+  // created last-to-first, so Stripe's newest-first list reads 100, 200, 500, gift set
+  assert.deepEqual([...fakeProducts.keys()].slice(-4), ['sw-gift-oil-set', 'sw-oil-500ml', 'sw-oil-200ml', 'sw-oil-100ml']);
 
   const again = await run();
   assert.deepEqual([again.productsCreated, again.pricesCreated, again.pricesArchived, again.productsArchived], [0, 0, 0, 0], 'second run changes nothing');
 
-  // a price change makes a new Stripe price and archives the old one; a retired oil is archived
-  const row = db.prepare("SELECT sizes FROM products WHERE slug = 'white-tea'").get();
+  // a site-wide price change (most oils now $55 for 100 ml) makes a new price and archives the old
+  const saved = db.prepare("SELECT id, sizes FROM products WHERE category = 'oils' AND active = 1").all();
   try {
-    db.prepare("UPDATE products SET sizes = ? WHERE slug = 'white-tea'").run(JSON.stringify([{ label: '100ml', price: 55 }, { label: '200ml', price: 89 }, { label: '500ml', price: 189 }]));
-    db.prepare("UPDATE products SET active = 0 WHERE slug = 'secret'").run();
+    for (const r of saved) db.prepare('UPDATE products SET sizes = ? WHERE id = ?').run(r.sizes.replace('"100ml","price":49', '"100ml","price":55'), r.id);
     const third = await run();
-    assert.deepEqual([third.pricesCreated, third.pricesArchived, third.productsArchived], [1, 1, 1]);
-    assert.equal(fakeProducts.get('sw-oil-secret').active, false);
-    fakeProducts.set('prod_handmade', { id: 'prod_handmade', object: 'product', active: true, name: 'S20' });
-    await run();
-    assert.equal(fakeProducts.get('prod_handmade').active, true, 'hand-made Stripe products are never touched');
+    assert.deepEqual([third.pricesCreated, third.pricesArchived], [1, 1]);
+    assert.deepEqual(priceOf('sw-oil-100ml'), [5500]);
   } finally {
-    db.prepare("UPDATE products SET sizes = ? WHERE slug = 'white-tea'").run(row.sizes);
-    db.prepare("UPDATE products SET active = 1 WHERE slug = 'secret'").run();
+    for (const r of saved) db.prepare('UPDATE products SET sizes = ? WHERE id = ?').run(r.sizes, r.id);
   }
 });
 
