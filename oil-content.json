@@ -222,5 +222,61 @@
   "defne": {
     "short": "Fresh bay laurel — green, herbal and lightly woody.",
     "full": "Fragrance family: Green / Aromatic. Best for spas, offices and wellness centres.\nScentWorld Defne Fragrance Oil suits spaces that want a natural, calming green-aromatic scent.\nFresh bay laurel feels green, herbal and softly woody.\nA soothing choice where a clean, natural and restful ambience is the aim."
+  },
+  "elegance": {
+    "short": "Polished and refined — an understated welcome for elegant interiors.",
+    "full": "Collection: Hotel Collection. Best for hotel lobbies, boutiques and reception areas.\nScentWorld Elegance Fragrance Oil is made for spaces that want a refined first impression without a heavy scent.\nSoft and composed rather than loud, it sits comfortably in the background of a busy lobby or showroom.\nA dependable everyday choice from our Hotel Collection."
+  },
+  "bvlgari": {
+    "short": "A hotel-lobby classic — fresh, clean and quietly luxurious.",
+    "full": "Collection: Hotel Collection. Best for hotel lobbies, suites and premium retail.\nThis ScentWorld fragrance oil is inspired by the fresh, refined style associated with luxury hotel lobbies.\nClean and uplifting on arrival, it leaves a calm, expensive-feeling impression that suits long opening hours.\nInspired-by fragrance: not affiliated with or endorsed by the brand named."
+  },
+  "night-ambience": {
+    "short": "An evening scent for lounges and lobbies — smooth, warm and inviting.",
+    "full": "Collection: Hotel Collection. Best for lounges, restaurants and evening venues.\nScentWorld Night Ambience Fragrance Oil sets a relaxed, after-dark mood.\nSmooth and enveloping, it flatters dim lighting and slower evenings without overpowering food or conversation.\nPart of our Hotel Collection."
+  },
+  "magnolia-vanilla": {
+    "short": "Creamy magnolia softened with vanilla — floral, warm and comforting.",
+    "full": "Collection: Hotel Collection. Best for boutique hotels, spas and salons.\nScentWorld Magnolia Vanilla Fragrance Oil pairs a soft white-floral character with a gentle vanilla warmth.\nThe result is welcoming and lightly sweet, with a smooth finish that feels at home in guest-facing spaces.\nPart of our Hotel Collection."
+  },
+  "white-orchid": {
+    "short": "Delicate white orchid — clean, airy and graceful.",
+    "full": "Collection: Hotel Collection. Best for hotel lobbies, spas and bridal or beauty boutiques.\nScentWorld White Orchid Fragrance Oil brings a light, elegant floral character to bright, modern interiors.\nAiry rather than heavy, it reads as fresh and well kept from the moment guests walk in.\nPart of our Hotel Collection."
+  },
+  "citrus-whisper": {
+    "short": "A light, sparkling citrus — fresh, bright and energising.",
+    "full": "Collection: Hotel Collection. Best for lobbies, offices, gyms and retail.\nScentWorld Citrus Whisper Fragrance Oil gives a space an instantly clean, awake feeling.\nBright citrus keeps it lively, while a soft finish stops it from turning sharp over a long day.\nPart of our Hotel Collection."
+  },
+  "sahara-night": {
+    "short": "Warm and deep — an evening scent with an Arabian character.",
+    "full": "Collection: Social Rooms Collection. Best for majlis, living rooms and lounges.\nScentWorld Sahara Night Fragrance Oil is made for rooms where people gather and stay a while.\nRich and warm, it fills a room with a generous, hospitable atmosphere.\nPart of our Social Rooms Collection."
+  },
+  "oud-air": {
+    "short": "Oud made lighter — warm and woody with an airy, modern finish.",
+    "full": "Collection: Social Rooms Collection. Best for majlis, living rooms and reception rooms.\nScentWorld Oud Air Fragrance Oil keeps the character of oud while feeling lighter and easier to live with every day.\nA good introduction to oud for homes and reception rooms that want warmth without heaviness.\nPart of our Social Rooms Collection."
+  },
+  "white-patchouli": {
+    "short": "Smooth patchouli with a clean, soft finish.",
+    "full": "Collection: Social Rooms Collection. Best for living rooms, lounges and boutiques.\nScentWorld White Patchouli Fragrance Oil offers the earthy depth of patchouli in a softer, cleaner style.\nGrounded and calm, it gives a room a settled, well-dressed feel.\nPart of our Social Rooms Collection."
+  },
+  "macca": {
+    "short": "A warm, traditional scent for gathering rooms.",
+    "full": "Collection: Social Rooms Collection. Best for majlis, prayer rooms and family gathering rooms.\nScentWorld Macca Fragrance Oil is a warm, traditional-style fragrance chosen for rooms where family and guests gather.\nGenerous and lasting, it makes a room feel prepared for company.\nPart of our Social Rooms Collection."
+  },
+  "white-rose": {
+    "short": "Fresh white rose — soft, romantic and elegant.",
+    "full": "Collection: The Signature Collection. Best for boutiques, bridal spaces, salons and bedrooms.\nScentWorld White Rose Fragrance Oil captures a clean, freshly cut rose character.\nSoft and romantic without being old-fashioned, it suits spaces that want a graceful, feminine signature.\nPart of The Signature Collection."
+  },
+  "light-vanilla": {
+    "short": "Gentle vanilla — soft, warm and comforting, never heavy.",
+    "full": "Collection: The Signature Collection. Best for homes, cafés, salons and waiting areas.\nScentWorld Light Vanilla Fragrance Oil gives a cosy, familiar warmth in a lighter style than a traditional vanilla.\nEasy to like and easy to live with, it works well as an all-day background scent.\nPart of The Signature Collection."
+  },
+  "red-wood": {
+    "short": "Warm, polished wood — confident and grounded.",
+    "full": "Collection: The Business Collection. Best for offices, showrooms and menswear or lifestyle retail.\nScentWorld Red Wood Fragrance Oil brings a smooth woody character that reads as confident and professional.\nSteady and warm, it suits workplaces and showrooms that want a composed, masculine-leaning signature.\nPart of The Business Collection."
+  },
+  "fruit-and-honey": {
+    "short": "Juicy fruit with a golden honey sweetness — bright and welcoming.",
+    "full": "Collection: The Business Collection. Best for retail, cafés, receptions and waiting areas.\nScentWorld Fruit and Honey Fragrance Oil combines lively fruit with a soft honeyed warmth.\nCheerful and inviting, it lifts the mood of busy customer-facing spaces.\nPart of The Business Collection."
   }
 }

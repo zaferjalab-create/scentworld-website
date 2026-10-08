@@ -70,6 +70,12 @@ a{color:var(--gold);text-decoration:none}
 .shop-toolbar{max-width:1320px;margin:1.5rem auto 0;padding:0 4vw;display:flex;flex-wrap:wrap;gap:.8rem;align-items:center}
 .pf-btn{padding:.5rem 1.15rem;background:transparent;border:1px solid var(--bdr);color:var(--txt);font-family:var(--bf);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .3s}
 .pf-btn:hover,.pf-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(201,165,92,.05)}
+/* Oil collections: a second row of chips, shown only while "Fragrance Oils" is selected */
+.coll-bar{max-width:1320px;margin:.9rem auto 0;padding:0 4vw;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.coll-bar[hidden]{display:none}
+.coll-bar span{font-size:.56rem;letter-spacing:.3em;text-transform:uppercase;color:var(--txt2);margin-right:.4rem}
+.coll-btn{padding:.38rem .9rem;background:transparent;border:1px solid var(--bdr);border-radius:999px;color:var(--txt);font-family:var(--bf);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .3s}
+.coll-btn:hover,.coll-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(201,165,92,.05)}
 .shop-selects{display:flex;gap:.8rem;margin-left:auto;flex-wrap:wrap}
 .shop-sel{padding:.5rem .9rem;background:var(--bg2);border:1px solid var(--bdr);color:var(--cream2);font-family:var(--bf);font-size:.7rem;letter-spacing:.06em;cursor:pointer;outline:none}
 .shop-sel:focus{border-color:var(--gold)}
@@ -167,6 +173,14 @@ a{color:var(--gold);text-decoration:none}
 
 <div class="shop-count" id="shopCount"></div>
 
+<% const usedCollections = Object.keys(COLLECTIONS).filter(k => products.some(p => p.collection === k)); %>
+<% if (!isSearch && usedCollections.length) { %>
+<div class="coll-bar" id="collBar" hidden>
+  <span>Collection</span>
+  <button class="coll-btn active" data-collection="">All oils</button>
+  <% usedCollections.forEach(k => { %><button class="coll-btn" data-collection="<%= k %>"><%= COLLECTIONS[k] %></button><% }) %>
+</div>
+<% } %>
 <% if (products.length) { %>
 <div class="shop-grid" id="shopGrid">
   <% products.forEach(p => {
@@ -174,7 +188,7 @@ a{color:var(--gold);text-decoration:none}
        const price = ps ? Math.min(...ps.map(s => s.price)) : (p.price || 0);
        const created = new Date(p.created_at || 0).getTime();
   %>
-  <div class="sp-card" data-cat="<%= p.category %>" data-price="<%= price %>" data-bucket="<%= p._bucket %>" data-sold="<%= p._sold %>" data-created="<%= created %>" data-order="<%= p.sort_order %>">
+  <div class="sp-card" data-cat="<%= p.category %>" data-collection="<%= p.collection || '' %>" data-price="<%= price %>" data-bucket="<%= p._bucket %>" data-sold="<%= p._sold %>" data-created="<%= created %>" data-order="<%= p.sort_order %>">
     <button class="wish-btn" data-id="<%= p.id %>" data-slug="<%= p.slug %>" data-name="<%= p.name %>" data-price="<%= p.price || 0 %>" data-image="<%= p.image_url || '' %>" data-category="<%= p.category %>" aria-label="Save <%= p.name %> to wishlist">
       <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>
     </button>
@@ -182,7 +196,7 @@ a{color:var(--gold);text-decoration:none}
       <img src="<%= p.image_url || '/images/placeholder.svg' %>" alt="<%= p.name %>" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'">
     </a>
     <div class="sp-body">
-      <div class="sp-cat"><%= CAT_LABELS[p.category] || p.category %></div>
+      <div class="sp-cat"><%= COLLECTIONS[p.collection] || CAT_LABELS[p.category] || p.category %></div>
       <div class="sp-name"><a href="/products/<%= p.slug %>"><%= p.name %></a></div>
       <% if (p.rating_count) { %><div class="sp-stars"><span><%= '★'.repeat(Math.round(p.rating_avg)) + '☆'.repeat(5 - Math.round(p.rating_avg)) %></span> <em><%= p.rating_avg.toFixed(1) %> (<%= p.rating_count %>)</em></div><% } %>
       <% if (p.coverage) { %><div class="sp-cov">Coverage: <%= p.coverage %></div><% } %>
@@ -233,14 +247,16 @@ function showToast(msg) {
 // ── Filters + sort (client-side, no reload) ─────────────
 const grid = document.getElementById('shopGrid');
 if (grid && document.querySelector('.shop-toolbar')) {
-  let cat = 'all', bucket = '', priceRange = '', sort = 'featured';
+  let cat = 'all', coll = '', bucket = '', priceRange = '', sort = 'featured';
+  const collBar = document.getElementById('collBar');
   const cards = Array.from(grid.children);
 
   function apply() {
     let visible = 0;
+    if (collBar) collBar.hidden = cat !== 'oils';
     let [lo, hi] = priceRange ? priceRange.split('-').map(Number) : [0, Infinity];
     cards.forEach(c => {
-      const okCat = cat === 'all' || c.dataset.cat === cat;
+      const okCat = (cat === 'all' || c.dataset.cat === cat) && (cat !== 'oils' || !coll || c.dataset.collection === coll);
       const okBucket = !bucket || c.dataset.bucket === bucket;
       const price = parseFloat(c.dataset.price);
       const okPrice = !priceRange || (price >= lo && price <= hi);
@@ -267,6 +283,11 @@ if (grid && document.querySelector('.shop-toolbar')) {
     cat = btn.dataset.cat;
     apply();
   }));
+  const pickCollection = key => {
+    coll = key;
+    document.querySelectorAll('.coll-btn').forEach(b => b.classList.toggle('active', b.dataset.collection === key));
+  };
+  document.querySelectorAll('.coll-btn').forEach(btn => btn.addEventListener('click', () => { pickCollection(btn.dataset.collection); apply(); }));
   document.getElementById('sizeSel').addEventListener('change', e => { bucket = e.target.value; apply(); });
   document.getElementById('priceSel').addEventListener('change', e => { priceRange = e.target.value; apply(); });
   document.getElementById('sortSel').addEventListener('change', e => { sort = e.target.value; apply(); });
@@ -275,6 +296,12 @@ if (grid && document.querySelector('.shop-toolbar')) {
   const params = new URLSearchParams(location.search);
   const f = params.get('filter');
   if (f) { const btn = document.querySelector(`.pf-btn[data-cat="${f}"]`); if (btn) { cat = f; document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); } }
+  // ?collection=hotel opens the oils with that collection selected
+  const cl = params.get('collection');
+  if (cl && document.querySelector(`.coll-btn[data-collection="${cl}"]`)) {
+    cat = 'oils'; pickCollection(cl);
+    document.querySelectorAll('.pf-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === 'oils'));
+  }
   const sz = params.get('size');
   if (sz) { const sel = document.getElementById('sizeSel'); if ([...sel.options].some(o => o.value === sz)) { sel.value = sz; bucket = sz; } }
   apply();

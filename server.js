@@ -16,6 +16,7 @@ const { resendEmail, escapeHtml, sendNotification, sendConfirmation } = require(
 const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
 const { stripeShippingOption, shippingRules } = require('./lib/shipping');
+const { syncOilsToStripe } = require('./lib/stripe-catalog');
 
 const crypto = require('crypto');
 const app = express();
@@ -65,6 +66,8 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // Every view can check productVideos[slug] (lib/videos.js).
 app.locals.productVideos = require('./lib/videos').productVideos;
+// Fragrance-oil collections: products.collection key -> display name.
+app.locals.COLLECTIONS = require('./lib/collections').COLLECTIONS;
 
 // Content-Security-Policy. The site relies on inline scripts/styles (GTM,
 // Facebook Pixel, Stripe.js, inline handlers) so 'unsafe-inline' is required
@@ -551,7 +554,7 @@ app.post('/api/order-lookup', formLimiter, (req, res) => {
 // Product feed + admin panel/API (see routes/). Mounted here so route order
 // relative to the public API above and the pages below is unchanged.
 app.use(require('./routes/catalog'));
-app.use(require('./routes/admin')({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR }));
+app.use(require('./routes/admin')({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog }));
 
 
 // ═══════════════════════════════════════
@@ -612,7 +615,7 @@ function shopLocals(products) {
   return withRatings(products).map(p => ({ ...p, _bucket: coverageBucket(p), _sold: sales[p.id] || 0 }));
 }
 // Curated homepage grid: show every non-oil product plus a taste of the oils
-// (the full 56-oil catalog lives on /shop) so the homepage stays a highlights
+// (the full oil range lives on /shop) so the homepage stays a highlights
 // reel, not an endless scroll.
 function homepageProducts() {
   const all = getActiveProducts();
@@ -822,6 +825,27 @@ process.on('uncaughtException', err => {
 // Bind the port unless running under the test suite (NODE_ENV=test), which
 // imports the app and listens on an ephemeral port itself. (A require.main
 // check is not reliable: some launchers start node through a wrapper.)
+// The oils on sale are mirrored into the Stripe product catalogue for the
+// in-person point-of-sale app (lib/stripe-catalog.js). It runs once per
+// catalogue version when the live site starts, and on demand from the admin
+// panel (Settings -> Stripe catalogue). A failure is logged + emailed and
+// retried on the next start; it never affects the website itself.
+const STRIPE_SYNC_FLAG = 'stripe_oils_synced_2026_10';
+function syncStripeCatalog() {
+  const base = process.env.BASE_URL || 'https://www.scentworld.ca';
+  return syncOilsToStripe(stripe, db, base).then(result => {
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(STRIPE_SYNC_FLAG, new Date().toISOString());
+    return result;
+  });
+}
+function syncStripeCatalogOnce() {
+  if (process.env.NODE_ENV !== 'production') return;
+  if (db.prepare('SELECT value FROM settings WHERE key = ?').get(STRIPE_SYNC_FLAG)) return;
+  syncStripeCatalog()
+    .then(r => console.log('✅ Stripe catalogue synced:', JSON.stringify(r)))
+    .catch(err => alertError('stripe-catalog', err));
+}
+
 if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`\n🌿 Scent World Canada`);
   console.log(`   Website:  http://localhost:${PORT}`);
@@ -829,6 +853,7 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`   API:      http://localhost:${PORT}/api/products\n`);
   scheduleDailyBackup();
   scheduleReviewRequests();
+  syncStripeCatalogOnce();
 });
 
 module.exports = app;

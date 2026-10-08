@@ -182,6 +182,12 @@ tr:hover td{background:rgba(255,255,255,.01)}
         <p style="color:var(--txt2);font-size:.85rem;margin-bottom:1.2rem">Download a full copy of your database (orders, customers, products, subscribers). A backup is also emailed automatically every night.</p>
         <a class="btn btn-gold" href="/api/admin/backup">Download Backup</a>
       </div>
+      <div class="card" style="padding:2rem;margin-top:1rem">
+        <h3 style="font-family:var(--df);margin-bottom:.5rem">Stripe catalogue</h3>
+        <p style="color:var(--txt2);font-size:.85rem;margin-bottom:1.2rem">Copies the fragrance oils currently on sale (name, sizes and prices) into your Stripe product catalogue, so they appear in the in-person payment app. Press it after changing oil prices or which oils are active. Diffusers you added in Stripe yourself are not touched.</p>
+        <button class="btn btn-gold" id="stripeSyncBtn" onclick="syncStripeCatalog()">Sync oils to Stripe</button>
+        <span id="stripeSyncMsg" style="margin-left:1rem;font-size:.85rem;color:var(--txt2)"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -752,6 +758,19 @@ async function saveSettings(){
   });
   await fetch(API+'/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   alert('Settings saved!');
+}
+async function syncStripeCatalog() {
+  const btn = document.getElementById('stripeSyncBtn'), msg = document.getElementById('stripeSyncMsg');
+  btn.disabled = true; msg.textContent = 'Syncing… this can take a minute.';
+  try {
+    const r = await (await fetch('/api/admin/stripe-sync', { method: 'POST' })).json();
+    msg.textContent = r.success
+      ? `Done: ${r.result.oils} oils — ${r.result.productsCreated} added, ${r.result.pricesCreated} prices created, ${r.result.productsArchived} retired.`
+      : (r.error || 'Sync failed.');
+  } catch (e) {
+    msg.textContent = 'Sync failed — please try again.';
+  }
+  btn.disabled = false;
 }
 async function changePassword(){
   const cur=document.getElementById('pw-current').value,nw=document.getElementById('pw-new').value;

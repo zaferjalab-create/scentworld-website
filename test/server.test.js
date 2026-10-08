@@ -13,6 +13,42 @@ const path = require('path');
 // Fake Stripe API: records checkout-session requests and answers like Stripe.
 const http = require('http');
 const stripeCalls = [];
+// In-memory Stripe product catalogue for the oil sync (lib/stripe-catalog.js).
+const fakeProducts = new Map(), fakePrices = new Map();
+function fakeCatalogue(method, url, params) {
+  const u = new URL(url, 'http://x');
+  const obj = () => { const o = {}; for (const [k, v] of params) if (!k.includes('[')) o[k] = v; return o; };
+  let m;
+  if ((m = /^\/v1\/products\/([^/]+)$/.exec(u.pathname))) {
+    const p = fakeProducts.get(m[1]);
+    if (!p) return { status: 404, body: { error: { type: 'invalid_request_error', code: 'resource_missing', message: 'No such product' } } };
+    if (method === 'POST') { Object.assign(p, obj()); if (params.has('active')) p.active = params.get('active') === 'true'; }
+    return { body: p };
+  }
+  if (u.pathname === '/v1/products') {
+    if (method === 'POST') {
+      const p = { object: 'product', active: true, default_price: null, ...obj() };
+      fakeProducts.set(p.id, p);
+      return { body: p };
+    }
+    return { body: { object: 'list', has_more: false, data: [...fakeProducts.values()].filter(p => p.active) } };
+  }
+  if ((m = /^\/v1\/prices\/([^/]+)$/.exec(u.pathname))) {
+    const pr = fakePrices.get(m[1]);
+    if (params.has('active')) pr.active = params.get('active') === 'true';
+    return { body: pr };
+  }
+  if (u.pathname === '/v1/prices') {
+    if (method === 'POST') {
+      const pr = { object: 'price', id: 'price_' + (fakePrices.size + 1), active: true, ...obj(), unit_amount: Number(params.get('unit_amount')) };
+      fakePrices.set(pr.id, pr);
+      return { body: pr };
+    }
+    const product = u.searchParams.get('product');
+    return { body: { object: 'list', has_more: false, data: [...fakePrices.values()].filter(x => x.product === product && x.active) } };
+  }
+  return null;
+}
 let stripeTaxOff = false; // simulate Stripe Tax being deactivated on the account
 const fakeStripe = http.createServer((req, res) => {
   let body = '';
@@ -25,6 +61,8 @@ const fakeStripe = http.createServer((req, res) => {
       res.statusCode = 400;
       return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'Stripe Tax has not been activated on your account.' } }));
     }
+    const catalogue = fakeCatalogue(req.method, req.url, params);
+    if (catalogue) { res.statusCode = catalogue.status || 200; return res.end(JSON.stringify(catalogue.body)); }
     res.end(JSON.stringify({ id: 'cs_test_fake', object: 'checkout.session', url: 'https://checkout.stripe.com/c/pay/cs_test_fake' }));
   });
 }).listen(0);
@@ -129,8 +167,8 @@ test('product videos: gallery video + VideoObject, homepage reel, cached range-s
 });
 
 test('hidden products redirect to their shop category; robots skips the API', async () => {
-  db.prepare("UPDATE products SET active = 0 WHERE slug = 's100'").run();
-  const r = await get('/products/s100', { redirect: 'manual' });
+  // l100 is a hidden (not deleted) diffuser
+  const r = await get('/products/l100', { redirect: 'manual' });
   assert.equal(r.status, 302);
   assert.equal(r.headers.get('location'), '/shop?filter=diffusers');
   assert.equal((await get('/products/no-such-thing')).status, 404);
@@ -174,8 +212,8 @@ test('product images are WebP and all resolve', async () => {
 });
 
 test('size finder shows a size group only when it has active products', async () => {
-  // 3,000-5,000 sq ft units: s200 (3,000–4,000) and l200 (4,000–5,000)
-  const commercial = ['s200', 'l200'];
+  // 3,000-5,000 sq ft units: s200 (3,000–4,000), s300 and l200 (4,000–5,000)
+  const commercial = ['s200', 's300', 'l200'];
   const setActive = v => commercial.forEach(slug => db.prepare('UPDATE products SET active = ? WHERE slug = ?').run(v, slug));
   const tile = async () => (await (await get('/')).text()).includes('/shop?size=commercial');
   try {
@@ -186,9 +224,32 @@ test('size finder shows a size group only when it has active products', async ()
     assert.equal(await tile(), true, 'tile comes back when re-activated');
   } finally {
     setActive(0);
-    db.prepare("UPDATE products SET active = 1 WHERE slug = 's200'").run();
+    db.prepare("UPDATE products SET active = 1 WHERE slug IN ('s200', 's300')").run();
   }
   assert.ok((await (await get('/')).text()).includes('/shop?size=small'));
+});
+
+test('October 2026 catalogue: 29 oils in five collections, S100 + S300 on sale', async () => {
+  const { COLLECTIONS, OIL_LINEUP } = require('../lib/collections');
+  const oils = db.prepare("SELECT slug, collection FROM products WHERE category = 'oils' AND active = 1 ORDER BY sort_order").all();
+  assert.equal(oils.length, 29);
+  assert.deepEqual(oils.map(o => o.slug), Object.values(OIL_LINEUP).flat(), 'sheet order, grouped by collection');
+  assert.ok(oils.every(o => COLLECTIONS[o.collection]), 'every oil has a collection');
+  assert.equal(db.prepare("SELECT count(*) c FROM products WHERE category = 'oils' AND active = 1 AND (full_desc IS NULL OR full_desc = '')").get().c, 0, 'no oil without a description');
+
+  const shop = await (await get('/shop')).text();
+  assert.ok(shop.includes('id="collBar"') && shop.includes('data-collection="hotel"'), 'collection filter');
+  assert.ok(shop.includes('Hotel Collection') && shop.includes('The Business Collection'));
+  assert.ok(!shop.includes('/products/juniper'), 'retired oils are not listed');
+  assert.equal((await get('/products/juniper', { redirect: 'manual' })).status, 302, 'retired oil pages redirect to the shop');
+  assert.ok((await (await get('/products/white-tea')).text()).includes('/shop?collection=hotel'));
+
+  const diffusers = db.prepare("SELECT slug, price FROM products WHERE category = 'diffusers' AND active = 1 ORDER BY sort_order").all();
+  assert.deepEqual(diffusers.map(d => d.slug), ['s20', 's30', 's100', 's200', 's300']);
+  assert.equal(diffusers.find(d => d.slug === 's100').price, 699);
+  assert.equal(diffusers.find(d => d.slug === 's300').price, 1199);
+  const s300 = await (await get('/products/s300')).text();
+  assert.ok(s300.includes('800 ml') && s300.includes('4,000–5,000 sq ft'));
 });
 
 test('product feed has variant grouping and well-formed rows', async () => {
@@ -367,3 +428,41 @@ test('upload rejects non-images disguised with an image extension', async () => 
   assert.equal(r.status, 400);
 });
 
+
+test('Stripe catalogue sync: 29 oils x 3 sizes, idempotent, price changes and retired oils handled', async () => {
+  const { syncOilsToStripe } = require('../lib/stripe-catalog');
+  const api = new URL(STRIPE_API_URL);
+  const fake = require('stripe')('sk_test_dummy', { host: api.hostname, port: api.port, protocol: 'http' });
+  const run = () => syncOilsToStripe(fake, db, 'https://www.scentworld.ca');
+
+  const first = await run();
+  assert.deepEqual([first.oils, first.productsCreated, first.pricesCreated], [29, 29, 87]);
+  const tea = fakeProducts.get('sw-oil-white-tea');
+  assert.equal(tea.name, 'White Tea Oil');
+  assert.equal(tea.tax_code, 'txcd_99999999');
+  const teaPrices = [...fakePrices.values()].filter(x => x.product === 'sw-oil-white-tea');
+  assert.deepEqual(teaPrices.map(x => [x.nickname, x.unit_amount]), [['100ml', 4900], ['200ml', 8900], ['500ml', 18900]]);
+  assert.ok(teaPrices.every(x => x.currency === 'cad' && x.tax_behavior === 'exclusive'));
+  assert.equal(tea.default_price, teaPrices[0].id, 'smallest size is the default price');
+  // created in reverse site order, so Stripe's newest-first list reads in collection order
+  assert.equal([...fakeProducts.keys()].at(-1), 'sw-oil-fresh-blossom');
+
+  const again = await run();
+  assert.deepEqual([again.productsCreated, again.pricesCreated, again.pricesArchived, again.productsArchived], [0, 0, 0, 0], 'second run changes nothing');
+
+  // a price change makes a new Stripe price and archives the old one; a retired oil is archived
+  const row = db.prepare("SELECT sizes FROM products WHERE slug = 'white-tea'").get();
+  try {
+    db.prepare("UPDATE products SET sizes = ? WHERE slug = 'white-tea'").run(JSON.stringify([{ label: '100ml', price: 55 }, { label: '200ml', price: 89 }, { label: '500ml', price: 189 }]));
+    db.prepare("UPDATE products SET active = 0 WHERE slug = 'secret'").run();
+    const third = await run();
+    assert.deepEqual([third.pricesCreated, third.pricesArchived, third.productsArchived], [1, 1, 1]);
+    assert.equal(fakeProducts.get('sw-oil-secret').active, false);
+    fakeProducts.set('prod_handmade', { id: 'prod_handmade', object: 'product', active: true, name: 'S20' });
+    await run();
+    assert.equal(fakeProducts.get('prod_handmade').active, true, 'hand-made Stripe products are never touched');
+  } finally {
+    db.prepare("UPDATE products SET sizes = ? WHERE slug = 'white-tea'").run(row.sizes);
+    db.prepare("UPDATE products SET active = 1 WHERE slug = 'secret'").run();
+  }
+});

@@ -515,7 +515,11 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
   </div>
 
   <div class="pd-info">
+    <% if (COLLECTIONS[product.collection]) { %>
+    <a class="pd-cat" href="/shop?collection=<%= product.collection %>" style="text-decoration:none"><%= COLLECTIONS[product.collection] %></a>
+    <% } else { %>
     <span class="pd-cat"><%= catLabel %></span>
+    <% } %>
     <h1 class="pd-name"><%= product.name %></h1>
     <% if (reviews.length) { %>
     <div class="pd-rating" id="reviews-summary">

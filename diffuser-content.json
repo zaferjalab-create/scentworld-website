@@ -68,6 +68,11 @@
     "spec_coverage": "4,000–5,000 sq ft"
   },
   "s300": {
-    "spec_coverage": "4,000–5,000 sq ft"
+    "short": "High-capacity HVAC-ready diffuser with app control — 4,000–5,000 sq ft, 800 ml, anti-theft lock.",
+    "full": "The Scent World S300 Commercial Large Space Diffuser is our highest-capacity system: HVAC-ready, app-controlled and built for large commercial spaces of 4,000–5,000 sq ft.\nBuilt-in HVAC integration spreads fragrance evenly across a large area, while the smart app handles scheduling and intensity. An 800 ml bottle keeps refills infrequent and the anti-theft lock makes it practical for public spaces.\nBest for villas, hotels, resorts, places of worship and fitness centres. For use with Scent World fragrance oils.",
+    "spec_coverage": "4,000–5,000 sq ft",
+    "spec_oil_capacity": "800 ml",
+    "spec_power": "13W · AC 100–240V",
+    "spec_dimensions": "395 × 280 × 140 mm"
   }
 }

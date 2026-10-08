@@ -189,8 +189,9 @@ try {
   const products = [
     { name: 'S20 Nano Diffuser', slug: 's20', category: 'diffusers', short_desc: 'Compact nano diffuser for personal spaces of 300–500 sq ft.', price: 199.00, coverage: '300–500 sq ft', sort_order: 1, image_url: '/images/products/S20-Black.webp' },
     { name: 'S30 Nano Diffuser', slug: 's30', category: 'diffusers', short_desc: 'Mid-size nano diffuser with programmable timer. Coverage 500–1,500 sq ft.', price: 349.00, coverage: '500–1,500 sq ft', sort_order: 2, image_url: '/images/products/S30-Black.webp' },
-    { name: 'S100 Commercial Diffuser', slug: 's100', category: 'diffusers', short_desc: 'Professional-grade cold-air diffuser for commercial spaces of 1,500–3,000 sq ft.', price: 599.00, coverage: '1,500–3,000 sq ft', sort_order: 3, image_url: '/images/products/S100.webp' },
+    { name: 'S100 Commercial Diffuser', slug: 's100', category: 'diffusers', short_desc: 'Professional-grade cold-air diffuser for commercial spaces of 1,500–3,000 sq ft.', price: 699.00, coverage: '1,500–3,000 sq ft', sort_order: 3, image_url: '/images/products/S100.webp' },
     { name: 'S200 Commercial Diffuser', slug: 's200', category: 'diffusers', short_desc: 'High-capacity nano diffuser for commercial environments of 3,000–4,000 sq ft.', price: 899.00, coverage: '3,000–4,000 sq ft', sort_order: 4, image_url: '/images/products/S200.webp' },
+    { name: 'S300 Commercial Diffuser', slug: 's300', category: 'diffusers', short_desc: 'High-capacity HVAC-ready diffuser with app control for large spaces of 4,000–5,000 sq ft.', price: 1199.00, coverage: '4,000–5,000 sq ft', sort_order: 5, image_url: '/images/products/S300.webp' },
     { name: 'L100 Luxury Diffuser', slug: 'l100', category: 'diffusers', short_desc: 'Premium luxury diffuser with elegant design and smart controls.', price: 749.00, coverage: '1,500–3,000 sq ft', sort_order: 5, image_url: '/images/products/SW110.webp' },
     { name: 'L100 AD Display Diffuser', slug: 'l100-ad', category: 'diffusers', short_desc: 'Luxury diffuser with built-in digital display for branding.', price: 999.00, coverage: '1,500–3,000 sq ft', sort_order: 6, image_url: '/images/products/SW114.webp' },
     { name: 'L200 Luxury Diffuser', slug: 'l200', category: 'diffusers', short_desc: 'Top-tier luxury diffuser with diamond-pattern design for premium venues.', price: 1299.00, coverage: '4,000–5,000 sq ft', sort_order: 7, image_url: '/images/products/SW127.webp' },
@@ -408,6 +409,19 @@ try {
     updOrigin.run(origin, slug);   // back-fill origin on any that already existed
     updSizes.run(OIL_SIZES, slug);
   }
+  // Oils added with the October 2026 line-up (lib/collections.js). Inserted
+  // here so the description fill below finds them; which oils are visible, and
+  // in what order, is set by the one-time line-up step near the end of the file.
+  const NEW_OILS = [
+    ['Elegance Oil', 'elegance'], ['Inspired by Bvlgari', 'bvlgari'], ['Night Ambience Oil', 'night-ambience'],
+    ['Magnolia Vanilla Oil', 'magnolia-vanilla'], ['White Orchid Oil', 'white-orchid'],
+    ['Citrus Whisper Oil', 'citrus-whisper'], ['Sahara Night Oil', 'sahara-night'], ['Oud Air Oil', 'oud-air'],
+    ['White Patchouli Oil', 'white-patchouli'], ['Macca Oil', 'macca'], ['White Rose Oil', 'white-rose'],
+    ['Light Vanilla Oil', 'light-vanilla'], ['Red Wood Oil', 'red-wood'], ['Fruit and Honey Oil', 'fruit-and-honey'],
+  ];
+  NEW_OILS.forEach(([name, slug], i) => {
+    if (ins.run(name, slug, 'Signature fragrance oil. Available in 100 ml, 200 ml and 500 ml.', OIL_SIZES, null, 300 + i).changes > 0) added++;
+  });
   if (added > 0) console.log(`✅ Seeded ${added} fragrance oils`);
 
   // Trademark-safe naming: recognizable brand/house names become "Inspired by …".
@@ -567,6 +581,42 @@ try {
   }
 } catch (e) {
   console.error('❌ coverage ladder error:', e.message);
+}
+
+// October 2026 catalogue (owner's decision): the oil range is cut to 29 oils in
+// five collections "to make it less confusing", and the S100 and S300 diffusers
+// go on sale. The collection column is schema; everything else is applied once
+// (settings flag) so later changes made in the admin panel are kept. Oils that
+// left the range are hidden, not deleted, so they can be switched back on.
+try {
+  const cols = db.prepare('PRAGMA table_info(products)').all().map(c => c.name);
+  if (!cols.includes('collection')) {
+    db.exec('ALTER TABLE products ADD COLUMN collection TEXT');
+    console.log('✅ Added products.collection column');
+  }
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'catalog_2026_10'").get();
+  if (!done) {
+    const { OIL_LINEUP } = require('./lib/collections');
+    db.prepare("UPDATE products SET active = 0, collection = NULL WHERE category = 'oils'").run();
+    const place = db.prepare("UPDATE products SET active = 1, collection = ?, sort_order = ? WHERE slug = ? AND category = 'oils'");
+    let order = 200, shown = 0;
+    for (const [collection, slugs] of Object.entries(OIL_LINEUP)) {
+      for (const slug of slugs) shown += place.run(collection, ++order, slug).changes;
+    }
+    // "Milano" on the stock sheet is the oil the 2026 list spelled "Melano".
+    db.prepare("UPDATE products SET name = 'Milano Oil' WHERE slug = 'melano' AND name = 'Melano Oil'").run();
+
+    // Diffusers: S100 back on sale at its new price; S300 after the S200.
+    db.prepare("UPDATE products SET active = 1, price = 699 WHERE slug = 's100'").run();
+    db.prepare("UPDATE products SET active = 1, sort_order = 5 WHERE slug = 's300'").run();
+    const bump = db.prepare('UPDATE products SET sort_order = ? WHERE slug = ?');
+    [['l100', 6], ['l100-ad', 7], ['l200', 8]].forEach(([slug, n]) => bump.run(n, slug));
+
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('catalog_2026_10', '1')").run();
+    console.log(`✅ October 2026 catalogue: ${shown} oils in 5 collections; S100 + S300 on sale`);
+  }
+} catch (e) {
+  console.error('❌ catalogue 2026-10 error:', e.message);
 }
 
 // Shipping rate set by the owner (2026-09-24): CA$12.99 flat under the $150

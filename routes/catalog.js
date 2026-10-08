@@ -2,6 +2,7 @@
 const express = require('express');
 const db = require('../database');
 const { shippingRules, shippingCost } = require('../lib/shipping');
+const { COLLECTIONS } = require('../lib/collections');
 const router = express.Router();
 
 // Meta/Google product catalog feed (CSV format)
@@ -50,7 +51,7 @@ router.get('/catalog.csv', (req, res) => {
           `"${img}"`,
           '"Scent World Canada"',
           `"${category}"`,
-          `"${p.category}"`,
+          `"${p.category}${COLLECTIONS[p.collection] ? ' > ' + COLLECTIONS[p.collection] : ''}"`,
           '', // sale_price
           '100', // inventory
           '', // gtin

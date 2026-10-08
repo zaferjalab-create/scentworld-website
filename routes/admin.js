@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../database');
 const { snapshotDb } = require('../lib/backup');
 
-module.exports = function adminRoutes({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR }) {
+module.exports = function adminRoutes({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog }) {
   const router = express.Router();
 
 // ═══════════════════════════════════════
@@ -441,6 +441,17 @@ router.post('/api/admin/change-password', requireAdmin, async (req, res) => {
     else { req.session.adminId = adminId; req.session.adminEmail = adminEmail; }
     res.json({ success: true, message: 'Password updated' });
   });
+});
+
+// On-demand: copy the oils on sale into the Stripe product catalogue (for the
+// in-person point-of-sale app). Safe to press repeatedly.
+router.post('/api/admin/stripe-sync', requireAdmin, async (req, res) => {
+  try {
+    res.json({ success: true, result: await syncStripeCatalog() });
+  } catch (err) {
+    console.error('Stripe catalogue sync error:', err.message);
+    res.status(502).json({ success: false, error: 'Stripe sync failed: ' + err.message });
+  }
 });
 
 // On-demand: admin downloads a fresh backup file.

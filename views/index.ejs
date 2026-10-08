@@ -738,7 +738,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     const HP_LABELS = { diffusers: 'Diffuser', oils: 'Fragrance Oil', home_car: 'Home & Car', aerosol: 'Aerosol System' };
     products.forEach((p, i) => {
       let gal = []; try { const g = JSON.parse(p.gallery_images || '[]'); if (Array.isArray(g)) gal = g; } catch(e) {}
-      const label = HP_LABELS[p.category] || p.category;
+      const label = COLLECTIONS[p.collection] || HP_LABELS[p.category] || p.category;
     %>
     <div class="pc rv<%= i < 4 ? ' d' + Math.min(i + 1, 4) : '' %>">
       <button class="wish-btn" data-id="<%= p.id %>" data-slug="<%= p.slug %>" data-name="<%= p.name %>" data-price="<%= p.price || 0 %>" data-image="<%= p.image_url || '' %>" data-category="<%= p.category %>" aria-label="Save <%= p.name %> to wishlist">
@@ -1164,6 +1164,7 @@ const CAT_ICONS = {
   aerosol: `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="65" rx="14" ry="5"/><path d="M26 65V35Q26 25 40 22Q54 25 54 35V65"/><path d="M34 22L34 18M40 22L40 16M46 22L46 18"/></svg>`,
 };
 const CAT_LABELS = { diffusers: 'Diffuser', oils: 'Fragrance Oil', home_car: 'Home & Car', aerosol: 'Aerosol System' };
+const COLL_LABELS = <%- JSON.stringify(COLLECTIONS) %>;
 
 function renderCartBody() {
   const body = document.getElementById('cartBody');
@@ -1296,7 +1297,7 @@ function renderProducts() {
   grid.innerHTML = filtered.map((p, i) => {
     const pName = p.name.replace(/'/g, "&#39;");
     const icon = CAT_ICONS[p.category] || CAT_ICONS.diffusers;
-    const label = CAT_LABELS[p.category] || p.category;
+    const label = COLL_LABELS[p.collection] || CAT_LABELS[p.category] || p.category;
     // Parse gallery images
     let gallery = [];
     if (p.gallery_images) {
