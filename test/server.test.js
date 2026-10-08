@@ -466,3 +466,15 @@ test('Stripe catalogue sync: 29 oils x 3 sizes, idempotent, price changes and re
     db.prepare("UPDATE products SET active = 1 WHERE slug = 'secret'").run();
   }
 });
+
+test('aerosol range is off sale: no products, no filter button, old pages redirect', async () => {
+  assert.equal(db.prepare("SELECT count(*) c FROM products WHERE category = 'aerosol' AND active = 1").get().c, 0);
+  for (const page of ['/', '/shop']) {
+    const html = await (await get(page)).text();
+    assert.ok(!html.includes('data-cat="aerosol"'), page + ' has no aerosol filter');
+    assert.ok(!html.includes('/products/aerosol-'), page + ' links to no aerosol product');
+  }
+  const r = await get('/products/aerosol-gold', { redirect: 'manual' });
+  assert.equal(r.status, 302);
+  assert.ok(!(await (await get('/catalog.csv')).text()).includes('aerosol'), 'not in the product feed');
+});

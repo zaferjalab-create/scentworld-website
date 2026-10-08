@@ -619,6 +619,20 @@ try {
   console.error('❌ catalogue 2026-10 error:', e.message);
 }
 
+// Aerosol range dropped by the owner (2026-10-07): the two aerosol products
+// come off sale. Hidden, not deleted, and applied once (settings flag) so they
+// can be switched back on in the admin panel. Their pages redirect to the shop.
+try {
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'removed_aerosols_2026_10'").get();
+  if (!done) {
+    const r = db.prepare("UPDATE products SET active = 0 WHERE category = 'aerosol'").run();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('removed_aerosols_2026_10', '1')").run();
+    if (r.changes) console.log(`✅ Took ${r.changes} aerosol products off sale`);
+  }
+} catch (e) {
+  console.error('❌ aerosol removal error:', e.message);
+}
+
 // Shipping rate set by the owner (2026-09-24): CA$12.99 flat under the $150
 // free-shipping threshold. Applied once (settings flag) so a later change in
 // admin → Settings (including clearing it for free shipping) is kept.

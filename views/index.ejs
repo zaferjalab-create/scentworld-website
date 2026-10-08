@@ -718,7 +718,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
   <div class="pf" id="filterBtns">
     <button class="pf-btn active" data-cat="all">All Products</button>
     <button class="pf-btn" data-cat="diffusers">Diffusers</button>
-    <button class="pf-btn" data-cat="aerosol">Aerosol</button>
+    <% if (products.some(p => p.category === 'aerosol')) { %><button class="pf-btn" data-cat="aerosol">Aerosol</button><% } %>
     <button class="pf-btn" data-cat="home_car">Home &amp; Car</button>
     <button class="pf-btn" data-cat="oils">Fragrance Oils</button>
   </div>
@@ -939,7 +939,6 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
             <option value="diffusers">Scent Diffusers</option>
             <option value="oils">Fragrance Oils</option>
             <option value="home_car">Home &amp; Car</option>
-            <option value="aerosol">Aerosol Systems</option>
             <option value="subscription">Scenting Subscription</option>
             <option value="marketing">Scent Marketing / Consultation</option>
             <option value="multiple">Multiple Products</option>
