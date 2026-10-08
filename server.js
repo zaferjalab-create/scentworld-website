@@ -385,6 +385,7 @@ app.post('/api/checkout', async (req, res) => {
           currency: 'cad',
           product_data: { name: productName, description: product.short_desc || undefined },
           unit_amount: Math.round(unitPrice * 100),
+          tax_behavior: 'exclusive',   // prices are before tax; GST/HST is added on top
         },
         quantity: item.quantity,
       });
@@ -399,7 +400,7 @@ app.post('/api/checkout', async (req, res) => {
     // Deriving from the request works in dev and prod with no env var needed
     // (trust proxy is set, so req.protocol is correct behind Railway).
     const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const session = await stripe.checkout.sessions.create({
+    const session = await createCheckoutSession({
       // No payment_method_types: hosted Checkout then offers every method
       // enabled in the Stripe dashboard (card, Apple Pay, Google Pay…).
       // NOTE: do not add automatic_payment_methods here — that is a
@@ -425,6 +426,22 @@ app.post('/api/checkout', async (req, res) => {
   }
 });
 
+// Creates the Checkout Session with Stripe Tax: GST/HST is calculated from the
+// customer's shipping address (14% in NS, 13% ON, 5% AB...) under the Canada
+// registration in the Stripe dashboard. If Stripe Tax is ever switched off or
+// mis-configured, Stripe rejects the request - sell without tax rather than
+// not at all, and email the owner so it gets fixed.
+async function createCheckoutSession(params) {
+  try {
+    return await stripe.checkout.sessions.create({ ...params, automatic_tax: { enabled: true } });
+  } catch (err) {
+    if (err.type !== 'StripeInvalidRequestError' || !/tax/i.test(err.message || '')) throw err;
+    console.error('Checkout tax error, retrying without tax:', err.message);
+    alertError('checkout-tax', err);
+    return stripe.checkout.sessions.create(params);
+  }
+}
+
 // Records the order + line items and sends confirmation emails for a PAID
 // Stripe session. Idempotent and safe to call from BOTH the browser success
 // page and the Stripe webhook — the UNIQUE(stripe_session_id) constraint is the
@@ -441,18 +458,20 @@ function recordOrderFromSession(session) {
   const name = shipping?.name || session.customer_details?.name || 'Customer';
   const email = session.customer_details?.email || '';
 
+  const tax = (session.total_details?.amount_tax || 0) / 100;
+  const shippingCost = (session.total_details?.amount_shipping || 0) / 100;
   let orderId;
   try {
     const result = db.prepare(`
       INSERT INTO orders (order_number, customer_name, customer_email, shipping_line1, shipping_city,
-        shipping_province, shipping_postal, shipping_country, subtotal, total, stripe_session_id, payment_status, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'confirmed')
+        shipping_province, shipping_postal, shipping_country, subtotal, tax, shipping_cost, total, stripe_session_id, payment_status, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'confirmed')
     `).run(
       orderNumber, name, email,
       shipping?.address?.line1 || null, shipping?.address?.city || null,
       shipping?.address?.state || null, shipping?.address?.postal_code || null,
       shipping?.address?.country || 'CA',
-      session.amount_subtotal / 100, session.amount_total / 100,
+      session.amount_subtotal / 100, tax, shippingCost, session.amount_total / 100,
       session.id
     );
     orderId = result.lastInsertRowid;
@@ -476,8 +495,10 @@ function recordOrderFromSession(session) {
     }
   }
 
-  sendNotification('New Order', `Order ${orderNumber}\nCustomer: ${name} (${email})\nTotal: $${session.amount_total / 100} CAD`);
-  sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\nTotal: $${session.amount_total / 100} CAD\nEstimated delivery: ${deliveryEstimate()}\n\nWe'll process and ship your order within 1–2 business days, and you'll receive tracking by email.`);
+  const money = n => '$' + n.toFixed(2);
+  const totals = `Subtotal: ${money(session.amount_subtotal / 100)}\nShipping: ${shippingCost ? money(shippingCost) : 'Free'}\nTax (GST/HST): ${money(tax)}\nTotal: ${money(session.amount_total / 100)} CAD`;
+  sendNotification('New Order', `Order ${orderNumber}\nCustomer: ${name} (${email})\n${totals}`);
+  sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\n${totals}\nEstimated delivery: ${deliveryEstimate()}\n\nWe'll process and ship your order within 1–2 business days, and you'll receive tracking by email.`);
   return orderNumber;
 }
 

@@ -13,12 +13,18 @@ const path = require('path');
 // Fake Stripe API: records checkout-session requests and answers like Stripe.
 const http = require('http');
 const stripeCalls = [];
+let stripeTaxOff = false; // simulate Stripe Tax being deactivated on the account
 const fakeStripe = http.createServer((req, res) => {
   let body = '';
   req.on('data', c => { body += c; });
   req.on('end', () => {
-    stripeCalls.push({ path: req.url, params: new URLSearchParams(body) });
+    const params = new URLSearchParams(body);
+    stripeCalls.push({ path: req.url, params });
     res.setHeader('Content-Type', 'application/json');
+    if (stripeTaxOff && params.get('automatic_tax[enabled]') === 'true') {
+      res.statusCode = 400;
+      return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'Stripe Tax has not been activated on your account.' } }));
+    }
     res.end(JSON.stringify({ id: 'cs_test_fake', object: 'checkout.session', url: 'https://checkout.stripe.com/c/pay/cs_test_fake' }));
   });
 }).listen(0);
@@ -203,7 +209,8 @@ function signedWebhook(session) {
   });
 }
 const paidSession = id => ({
-  id, payment_status: 'paid', amount_subtotal: 19900, amount_total: 19900,
+  id, payment_status: 'paid', amount_subtotal: 19900, amount_total: 22686,
+  total_details: { amount_tax: 2786, amount_shipping: 0, amount_discount: 0 },
   customer_details: { email: 'buyer@example.com', name: 'Test Buyer' },
   shipping_details: { name: 'Test Buyer', address: { line1: '1 Test St', city: 'Halifax', state: 'NS', postal_code: 'B3H 0A1', country: 'CA' } },
   metadata: { items: JSON.stringify([{ id: 1, qty: 1 }]) },
@@ -238,6 +245,25 @@ test('checkout sends Stripe a valid session: real prices, shipping option, no in
   assert.equal(p.get('shipping_options[0][shipping_rate_data][type]'), 'fixed_amount');
   assert.equal(p.get('allow_promotion_codes'), 'true');
   assert.ok(p.get('success_url').includes('/success.html?session_id={CHECKOUT_SESSION_ID}'));
+  // GST/HST: Stripe Tax on, prices and shipping are tax-exclusive
+  assert.equal(p.get('automatic_tax[enabled]'), 'true');
+  assert.equal(p.get('line_items[0][price_data][tax_behavior]'), 'exclusive');
+  assert.equal(p.get('shipping_options[0][shipping_rate_data][tax_behavior]'), 'exclusive');
+});
+
+test('checkout still works (without tax) if Stripe Tax is switched off', async () => {
+  const oil = db.prepare("SELECT id FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
+  const before = stripeCalls.length;
+  stripeTaxOff = true;
+  try {
+    const r = await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 1, size: '100ml' }] });
+    assert.equal(r.status, 200, 'customer can still check out');
+    const calls = stripeCalls.slice(before);
+    assert.equal(calls.length, 2, 'one rejected attempt, one retry');
+    assert.equal(calls[1].params.get('automatic_tax[enabled]'), null, 'retry has no tax');
+  } finally {
+    stripeTaxOff = false;
+  }
 });
 
 test('webhook rejects unsigned requests', async () => {
@@ -251,7 +277,9 @@ test('paid checkout webhook records exactly one order, even when replayed', asyn
   assert.equal((await signedWebhook(paidSession(sid))).status, 200); // Stripe retries
   const rows = db.prepare('SELECT * FROM orders WHERE stripe_session_id = ?').all(sid);
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].total, 199);
+  assert.equal(rows[0].total, 226.86);
+  assert.equal(rows[0].subtotal, 199);
+  assert.equal(rows[0].tax, 27.86, 'HST recorded on the order');
   const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(rows[0].id);
   assert.equal(items.length, 1);
 
@@ -259,7 +287,7 @@ test('paid checkout webhook records exactly one order, even when replayed', asyn
   const v = await (await get('/api/checkout/verify?session_id=' + sid)).json();
   assert.equal(v.paid, true);
   assert.equal(v.order_number, rows[0].order_number);
-  assert.equal(v.total, 199);
+  assert.equal(v.total, 226.86);
 
   // order lookup needs number + matching email
   const ok = await postJson('/api/order-lookup', { order_number: rows[0].order_number, email: 'buyer@example.com' });
