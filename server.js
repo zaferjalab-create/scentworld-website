@@ -16,7 +16,7 @@ const { resendEmail, escapeHtml, sendNotification, sendConfirmation } = require(
 const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
 const { stripeShippingOption, shippingRules } = require('./lib/shipping');
-const { syncStripeCatalogue } = require('./lib/stripe-catalog');
+const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
 
 const crypto = require('crypto');
 const app = express();
@@ -831,20 +831,38 @@ process.on('uncaughtException', err => {
 // catalogue version when the live site starts, and on demand from the admin
 // panel (Settings -> Stripe catalogue). A failure is logged + emailed and
 // retried on the next start; it never affects the website itself.
-const STRIPE_SYNC_FLAG = 'stripe_catalogue_synced_2026_10b'; // 3 oil sizes + gift set
+// "State" = catalogue layout version + whether the scheduled sale is on. Stripe
+// is re-synced whenever the saved state differs from the wanted one: after a
+// deploy that changes the layout, when the sale starts, and when it ends.
+const STRIPE_STATE_KEY = 'stripe_catalogue_state';
+const stripeCatalogueState = () => 'v3|' + saleSettings(db).state;
 function syncStripeCatalog() {
   const base = process.env.BASE_URL || 'https://www.scentworld.ca';
+  const state = stripeCatalogueState();
   return syncStripeCatalogue(stripe, db, base).then(result => {
-    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(STRIPE_SYNC_FLAG, new Date().toISOString());
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(STRIPE_STATE_KEY, state);
     return result;
   });
 }
-function syncStripeCatalogOnce() {
-  if (process.env.NODE_ENV !== 'production') return;
-  if (db.prepare('SELECT value FROM settings WHERE key = ?').get(STRIPE_SYNC_FLAG)) return;
+let stripeSyncRunning = false;
+function syncStripeCatalogIfDue() {
+  if (process.env.NODE_ENV !== 'production' || stripeSyncRunning) return;
+  const saved = (db.prepare('SELECT value FROM settings WHERE key = ?').get(STRIPE_STATE_KEY) || {}).value;
+  if (saved === stripeCatalogueState()) return;
+  stripeSyncRunning = true;
   syncStripeCatalog()
-    .then(r => console.log('✅ Stripe catalogue synced:', JSON.stringify(r)))
-    .catch(err => alertError('stripe-catalog', err));
+    .then(r => {
+      console.log('✅ Stripe catalogue synced:', JSON.stringify(r));
+      // Tell the owner when sale prices switch on or off, or anything was skipped.
+      if (r.saleApplied || r.saleRemoved || r.skipped.length || (saved && saved.split('|')[1] !== stripeCatalogueState().split('|')[1])) {
+        sendNotification('Stripe prices updated',
+          `Sale: ${r.sale}\nPrices now in Stripe: ${r.items.join(', ')}\n` +
+          `Other products put on sale: ${r.saleApplied}; returned to regular price: ${r.saleRemoved}` +
+          (r.skipped.length ? `\nNOT changed (check these in Stripe): ${r.skipped.join(', ')}` : ''));
+      }
+    })
+    .catch(err => alertError('stripe-catalog', err))
+    .finally(() => { stripeSyncRunning = false; });
 }
 
 if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
@@ -854,7 +872,8 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`   API:      http://localhost:${PORT}/api/products\n`);
   scheduleDailyBackup();
   scheduleReviewRequests();
-  syncStripeCatalogOnce();
+  syncStripeCatalogIfDue();
+  setInterval(syncStripeCatalogIfDue, 15 * 60 * 1000).unref(); // picks up the sale start/end
 });
 
 module.exports = app;

@@ -17,12 +17,26 @@ const stripeCalls = [];
 const fakeProducts = new Map(), fakePrices = new Map();
 function fakeCatalogue(method, url, params) {
   const u = new URL(url, 'http://x');
-  const obj = () => { const o = {}; for (const [k, v] of params) if (!k.includes('[')) o[k] = v; return o; };
+  // flat fields + metadata[key] -> { metadata: { key } }
+  const obj = () => {
+    const o = {};
+    for (const [k, v] of params) {
+      const m = /^metadata\[(.+)\]$/.exec(k);
+      if (m) (o.metadata = o.metadata || {})[m[1]] = v;
+      else if (!k.includes('[')) o[k] = v;
+    }
+    return o;
+  };
+  const patch = target => {
+    const o = obj();
+    if ('active' in o) o.active = o.active === 'true';
+    return Object.assign(target, o);
+  };
   let m;
   if ((m = /^\/v1\/products\/([^/]+)$/.exec(u.pathname))) {
     const p = fakeProducts.get(m[1]);
     if (!p) return { status: 404, body: { error: { type: 'invalid_request_error', code: 'resource_missing', message: 'No such product' } } };
-    if (method === 'POST') { Object.assign(p, obj()); if (params.has('active')) p.active = params.get('active') === 'true'; }
+    if (method === 'POST') patch(p);
     return { body: p };
   }
   if (u.pathname === '/v1/products') {
@@ -35,17 +49,23 @@ function fakeCatalogue(method, url, params) {
   }
   if ((m = /^\/v1\/prices\/([^/]+)$/.exec(u.pathname))) {
     const pr = fakePrices.get(m[1]);
-    if (params.has('active')) pr.active = params.get('active') === 'true';
+    if (method === 'POST') {
+      // like Stripe: a product's default price cannot be archived
+      if (params.get('active') === 'false' && fakeProducts.get(pr.product)?.default_price === pr.id) {
+        return { status: 400, body: { error: { type: 'invalid_request_error', message: 'This price cannot be archived because it is the default price of its product.' } } };
+      }
+      patch(pr);
+    }
     return { body: pr };
   }
   if (u.pathname === '/v1/prices') {
     if (method === 'POST') {
-      const pr = { object: 'price', id: 'price_' + (fakePrices.size + 1), active: true, ...obj(), unit_amount: Number(params.get('unit_amount')) };
+      const pr = { object: 'price', id: 'price_' + (fakePrices.size + 1), type: 'one_time', active: true, metadata: {}, ...obj(), unit_amount: Number(params.get('unit_amount')) };
       fakePrices.set(pr.id, pr);
       return { body: pr };
     }
-    const product = u.searchParams.get('product');
-    return { body: { object: 'list', has_more: false, data: [...fakePrices.values()].filter(x => x.product === product && x.active) } };
+    const product = u.searchParams.get('product'), onlyActive = u.searchParams.get('active') === 'true';
+    return { body: { object: 'list', has_more: false, data: [...fakePrices.values()].filter(x => x.product === product && (!onlyActive || x.active)) } };
   }
   return null;
 }
@@ -441,7 +461,7 @@ test('Stripe catalogue sync: Oil 100/200/500 ml + Gift Oil Set, idempotent, olde
   fakeProducts.set('prod_handmade', { id: 'prod_handmade', object: 'product', active: true, name: 'S20' });
 
   const first = await run();
-  assert.deepEqual(first.items, ['Oil 100 ml $49', 'Oil 200 ml $89', 'Oil 500 ml $189', 'Gift Oil Set $99']);
+  assert.deepEqual(first.items, ['Oil 100 ml $49.00', 'Oil 200 ml $89.00', 'Oil 500 ml $189.00', 'Gift Oil Set $99.00']);
   assert.deepEqual([first.productsCreated, first.pricesCreated, first.productsArchived], [4, 4, 1]);
   assert.deepEqual(['sw-oil-100ml', 'sw-oil-200ml', 'sw-oil-500ml', 'sw-gift-oil-set'].map(priceOf), [[4900], [8900], [18900], [9900]]);
   const p100 = fakeProducts.get('sw-oil-100ml');
@@ -465,6 +485,57 @@ test('Stripe catalogue sync: Oil 100/200/500 ml + Gift Oil Set, idempotent, olde
     assert.deepEqual(priceOf('sw-oil-100ml'), [5500]);
   } finally {
     for (const r of saved) db.prepare('UPDATE products SET sizes = ? WHERE id = ?').run(r.sizes, r.id);
+  }
+});
+
+test('scheduled Stripe sale: 25% off every product for 4-7 Nov (Halifax time), then back to regular', async () => {
+  const { syncStripeCatalogue, saleSettings } = require('../lib/stripe-catalog');
+  const api = new URL(STRIPE_API_URL);
+  const fake = require('stripe')('sk_test_dummy', { host: api.hostname, port: api.port, protocol: 'http' });
+  const at = iso => new Date(iso);
+  const run = iso => syncStripeCatalogue(fake, db, 'https://www.scentworld.ca', at(iso));
+  const active = id => [...fakePrices.values()].filter(x => x.product === id && x.active).map(x => x.unit_amount);
+
+  // the owner's default: 25%, 2026-11-04 .. 2026-11-07, inclusive, in Halifax time (UTC-4 until the clocks change on Nov 1, then UTC-4/-3...)
+  assert.deepEqual([saleSettings(db, at('2026-11-03T20:00:00-04:00')).active, saleSettings(db, at('2026-11-04T00:30:00-04:00')).active], [false, true]);
+  assert.deepEqual([saleSettings(db, at('2026-11-07T23:30:00-04:00')).active, saleSettings(db, at('2026-11-08T00:30:00-04:00')).active], [true, false]);
+  assert.equal(saleSettings(db, at('2026-11-05T12:00:00-04:00')).state, 'sale:25:2026-11-04:2026-11-07');
+
+  // a product the owner made by hand: S300 at $1,199.00
+  fakeProducts.clear(); fakePrices.clear();
+  fakePrices.set('price_s300', { id: 'price_s300', object: 'price', type: 'one_time', product: 'prod_s300', active: true, currency: 'cad', unit_amount: 119900, tax_behavior: 'exclusive', metadata: {} });
+  fakeProducts.set('prod_s300', { id: 'prod_s300', object: 'product', active: true, name: 'S300', default_price: 'price_s300' });
+
+  const before = await run('2026-10-20T12:00:00-03:00');
+  assert.equal(before.sale, 'off');
+  assert.deepEqual([active('sw-oil-100ml'), active('prod_s300')], [[4900], [119900]], 'regular prices before the sale');
+
+  const during = await run('2026-11-05T12:00:00-04:00');
+  assert.equal(during.sale, '25% off until 2026-11-07');
+  assert.deepEqual(during.items, ['Oil 100 ml $36.75', 'Oil 200 ml $66.75', 'Oil 500 ml $141.75', 'Gift Oil Set $74.25']);
+  assert.deepEqual([active('sw-oil-100ml'), active('sw-gift-oil-set'), active('prod_s300')], [[3675], [7425], [89925]], 'exactly one (discounted) active price per product');
+  assert.equal(during.saleApplied, 1);
+  assert.equal(fakeProducts.get('prod_s300').default_price !== 'price_s300', true);
+  assert.equal(fakePrices.get('price_s300').active, false, 'regular price is parked, not deleted');
+
+  const again = await run('2026-11-06T09:00:00-04:00');
+  assert.deepEqual([again.pricesCreated, again.pricesArchived, again.saleApplied, again.saleRemoved], [0, 0, 0, 0], 'no churn while the sale runs');
+
+  const after = await run('2026-11-08T08:00:00-04:00');
+  assert.equal(after.sale, 'off');
+  assert.equal(after.saleRemoved, 1);
+  assert.deepEqual([active('sw-oil-100ml'), active('sw-gift-oil-set'), active('prod_s300')], [[4900], [9900], [119900]], 'regular prices are back');
+  assert.equal(fakeProducts.get('prod_s300').default_price, 'price_s300', 'the original price object is restored');
+  assert.equal(after.pricesCreated, 0, 'old regular prices are re-used, not duplicated');
+
+  // cancelling in admin (empty percentage) = no sale even inside the dates
+  const pct = db.prepare("SELECT value FROM settings WHERE key = 'sale_percent'").get().value;
+  try {
+    db.prepare("UPDATE settings SET value = '' WHERE key = 'sale_percent'").run();
+    assert.equal((await run('2026-11-05T12:00:00-04:00')).sale, 'off');
+    assert.deepEqual(active('prod_s300'), [119900]);
+  } finally {
+    db.prepare("UPDATE settings SET value = ? WHERE key = 'sale_percent'").run(pct);
   }
 });
 

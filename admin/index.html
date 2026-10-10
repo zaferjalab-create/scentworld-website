@@ -185,6 +185,14 @@ tr:hover td{background:rgba(255,255,255,.01)}
       <div class="card" style="padding:2rem;margin-top:1rem">
         <h3 style="font-family:var(--df);margin-bottom:.5rem">Stripe catalogue</h3>
         <p style="color:var(--txt2);font-size:.85rem;margin-bottom:1.2rem">Keeps four quick-sale items in your Stripe product catalogue for the in-person payment app: Oil 100 ml, Oil 200 ml, Oil 500 ml (at the website's standard oil prices) and the Gift Oil Set. Press it after changing oil prices on the website. Products you added in Stripe yourself are not touched.</p>
+        <h4 style="font-family:var(--df);margin:.4rem 0 .4rem">Scheduled sale</h4>
+        <p style="color:var(--txt2);font-size:.85rem;margin-bottom:.8rem">Takes this percentage off <strong>every</strong> price in Stripe (including the products you added yourself) from the start date to the end date, both included. Prices switch on and off by themselves; you get an email each time. Leave the percentage empty to cancel. This does not change website prices.</p>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.2rem">
+          <div><label>Discount %</label><input id="set-sale_percent" type="number" min="0" max="99" step="1" style="width:7rem"></div>
+          <div><label>First day</label><input id="set-sale_start" type="date"></div>
+          <div><label>Last day</label><input id="set-sale_end" type="date"></div>
+          <button class="btn btn-outline" onclick="saveSale()">Save sale</button>
+        </div>
         <button class="btn btn-gold" id="stripeSyncBtn" onclick="syncStripeCatalog()">Sync items to Stripe</button>
         <span id="stripeSyncMsg" style="margin-left:1rem;font-size:.85rem;color:var(--txt2)"></span>
       </div>
@@ -759,13 +767,19 @@ async function saveSettings(){
   await fetch(API+'/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   alert('Settings saved!');
 }
+async function saveSale() {
+  const data = {};
+  ['sale_percent', 'sale_start', 'sale_end'].forEach(k => { data[k] = document.getElementById('set-' + k).value; });
+  await fetch(API + '/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  await syncStripeCatalog(); // apply straight away if today is inside (or just left) the sale dates
+}
 async function syncStripeCatalog() {
   const btn = document.getElementById('stripeSyncBtn'), msg = document.getElementById('stripeSyncMsg');
   btn.disabled = true; msg.textContent = 'Syncing… this can take a minute.';
   try {
     const r = await (await fetch('/api/admin/stripe-sync', { method: 'POST' })).json();
     msg.textContent = r.success
-      ? `Done: ${r.result.items.join(', ')} — ${r.result.productsCreated} added, ${r.result.pricesCreated} prices created, ${r.result.productsArchived} retired.`
+      ? `Saved. Sale now: ${r.result.sale}. Stripe prices: ${r.result.items.join(', ')}.` + (r.result.skipped.length ? ` Not changed: ${r.result.skipped.join(', ')}.` : '')
       : (r.error || 'Sync failed.');
   } catch (e) {
     msg.textContent = 'Sync failed — please try again.';

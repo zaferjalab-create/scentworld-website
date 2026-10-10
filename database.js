@@ -633,6 +633,24 @@ try {
   console.error('❌ aerosol removal error:', e.message);
 }
 
+// Exhibition sale (owner, 2026-10-10): 25% off every price in the Stripe
+// catalogue for the exhibition on 4-7 November 2026, so the stall needs no
+// coupon step (lib/stripe-catalog.js applies and removes it on schedule). Set
+// once; afterwards the dates and percentage belong to admin -> Settings.
+try {
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'sale_default_2026_11'").get();
+  if (!done) {
+    const set = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    set.run('sale_percent', '25');
+    set.run('sale_start', '2026-11-04');
+    set.run('sale_end', '2026-11-07');
+    set.run('sale_default_2026_11', '1');
+    console.log('✅ Stripe sale scheduled: 25% off, 2026-11-04 to 2026-11-07');
+  }
+} catch (e) {
+  console.error('❌ sale default error:', e.message);
+}
+
 // Shipping rate set by the owner (2026-09-24): CA$12.99 flat under the $150
 // free-shipping threshold. Applied once (settings flag) so a later change in
 // admin → Settings (including clearing it for free shipping) is kept.
