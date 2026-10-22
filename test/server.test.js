@@ -292,8 +292,10 @@ function signedWebhook(session) {
 const paidSession = id => ({
   id, payment_status: 'paid', amount_subtotal: 19900, amount_total: 22686,
   total_details: { amount_tax: 2786, amount_shipping: 0, amount_discount: 0 },
-  customer_details: { email: 'buyer@example.com', name: 'Test Buyer' },
-  shipping_details: { name: 'Test Buyer', address: { line1: '1 Test St', city: 'Halifax', state: 'NS', postal_code: 'B3H 0A1', country: 'CA' } },
+  payment_intent: 'pi_test_123',
+  customer_details: { email: 'buyer@example.com', name: 'Test Buyer', phone: '+19025550123' },
+  // Stripe API 2025-03-31+ shape (the site's version): address under collected_information
+  collected_information: { shipping_details: { name: 'Test Buyer', address: { line1: '1 Test St', line2: 'Unit 4', city: 'Halifax', state: 'NS', postal_code: 'B3H 0A1', country: 'CA' } } },
   metadata: { items: JSON.stringify([{ id: 1, qty: 1 }]) },
 });
 
@@ -325,6 +327,7 @@ test('checkout sends Stripe a valid session: real prices, shipping option, no in
   assert.equal(p.get('line_items[0][quantity]'), '2');
   assert.equal(p.get('shipping_options[0][shipping_rate_data][type]'), 'fixed_amount');
   assert.equal(p.get('allow_promotion_codes'), 'true');
+  assert.equal(p.get('phone_number_collection[enabled]'), 'true', 'checkout asks for a phone number');
   assert.ok(p.get('success_url').includes('/success.html?session_id={CHECKOUT_SESSION_ID}'));
   // GST/HST: Stripe Tax on, prices and shipping are tax-exclusive
   assert.equal(p.get('automatic_tax[enabled]'), 'true');
@@ -361,6 +364,15 @@ test('paid checkout webhook records exactly one order, even when replayed', asyn
   assert.equal(rows[0].total, 226.86);
   assert.equal(rows[0].subtotal, 199);
   assert.equal(rows[0].tax, 27.86, 'HST recorded on the order');
+  // everything needed to pack and ship
+  assert.deepEqual(
+    [rows[0].customer_phone, rows[0].shipping_line1, rows[0].shipping_line2, rows[0].shipping_city, rows[0].shipping_province, rows[0].shipping_postal, rows[0].stripe_payment_intent],
+    ['+19025550123', '1 Test St', 'Unit 4', 'Halifax', 'NS', 'B3H 0A1', 'pi_test_123']);
+  const { ownerOrderText } = require('../lib/order-emails');
+  const mail = ownerOrderText(rows[0], db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(rows[0].id));
+  for (const part of ['TO PACK', '1 × S20 Nano Diffuser', 'SHIP TO', '1 Test St', 'Unit 4', 'Halifax NS B3H 0A1', 'Phone: +19025550123', 'buyer@example.com', 'Total $226.86 CAD', 'dashboard.stripe.com/payments/pi_test_123']) {
+    assert.ok(mail.includes(part), 'owner email has: ' + part);
+  }
   const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(rows[0].id);
   assert.equal(items.length, 1);
 

@@ -145,7 +145,7 @@ tr:hover td{background:rgba(255,255,255,.01)}
       <p class="page-desc">Online orders placed through your Stripe checkout.</p>
       <div class="card">
         <div class="card-head"><h3>All Orders</h3></div>
-        <table><thead><tr><th>Order #</th><th>Customer</th><th>Email</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <table><thead><tr><th>Order #</th><th>Customer</th><th>Ship to</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
         <tbody id="tbl-orders"></tbody></table>
       </div>
     </div>
@@ -400,17 +400,40 @@ async function loadDashboard(){
 }
 
 // Orders
+// Everything needed to pack and ship one order, shown under its row.
+async function toggleOrder(id, btn){
+  const row = btn.closest('tr'), next = row.nextElementSibling;
+  if (next && next.classList.contains('order-detail')) { next.remove(); btn.textContent = 'Details'; return; }
+  const d = await (await fetch(API + '/orders/' + id)).json();
+  if (!d.success) return;
+  const o = d.order, money = n => '$' + Number(n || 0).toFixed(2);
+  const addr = [o.customer_name, o.shipping_line1, o.shipping_line2,
+    [o.shipping_city, o.shipping_province, o.shipping_postal].filter(Boolean).join(' '), o.shipping_country].filter(Boolean);
+  const items = d.items.map(i => `<li><strong>${esc(i.quantity)} × ${esc(i.product_name)}</strong> — ${money(i.total_price)}</li>`).join('') || '<li>(no items recorded — see Stripe)</li>';
+  const tr = document.createElement('tr');
+  tr.className = 'order-detail';
+  tr.innerHTML = `<td colspan="7" style="background:var(--bg3,#151210);padding:1.2rem 1.4rem">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.4rem;font-size:.85rem;line-height:1.6">
+      <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">TO PACK</div><ul style="margin:.4rem 0 0 1rem">${items}</ul></div>
+      <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">SHIP TO</div>${addr.map(esc).join('<br>') || '—'}</div>
+      <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">CUSTOMER</div>Email: <a href="mailto:${esc(o.customer_email)}">${esc(o.customer_email || '—')}</a><br>Phone: ${o.customer_phone ? `<a href="tel:${esc(o.customer_phone)}">${esc(o.customer_phone)}</a>` : '—'}</div>
+      <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">PAYMENT</div>Subtotal ${money(o.subtotal)}<br>Shipping ${o.shipping_cost ? money(o.shipping_cost) : 'Free'}<br>Tax ${money(o.tax)}<br><strong>Total ${money(o.total)} CAD</strong>${o.stripe_payment_intent ? `<br><a href="https://dashboard.stripe.com/payments/${esc(o.stripe_payment_intent)}" target="_blank" rel="noopener">Open in Stripe ↗</a>` : ''}</div>
+    </div></td>`;
+  row.after(tr);
+  btn.textContent = 'Hide';
+}
 async function loadOrders(){
   const r=await fetch(API+'/orders');const d=await r.json();
   const statuses={confirmed:'done',shipped:'active',delivered:'active',cancelled:'pending',refunded:'pending'};
   document.getElementById('tbl-orders').innerHTML=d.orders.map(o=>`<tr>
     <td style="font-family:var(--df);color:var(--gold)">${esc(o.order_number)}</td>
-    <td>${esc(o.customer_name||'-')}</td>
-    <td>${esc(o.customer_email||'-')}</td>
+    <td>${esc(o.customer_name||'-')}<div style="font-size:.75rem;color:var(--txt2)">${esc(o.customer_email||'')}</div></td>
+    <td style="font-size:.8rem">${esc([o.shipping_city,o.shipping_province].filter(Boolean).join(', ')||'-')}</td>
     <td style="color:var(--gold)">$${Number(o.total).toFixed(2)} CAD</td>
     <td><span class="badge badge-${statuses[o.status]||'new'}">${esc(o.status)}</span></td>
     <td>${new Date(o.created_at).toLocaleDateString()}</td>
     <td>
+      <button class="btn btn-sm btn-gold" onclick="toggleOrder(${o.id},this)" style="margin-right:.4rem">Details</button>
       <select class="btn btn-sm btn-outline" onchange="updateOrder(${o.id},this.value);this.blur()" style="cursor:pointer;padding:.3rem .5rem">
         <option value="">Update&hellip;</option>
         <option value="confirmed">Confirmed</option>

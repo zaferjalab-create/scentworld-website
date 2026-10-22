@@ -17,6 +17,7 @@ const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
 const { stripeShippingOption, shippingRules } = require('./lib/shipping');
 const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
+const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails');
 
 const crypto = require('crypto');
 const app = express();
@@ -412,6 +413,7 @@ app.post('/api/checkout', async (req, res) => {
       line_items: lineItems,
       mode: 'payment',
       shipping_address_collection: { allowed_countries: ['CA', 'US'] },
+      phone_number_collection: { enabled: true },   // for the courier and delivery questions
       // Free at/above the admin threshold, flat rate below it (lib/shipping.js).
       shipping_options: [stripeShippingOption(subtotal)],
       allow_promotion_codes: true,   // customers can enter promo/discount codes
@@ -457,25 +459,21 @@ function recordOrderFromSession(session) {
   if (existing) return existing.order_number;
 
   const orderNumber = 'SW-' + Date.now().toString().slice(-8);
-  const shipping = session.shipping_details;
-  const name = shipping?.name || session.customer_details?.name || 'Customer';
-  const email = session.customer_details?.email || '';
+  const c = orderContact(session);
 
   const tax = (session.total_details?.amount_tax || 0) / 100;
   const shippingCost = (session.total_details?.amount_shipping || 0) / 100;
   let orderId;
   try {
     const result = db.prepare(`
-      INSERT INTO orders (order_number, customer_name, customer_email, shipping_line1, shipping_city,
-        shipping_province, shipping_postal, shipping_country, subtotal, tax, shipping_cost, total, stripe_session_id, payment_status, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'confirmed')
+      INSERT INTO orders (order_number, customer_name, customer_email, customer_phone, shipping_line1, shipping_line2,
+        shipping_city, shipping_province, shipping_postal, shipping_country, subtotal, tax, shipping_cost, total,
+        stripe_session_id, stripe_payment_intent, payment_status, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'confirmed')
     `).run(
-      orderNumber, name, email,
-      shipping?.address?.line1 || null, shipping?.address?.city || null,
-      shipping?.address?.state || null, shipping?.address?.postal_code || null,
-      shipping?.address?.country || 'CA',
+      orderNumber, c.name, c.email, c.phone, c.line1, c.line2, c.city, c.province, c.postal, c.country,
       session.amount_subtotal / 100, tax, shippingCost, session.amount_total / 100,
-      session.id
+      session.id, c.paymentIntent
     );
     orderId = result.lastInsertRowid;
   } catch (e) {
@@ -498,11 +496,46 @@ function recordOrderFromSession(session) {
     }
   }
 
-  const money = n => '$' + n.toFixed(2);
-  const totals = `Subtotal: ${money(session.amount_subtotal / 100)}\nShipping: ${shippingCost ? money(shippingCost) : 'Free'}\nTax (GST/HST): ${money(tax)}\nTotal: ${money(session.amount_total / 100)} CAD`;
-  sendNotification('New Order', `Order ${orderNumber}\nCustomer: ${name} (${email})\n${totals}`);
-  sendConfirmation(email, name.split(' ')[0], 'order', `Order #${orderNumber}\n${totals}\nEstimated delivery: ${deliveryEstimate()}\n\nWe'll process and ship your order within 1–2 business days, and you'll receive tracking by email.`);
+  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+  const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId);
+  notifyOwnerOfOrder(order, items).catch(err => console.error('Order notification failed:', err.message));
+  sendConfirmation(c.email, (c.name || 'there').split(' ')[0], 'order', customerOrderDetails(order, items, deliveryEstimate()));
   return orderNumber;
+}
+
+// Customer + delivery details from a Checkout Session. Newer Stripe API
+// versions (2025-03-31+, this site runs 2026-08-26) moved the shipping address
+// from session.shipping_details to session.collected_information.shipping_details;
+// both are read so neither shape loses the address.
+function orderContact(session) {
+  const ship = session.collected_information?.shipping_details || session.shipping_details || {};
+  const a = ship.address || {};
+  return {
+    name: ship.name || session.customer_details?.name || 'Customer',
+    email: session.customer_details?.email || '',
+    phone: session.customer_details?.phone || ship.phone || null,
+    line1: a.line1 || null, line2: a.line2 || null, city: a.city || null,
+    province: a.state || null, postal: a.postal_code || null, country: a.country || 'CA',
+    paymentIntent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null,
+  };
+}
+
+// Orders saved before the address fix (Oct 2026) have no address in the admin
+// panel. Fill them in once from Stripe; runs on the live site at startup.
+async function backfillOrderDetails() {
+  const missing = db.prepare("SELECT id, stripe_session_id FROM orders WHERE shipping_line1 IS NULL AND stripe_session_id LIKE 'cs_%'").all();
+  for (const o of missing) {
+    try {
+      const c = orderContact(await stripe.checkout.sessions.retrieve(o.stripe_session_id));
+      db.prepare(`UPDATE orders SET customer_phone = COALESCE(customer_phone, ?), shipping_line1 = ?, shipping_line2 = ?,
+        shipping_city = ?, shipping_province = ?, shipping_postal = ?, shipping_country = ?,
+        stripe_payment_intent = COALESCE(stripe_payment_intent, ?) WHERE id = ?`)
+        .run(c.phone, c.line1, c.line2, c.city, c.province, c.postal, c.country, c.paymentIntent, o.id);
+      console.log(`✅ Filled in delivery details for order ${o.id} from Stripe`);
+    } catch (err) {
+      console.error(`Order ${o.id} backfill failed:`, err.message);
+    }
+  }
 }
 
 app.get('/api/checkout/verify', async (req, res) => {
@@ -872,6 +905,7 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`   API:      http://localhost:${PORT}/api/products\n`);
   scheduleDailyBackup();
   scheduleReviewRequests();
+  if (process.env.NODE_ENV === 'production') backfillOrderDetails();
   syncStripeCatalogIfDue();
   setInterval(syncStripeCatalogIfDue, 15 * 60 * 1000).unref(); // picks up the sale start/end
 });

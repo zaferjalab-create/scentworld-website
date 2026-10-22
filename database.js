@@ -651,6 +651,14 @@ try {
   console.error('❌ sale default error:', e.message);
 }
 
+// Orders keep the second address line (apartment / unit / suite) too.
+try {
+  const cols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
+  if (!cols.includes('shipping_line2')) db.exec('ALTER TABLE orders ADD COLUMN shipping_line2 TEXT');
+} catch (e) {
+  console.error('❌ orders.shipping_line2 migration error:', e.message);
+}
+
 // Shipping rate set by the owner (2026-09-24): CA$12.99 flat under the $150
 // free-shipping threshold. Applied once (settings flag) so a later change in
 // admin → Settings (including clearing it for free shipping) is kept.
