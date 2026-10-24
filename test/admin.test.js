@@ -75,7 +75,7 @@ test('dashboard stats and read-only lists', async () => {
 test('contacts, bookings and subscribers: create via public forms, then manage', async () => {
   const post = (p, b) => fetch(BASE + p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
   assert.equal((await post('/api/contact', { first_name: 'Ann', last_name: 'Lee', email: 'ann@example.com', message: 'Quote please' })).status, 200);
-  assert.equal((await post('/api/booking', { first_name: 'Bob', last_name: 'Ray', email: 'bob@example.com', preferred_date: '2026-10-01', preferred_time: '10:00' })).status, 200);
+  assert.equal((await post('/api/booking', { first_name: 'Bob', last_name: 'Ray', email: 'bob@example.com', phone: '902-555-0100', preferred_date: '2026-10-01', preferred_time: '10:00' })).status, 200);
   assert.equal((await post('/api/subscribe', { email: '=cmd@example.com' })).status, 200);
 
   const [c] = (await ok('GET', '/api/admin/contacts')).contacts;

@@ -456,7 +456,7 @@ async function loadContacts(){
   const r=await fetch(API+'/contacts');const d=await r.json();
   document.getElementById('tbl-contacts').innerHTML=d.contacts.map(c=>`<tr>
     <td>${esc(c.first_name)} ${esc(c.last_name)}</td><td>${esc(c.email)}</td><td>${esc(c.phone||'-')}</td>
-    <td>${esc(c.customer_type||'-')}</td><td>${esc(c.product_interest||'-')}</td>
+    <td>${esc(c.customer_type||'-')}</td><td>${esc(c.product_interest||'-')}${c.message?`<div style="font-size:.78rem;color:var(--txt2);margin-top:.3rem;white-space:pre-wrap;max-width:320px">“${esc(c.message)}”</div>`:''}</td>
     <td><span class="badge badge-${c.status==='new'?'new':'done'}">${esc(c.status)}</span></td>
     <td>${new Date(c.created_at).toLocaleDateString()}</td>
     <td><button class="btn btn-sm btn-ok" onclick="updateContact(${c.id},'reviewed')">✓</button> <button class="btn btn-sm btn-err" onclick="deleteContact(${c.id})">✕</button></td>
@@ -471,7 +471,8 @@ async function loadBookings(){
   document.getElementById('tbl-bookings').innerHTML=d.bookings.map(b=>`<tr>
     <td>${esc(b.first_name)} ${esc(b.last_name)}<br><small style="color:var(--txt2)">${esc(b.business_name||'')}</small></td>
     <td>${esc(b.email)}<br><small style="color:var(--txt2)">${esc(b.phone||'')}</small></td>
-    <td>${esc(b.preferred_date)}</td><td>${esc(b.preferred_time)}</td><td>${esc(b.topic||'-')}</td>
+    <td>${esc(b.preferred_date)}</td><td>${esc(b.preferred_time)}</td>
+    <td>${esc(b.topic||'-')}${(b.space_type||b.space_size)?`<br><small style="color:var(--txt2)">${esc([b.space_type,b.space_size].filter(Boolean).join(' · '))}</small>`:''}${b.message?`<div style="font-size:.78rem;color:var(--txt2);margin-top:.3rem;white-space:pre-wrap;max-width:320px">“${esc(b.message)}”</div>`:''}</td>
     <td><span class="badge badge-${b.status==='pending'?'pending':b.status==='confirmed'?'done':'new'}">${esc(b.status)}</span></td>
     <td><button class="btn btn-sm btn-ok" onclick="updateBooking(${b.id},'confirmed')">Confirm</button> <button class="btn btn-sm btn-err" onclick="deleteBooking(${b.id})">✕</button></td>
   </tr>`).join('')||'<tr><td colspan="7" class="empty">No bookings yet</td></tr>';

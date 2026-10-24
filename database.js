@@ -651,6 +651,15 @@ try {
   console.error('❌ sale default error:', e.message);
 }
 
+// Consultation bookings also record the type and size of the customer's space.
+try {
+  const cols = db.prepare('PRAGMA table_info(bookings)').all().map(c => c.name);
+  if (!cols.includes('space_type')) db.exec('ALTER TABLE bookings ADD COLUMN space_type TEXT');
+  if (!cols.includes('space_size')) db.exec('ALTER TABLE bookings ADD COLUMN space_size TEXT');
+} catch (e) {
+  console.error('❌ bookings space columns migration error:', e.message);
+}
+
 // Orders keep the second address line (apartment / unit / suite) too.
 try {
   const cols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);

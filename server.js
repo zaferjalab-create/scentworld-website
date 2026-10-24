@@ -18,6 +18,7 @@ const { scheduleReviewRequests } = require('./lib/review-requests');
 const { stripeShippingOption, shippingRules } = require('./lib/shipping');
 const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
 const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails');
+const { notifyBooking, notifyQuote } = require('./lib/lead-emails');
 
 const crypto = require('crypto');
 const app = express();
@@ -272,7 +273,8 @@ app.post('/api/contact', formLimiter, (req, res) => {
     }
     const stmt = db.prepare(`INSERT INTO contacts (first_name, last_name, email, phone, customer_type, product_interest, message) VALUES (?, ?, ?, ?, ?, ?, ?)`);
     stmt.run(first_name, last_name, email, phone || null, customer_type || null, product_interest || null, message || null);
-    sendNotification('New Quote Request', `From: ${first_name} ${last_name} (${email})\nType: ${customer_type}\nInterest: ${product_interest}\n\n${message || 'No message'}`);
+    notifyQuote({ first_name, last_name, email, phone, customer_type, product_interest, message })
+      .catch(err => console.error('Quote notification failed:', err.message));
     sendConfirmation(email, first_name, 'quote', `Interest: ${product_interest || 'General'}\nType: ${customer_type || 'N/A'}`);
     res.json({ success: true, message: 'Quote request received. We\'ll be in touch within 24 hours.' });
   } catch (err) {
@@ -284,13 +286,15 @@ app.post('/api/contact', formLimiter, (req, res) => {
 // Booking / Consultation
 app.post('/api/booking', formLimiter, (req, res) => {
   try {
-    const { first_name, last_name, email, phone, business_name, preferred_date, preferred_time, topic, message } = req.body;
-    if (!first_name || !last_name || !email || !preferred_date || !preferred_time) {
-      return res.status(400).json({ success: false, error: 'Please fill in all required fields' });
+    const { first_name, last_name, email, phone, business_name, preferred_date, preferred_time, topic, message, space_type, space_size } = req.body;
+    // A consultation is a call: a phone number is required (the form says so too).
+    if (!first_name || !last_name || !email || !String(phone || '').trim() || !preferred_date || !preferred_time) {
+      return res.status(400).json({ success: false, error: 'Please fill in all required fields, including a phone number.' });
     }
-    const stmt = db.prepare(`INSERT INTO bookings (first_name, last_name, email, phone, business_name, preferred_date, preferred_time, topic, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    stmt.run(first_name, last_name, email, phone || null, business_name || null, preferred_date, preferred_time, topic || null, message || null);
-    sendNotification('New Booking Request', `From: ${first_name} ${last_name} (${email})\nDate: ${preferred_date} at ${preferred_time}\nBusiness: ${business_name || 'N/A'}\nTopic: ${topic || 'General'}\n\n${message || ''}`);
+    const stmt = db.prepare(`INSERT INTO bookings (first_name, last_name, email, phone, business_name, preferred_date, preferred_time, topic, message, space_type, space_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    stmt.run(first_name, last_name, email, phone || null, business_name || null, preferred_date, preferred_time, topic || null, message || null, space_type || null, space_size || null);
+    notifyBooking({ first_name, last_name, email, phone, business_name, preferred_date, preferred_time, topic, message, space_type, space_size })
+      .catch(err => console.error('Booking notification failed:', err.message));
     sendConfirmation(email, first_name, 'booking', `${preferred_date} at ${preferred_time}\nTopic: ${topic || 'General Consultation'}`);
     res.json({ success: true, message: 'Consultation booked! We\'ll confirm your time slot within 24 hours.' });
   } catch (err) {

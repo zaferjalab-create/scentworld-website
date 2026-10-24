@@ -581,3 +581,24 @@ test('compressed request bodies are refused (Node CVE-2026-111497 Brotli RCE nev
   assert.deepEqual(['22.23.2', '22.23.4', '22.24.0', '24.22.0', '24.22.1', '26.12.1', '20.20.0'].map(v => nodeIsPatched(v)),
     [false, true, true, false, true, true, false]);
 });
+
+test('booking + quote notifications carry every detail; booking needs a phone', async () => {
+  const base = { first_name: 'Lugard', last_name: 'Test', email: 'lugard@example.com', preferred_date: '2026-10-24', preferred_time: '2:00 PM',
+    business_name: 'The Jagz', topic: 'Custom fragrance consultation', space_type: 'Retail store', space_size: '500–1,500 sq ft', message: 'Need a scent for our shop' };
+  assert.equal((await postJson('/api/booking', base)).status, 400, 'no phone -> rejected');
+  assert.equal((await postJson('/api/booking', { ...base, phone: '902-555-0199' })).status, 200);
+  const row = db.prepare("SELECT * FROM bookings WHERE email = 'lugard@example.com'").get();
+  assert.deepEqual([row.phone, row.space_type, row.space_size], ['902-555-0199', 'Retail store', '500–1,500 sq ft']);
+
+  const { bookingEmail, quoteEmail } = require('../lib/lead-emails');
+  const b = bookingEmail(row);
+  for (const part of ['Phone: 902-555-0199', 'lugard@example.com', 'The Jagz', 'Saturday, October 24, 2026 at 2:00 PM', 'Retail store', '500–1,500 sq ft', 'Need a scent for our shop']) {
+    assert.ok(b.text.includes(part), 'booking email has: ' + part);
+  }
+  assert.ok(b.subject.includes('The Jagz') && b.html.includes('tel:902-555-0199'));
+  const q = quoteEmail({ first_name: 'A', last_name: 'B', email: 'a@b.co', phone: '902-555-0123', customer_type: 'Business', product_interest: 'diffusers', message: '' });
+  assert.ok(q.text.includes('Phone: 902-555-0123') && q.text.includes('(no message)'));
+
+  const home = await (await get('/')).text();
+  assert.ok(/name="phone" class="f-input" required/.test(home) && home.includes('name="space_type"') && home.includes('name="space_size"'));
+});

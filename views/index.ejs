@@ -1028,9 +1028,26 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
       </div>
       <div class="f-2col">
         <div class="f-row"><label>Email *</label><input type="email" name="email" class="f-input" required></div>
-        <div class="f-row"><label>Phone</label><input type="tel" name="phone" class="f-input"></div>
+        <div class="f-row"><label>Phone *</label><input type="tel" name="phone" class="f-input" required autocomplete="tel"></div>
       </div>
       <div class="f-row"><label>Business Name</label><input type="text" name="business_name" class="f-input"></div>
+      <div class="f-2col">
+        <div class="f-row"><label>Type of space</label>
+          <select name="space_type" class="f-select">
+            <option value="">Select type</option>
+            <option>Home</option><option>Office</option><option>Retail store</option><option>Hotel / lobby</option>
+            <option>Restaurant / café</option><option>Spa / salon</option><option>Gym / fitness</option>
+            <option>Place of worship</option><option>Car</option><option>Other</option>
+          </select>
+        </div>
+        <div class="f-row"><label>Approximate size</label>
+          <select name="space_size" class="f-select">
+            <option value="">Select size</option>
+            <option>Under 500 sq ft</option><option>500–1,500 sq ft</option><option>1,500–3,000 sq ft</option>
+            <option>3,000–5,000 sq ft</option><option>Over 5,000 sq ft</option><option>Not sure</option>
+          </select>
+        </div>
+      </div>
       <div class="f-2col">
         <div class="f-row"><label>Preferred Date *</label><input type="date" name="preferred_date" class="f-input" required></div>
         <div class="f-row"><label>Preferred Time *</label>
