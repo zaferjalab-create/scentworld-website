@@ -106,8 +106,33 @@ app.use((req, res, next) => {
   next();
 });
 
+// Refuse compressed request BODIES (Content-Encoding on the request). No
+// browser form, fetch() call or Stripe webhook sends them, and decompressing
+// attacker-supplied Brotli is the Node.js remote-code-execution bug fixed on
+// 2026-10-21 (CVE-2026-111497) — Express 5's body parser would otherwise
+// inflate such bodies. With this, untrusted input never reaches zlib whatever
+// Node version is running. (Compressed RESPONSES below are unaffected.)
+app.use((req, res, next) => {
+  const enc = String(req.headers['content-encoding'] || '').trim().toLowerCase();
+  if (enc && enc !== 'identity') {
+    return res.status(415).json({ success: false, error: 'Compressed request bodies are not accepted.' });
+  }
+  next();
+});
+
 // gzip/deflate responses — HTML pages are 100-170KB uncompressed.
 app.use(compression());
+
+// Minimum patched Node.js release per line (Node security release 2026-10-21).
+// Update when Node publishes a new security release.
+const NODE_PATCHED = { 22: [22, 23, 4], 24: [24, 22, 1], 26: [26, 12, 1] };
+function nodeIsPatched(v = process.versions.node) {
+  const cur = v.split('.').map(Number);
+  const min = NODE_PATCHED[cur[0]];
+  if (!min) return false;
+  for (let i = 0; i < 3; i++) if (cur[i] !== min[i]) return cur[i] > min[i];
+  return true;
+}
 
 // Health check for Railway (railway.toml healthcheckPath) and uptime monitors:
 // a deploy only goes live once this answers, and it proves the DB is readable.
@@ -117,7 +142,9 @@ app.get('/healthz', (req, res) => {
     // version = deployed git commit (Railway sets RAILWAY_GIT_COMMIT_SHA), so a
     // deploy can be confirmed from outside.
     const version = (process.env.RAILWAY_GIT_COMMIT_SHA || 'local').slice(0, 7);
-    res.set('Cache-Control', 'no-store').json({ ok: true, version });
+    // runtime_patched: is Node at or above the latest security release for its
+    // line? A yes/no only, so the exact version isn't advertised.
+    res.set('Cache-Control', 'no-store').json({ ok: true, version, runtime_patched: nodeIsPatched() });
   } catch (err) {
     res.status(503).json({ ok: false });
   }
@@ -899,6 +926,9 @@ function syncStripeCatalogIfDue() {
 }
 
 if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
+  if (process.env.NODE_ENV === 'production' && !nodeIsPatched()) {
+    alertError('node-runtime', new Error(`Node.js ${process.version} is older than the latest security release for its line — update .node-version / package.json engines.`));
+  }
   console.log(`\n🌿 Scent World Canada`);
   console.log(`   Website:  http://localhost:${PORT}`);
   console.log(`   Admin:    http://localhost:${PORT}/admin/login.html`);
@@ -911,3 +941,4 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
 });
 
 module.exports = app;
+module.exports.nodeIsPatched = nodeIsPatched;

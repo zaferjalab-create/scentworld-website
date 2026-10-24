@@ -562,3 +562,22 @@ test('aerosol range is off sale: no products, no filter button, old pages redire
   assert.equal(r.status, 302);
   assert.ok(!(await (await get('/catalog.csv')).text()).includes('aerosol'), 'not in the product feed');
 });
+
+test('compressed request bodies are refused (Node CVE-2026-111497 Brotli RCE never reachable)', async () => {
+  for (const enc of ['br', 'gzip', 'deflate', 'BR']) {
+    const r = await fetch(BASE + '/api/subscribe', {
+      method: 'POST', body: 'xxxx',
+      headers: { 'Content-Type': 'application/json', 'Content-Encoding': enc },
+    });
+    assert.equal(r.status, 415, enc);
+  }
+  // ordinary requests still work
+  const ok = await postJson('/api/subscribe', { email: 'not-an-email' });
+  assert.notEqual(ok.status, 415);
+  // health check reports whether the runtime is patched (yes/no only)
+  const h = await (await get('/healthz')).json();
+  assert.equal(typeof h.runtime_patched, 'boolean');
+  const { nodeIsPatched } = require('../server');
+  assert.deepEqual(['22.23.2', '22.23.4', '22.24.0', '24.22.0', '24.22.1', '26.12.1', '20.20.0'].map(v => nodeIsPatched(v)),
+    [false, true, true, false, true, true, false]);
+});
