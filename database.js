@@ -651,6 +651,28 @@ try {
   console.error('❌ sale default error:', e.message);
 }
 
+// Owner (2026-10-26): the 100 ml and 200 ml oils are sold out. Every oil keeps
+// those sizes listed as "Sold out" and sells the 500 ml. Applied once; restock
+// a size by deleting its "sold_out": true in admin -> Products -> Sizes.
+try {
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'oil_small_sold_out_2026_10'").get();
+  if (!done) {
+    const SOLD_OUT = new Set(['100ml', '200ml']);
+    const upd = db.prepare('UPDATE products SET sizes = ? WHERE id = ?');
+    let n = 0;
+    for (const p of db.prepare("SELECT id, sizes FROM products WHERE category = 'oils' AND sizes IS NOT NULL").all()) {
+      let sizes; try { sizes = JSON.parse(p.sizes); } catch (e) { continue; }
+      if (!Array.isArray(sizes)) continue;
+      upd.run(JSON.stringify(sizes.map(s => (SOLD_OUT.has(s.label) ? { ...s, sold_out: true } : s))), p.id);
+      n++;
+    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('oil_small_sold_out_2026_10', '1')").run();
+    console.log(`✅ 100 ml + 200 ml marked sold out on ${n} oils`);
+  }
+} catch (e) {
+  console.error('❌ oil sold-out error:', e.message);
+}
+
 // Consultation bookings also record the type and size of the customer's space.
 try {
   const cols = db.prepare('PRAGMA table_info(bookings)').all().map(c => c.name);

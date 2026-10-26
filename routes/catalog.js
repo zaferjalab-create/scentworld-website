@@ -27,7 +27,7 @@ router.get('/catalog.csv', (req, res) => {
       if (p.sizes) {
         try {
           const sizes = typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes;
-          if (Array.isArray(sizes) && sizes.length) variants = sizes.map(s => ({label: s.label, price: s.price}));
+          if (Array.isArray(sizes) && sizes.length) variants = sizes.map(s => ({label: s.label, price: s.price, soldOut: !!s.sold_out}));
         } catch (e) {}
       }
       for (const v of variants) {
@@ -44,7 +44,7 @@ router.get('/catalog.csv', (req, res) => {
           `"${id}"`,
           `"${title}"`,
           `"${desc}"`,
-          'in stock',
+          v.soldOut ? 'out of stock' : 'in stock',
           'new',
           `"${price}"`,
           `"${link}"`,
@@ -53,7 +53,7 @@ router.get('/catalog.csv', (req, res) => {
           `"${category}"`,
           `"${p.category}${COLLECTIONS[p.collection] ? ' > ' + COLLECTIONS[p.collection] : ''}"`,
           '', // sale_price
-          '100', // inventory
+          v.soldOut ? '0' : '100', // inventory
           '', // gtin
           `"${id}"`, // mpn
           `"CA::Standard:${shippingCost(v.price || p.price || 0, rules).toFixed(2)} CAD"`,

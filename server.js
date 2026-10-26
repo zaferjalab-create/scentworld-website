@@ -19,6 +19,7 @@ const { stripeShippingOption, shippingRules } = require('./lib/shipping');
 const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
 const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails');
 const { notifyBooking, notifyQuote } = require('./lib/lead-emails');
+const { parseSizes, inStock, withStock } = require('./lib/sizes');
 
 const crypto = require('crypto');
 const app = express();
@@ -399,20 +400,22 @@ app.post('/api/checkout', async (req, res) => {
         return res.status(400).json({ success: false, error: 'Invalid quantity' });
       }
       item.quantity = qty;
-      // Resolve price from size variant if provided, otherwise use product default
+      // Products sold in sizes are priced by size; a cart line with no size
+      // (an old cart) gets the cheapest size in stock. Sold-out sizes are refused.
       let unitPrice = product.price;
       let productName = product.name;
-      if (item.size) {
-        try {
-          const sizes = product.sizes ? JSON.parse(product.sizes) : null;
-          if (Array.isArray(sizes)) {
-            const match = sizes.find(s => s.label === item.size);
-            if (match) {
-              unitPrice = match.price;
-              productName = `${product.name} — ${match.label}`;
-            }
-          }
-        } catch (e) {}
+      const sizes = parseSizes(product.sizes);
+      if (sizes) {
+        const match = item.size
+          ? sizes.find(s => s.label === item.size)
+          : inStock(sizes).sort((a, b) => a.price - b.price)[0];
+        if (!match) return res.status(400).json({ success: false, error: `${product.name} is sold out` });
+        if (match.sold_out) {
+          return res.status(400).json({ success: false, error: `${product.name} (${match.label}) is sold out. Please choose another size.` });
+        }
+        unitPrice = match.price;
+        productName = `${product.name} — ${match.label}`;
+        item.size = match.label;
       }
       if (!unitPrice) return res.status(400).json({ success: false, error: `No price for product ${item.id}` });
       lineItems.push({
@@ -627,7 +630,7 @@ app.use(require('./routes/admin')({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLO
 
 // ── Product helpers ──
 function getActiveProducts() {
-  return db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all();
+  return db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all().map(withStock);
 }
 function parseCoverageSqft(p) {
   // Bucket on whichever field carries a sq-ft figure. spec_coverage may hold a
@@ -752,7 +755,7 @@ app.get('/search', (req, res) => {
     const like = `%${q}%`;
     products = db.prepare(
       `SELECT * FROM products WHERE active = 1 AND (name LIKE ? OR short_desc LIKE ? OR full_desc LIKE ?) ORDER BY sort_order`
-    ).all(like, like, like);
+    ).all(like, like, like).map(withStock);
   }
   res.render('shop', { products: shopLocals(products), q, buckets: sizeBuckets() });
 });

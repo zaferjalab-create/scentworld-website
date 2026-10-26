@@ -185,7 +185,7 @@ a{color:var(--gold);text-decoration:none}
 <div class="shop-grid" id="shopGrid">
   <% products.forEach(p => {
        let ps = null; try { const t = JSON.parse(p.sizes || 'null'); if (Array.isArray(t) && t.length) ps = t; } catch(e) {}
-       const price = ps ? Math.min(...ps.map(s => s.price)) : (p.price || 0);
+       const price = p.price || 0; // sized products: cheapest size in stock (lib/sizes.js)
        const created = new Date(p.created_at || 0).getTime();
   %>
   <div class="sp-card" data-cat="<%= p.category %>" data-collection="<%= p.collection || '' %>" data-price="<%= price %>" data-bucket="<%= p._bucket %>" data-sold="<%= p._sold %>" data-created="<%= created %>" data-order="<%= p.sort_order %>">
@@ -202,7 +202,8 @@ a{color:var(--gold);text-decoration:none}
       <% if (p.coverage) { %><div class="sp-cov">Coverage: <%= p.coverage %></div><% } %>
       <div class="sp-row">
         <div class="sp-price"><% if (ps) { %><small>from </small><% } %>$<%= price.toFixed(2) %></div>
-        <button class="sp-atc" onclick='quickAdd(<%- JSON.stringify({id: p.id, slug: p.slug, name: p.name, price: price, category: p.category, image_url: p.image_url, size: ps ? ps[0].label : null}) %>, this)'>Add to Cart</button>
+        <% if (p.sold_out) { %><button class="sp-atc" disabled style="opacity:.5;cursor:not-allowed">Sold out</button>
+        <% } else { %><button class="sp-atc" onclick='quickAdd(<%- JSON.stringify({id: p.id, slug: p.slug, name: p.name, price: price, category: p.category, image_url: p.image_url, size: ps ? p.default_size : null}) %>, this)'>Add<%= ps ? ' ' + p.default_size : '' %> to Cart</button><% } %>
       </div>
     </div>
   </div>
@@ -233,9 +234,10 @@ function quickAdd(p, btn) {
   document.querySelectorAll('.cart-badge').forEach(b => { b.textContent = total; b.classList.add('show'); });
   if (typeof gtag === 'function') gtag('event', 'add_to_cart', { currency: 'CAD', value: p.price, items: [{ item_id: p.id, item_name: p.name, item_variant: p.size || '', item_category: p.category, price: p.price, quantity: 1 }] });
   if (typeof fbq === 'function') fbq('track', 'AddToCart', { currency: 'CAD', value: p.price, content_ids: [p.id], content_name: p.name, content_type: 'product' });
+  const label = btn.textContent;
   btn.classList.add('added'); btn.textContent = 'Added ✓';
   showToast(`Added ${p.name}${p.size ? ` (${p.size})` : ''} to cart`);
-  setTimeout(() => { btn.classList.remove('added'); btn.textContent = 'Add to Cart'; }, 1800);
+  setTimeout(() => { btn.classList.remove('added'); btn.textContent = label; }, 1800);
 }
 function showToast(msg) {
   const t = document.getElementById('toast');

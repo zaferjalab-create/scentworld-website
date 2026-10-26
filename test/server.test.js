@@ -310,8 +310,9 @@ test('health check answers and bad JSON gets a clean 400 (no crash, no alert)', 
 });
 
 test('checkout sends Stripe a valid session: real prices, shipping option, no invalid params', async () => {
-  const oil = db.prepare("SELECT id FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
-  const r = await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 2, size: '100ml' }] });
+  const oil = db.prepare("SELECT id, sizes FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
+  const ml500 = JSON.parse(oil.sizes).find(s => s.label === '500ml');
+  const r = await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 2, size: '500ml' }] });
   const data = await r.json();
   assert.equal(r.status, 200, JSON.stringify(data));
   assert.ok(data.url.startsWith('https://checkout.stripe.com/'), data.url);
@@ -323,7 +324,7 @@ test('checkout sends Stripe a valid session: real prices, shipping option, no in
   assert.ok(!keys.some(k => k.startsWith('automatic_payment_methods')), 'no invalid params');
   assert.equal(p.get('mode'), 'payment');
   assert.equal(p.get('line_items[0][price_data][currency]'), 'cad');
-  assert.equal(p.get('line_items[0][price_data][unit_amount]'), '4900', 'price comes from the server, not the cart');
+  assert.equal(p.get('line_items[0][price_data][unit_amount]'), String(ml500.price * 100), 'price comes from the server, not the cart');
   assert.equal(p.get('line_items[0][quantity]'), '2');
   assert.equal(p.get('shipping_options[0][shipping_rate_data][type]'), 'fixed_amount');
   assert.equal(p.get('allow_promotion_codes'), 'true');
@@ -340,7 +341,7 @@ test('checkout still works (without tax) if Stripe Tax is switched off', async (
   const before = stripeCalls.length;
   stripeTaxOff = true;
   try {
-    const r = await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 1, size: '100ml' }] });
+    const r = await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 1, size: '500ml' }] });
     assert.equal(r.status, 200, 'customer can still check out');
     const calls = stripeCalls.slice(before);
     assert.equal(calls.length, 2, 'one rejected attempt, one retry');
@@ -348,6 +349,38 @@ test('checkout still works (without tax) if Stripe Tax is switched off', async (
   } finally {
     stripeTaxOff = false;
   }
+});
+
+test('100 ml + 200 ml oils are sold out everywhere; 500 ml still sells', async () => {
+  const oils = db.prepare("SELECT id, slug, sizes FROM products WHERE category = 'oils' AND active = 1").all();
+  assert.ok(oils.length >= 29);
+  for (const o of oils) {
+    const by = Object.fromEntries(JSON.parse(o.sizes).map(s => [s.label, s]));
+    assert.ok(by['100ml'].sold_out && by['200ml'].sold_out && !by['500ml'].sold_out, o.slug);
+  }
+  const oil = oils[0];
+  // checkout refuses sold-out sizes; a size-less (old) cart line gets the 500 ml
+  const no = await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 1, size: '100ml' }] });
+  assert.equal(no.status, 400);
+  assert.match((await no.json()).error, /sold out/);
+  const before = stripeCalls.length;
+  assert.equal((await postJson('/api/checkout', { items: [{ id: oil.id, quantity: 1 }] })).status, 200);
+  const call = stripeCalls.slice(before).find(c => c.path === '/v1/checkout/sessions');
+  assert.match(call.params.get('line_items[0][price_data][product_data][name]'), /500ml$/);
+
+  // product page: sizes marked sold out and disabled, 500 ml preselected
+  const html = await (await get('/products/' + oil.slug)).text();
+  assert.ok(/data-label="100ml"[^>]*disabled/.test(html) && /data-label="200ml"[^>]*disabled/.test(html));
+  assert.ok(!/data-label="500ml"[^>]*disabled/.test(html));
+  assert.ok(html.includes('id="sizeLabel">500ml<'));
+  assert.ok(html.includes('"availability":"https://schema.org/OutOfStock"'));
+  // shop + homepage one-click add the 500 ml
+  assert.ok((await (await get('/shop')).text()).includes('"size":"500ml"'));
+  assert.ok((await (await get('/')).text()).includes('"size":"500ml"'));
+  // Google feed: small sizes out of stock
+  const feed = (await (await get('/catalog.csv')).text()).split('\n');
+  assert.ok(feed.find(l => l.startsWith(`"${oil.slug}-100ml"`)).includes(',out of stock,'));
+  assert.ok(feed.find(l => l.startsWith(`"${oil.slug}-500ml"`)).includes(',in stock,'));
 });
 
 test('webhook rejects unsigned requests', async () => {

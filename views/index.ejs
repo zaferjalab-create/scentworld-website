@@ -760,8 +760,11 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
         <p class="pdesc"><%= p.short_desc || '' %></p>
         <% if (p.coverage) { %><p class="pcov">Coverage: <%= p.coverage %></p><% } %>
         <% if (p.price) { %><div class="pp">$<%= p.price.toFixed(2) %> <span>CAD</span></div><% } %>
-        <% if (p.price) { %>
-        <button class="atc" onclick='(function(btn){addToCart(<%- JSON.stringify({id: p.id, name: p.name, price: p.price, category: p.category}) %>);btn.textContent="Added ✓";btn.classList.add("added");setTimeout(function(){btn.textContent="Add to Cart";btn.classList.remove("added")},1600)})(this)'>Add to Cart</button>
+        <% if (p.sold_out) { %><button class="atc" disabled style="opacity:.5;cursor:not-allowed">Sold out</button>
+        <% } else if (p.price) { %>
+        <button class="atc" onclick='(function(btn){addToCart(<%- JSON.stringify(p.default_size
+          ? {id: p.id, name: `${p.name} (${p.default_size})`, price: p.price, category: p.category, size: p.default_size, cartKey: `${p.id}-${p.default_size}`}
+          : {id: p.id, name: p.name, price: p.price, category: p.category}) %>);btn.textContent="Added ✓";btn.classList.add("added");setTimeout(function(){btn.textContent="Add to Cart";btn.classList.remove("added")},1600)})(this)'>Add to Cart</button>
         <% } else { %><a href="#contact" class="pl">Get a Quote &rarr;</a><% } %>
         <a href="/products/<%= p.slug %>" style="display:block;margin-top:.5rem;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);text-decoration:none">View Details →</a>
       </div>
@@ -1329,8 +1332,13 @@ function renderProducts() {
       img = `<div class="pi-ph">${icon}<span>${label}</span></div>`;
     }
     const priceHtml = p.price ? `<div class="pp">$${p.price.toFixed(2)} <span>CAD</span></div>` : '';
-    const btnHtml = p.price
-      ? `<button class="atc" onclick="(function(btn){addToCart({id:${p.id},name:'${pName}',price:${p.price},category:'${p.category}'});btn.textContent='Added ✓';btn.classList.add('added');setTimeout(()=>{btn.textContent='Add to Cart';btn.classList.remove('added')},1600)})(this)">Add to Cart</button>`
+    // Sized products (oils) add their cheapest in-stock size; see lib/sizes.js
+    const sizeArgs = p.default_size ? `,size:'${p.default_size}',cartKey:'${p.id}-${p.default_size}'` : '';
+    const cartName = p.default_size ? `${pName} (${p.default_size})` : pName;
+    const btnHtml = p.sold_out
+      ? `<button class="atc" disabled style="opacity:.5;cursor:not-allowed">Sold out</button>`
+      : p.price
+      ? `<button class="atc" onclick="(function(btn){addToCart({id:${p.id},name:'${cartName}',price:${p.price},category:'${p.category}'${sizeArgs}});btn.textContent='Added ✓';btn.classList.add('added');setTimeout(()=>{btn.textContent='Add to Cart';btn.classList.remove('added')},1600)})(this)">Add to Cart</button>`
       : `<a href="#contact" class="pl">Get a Quote &rarr;</a>`;
     return `<div class="pc rv${i < 4 ? ' d' + Math.min(i + 1, 4) : ''}">
       <a href="/products/${p.slug}" class="pi" style="display:block;text-decoration:none">${img}</a>

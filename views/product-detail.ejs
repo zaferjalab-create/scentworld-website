@@ -26,7 +26,10 @@ const specs = [
   ['Warranty', product.spec_warranty],
 ].filter(([k, v]) => v && String(v).trim());
 
-const startPrice = sizes ? sizes[0].price : (product.price || 0);
+// Sold-out sizes stay listed but can't be picked; open on the first one in stock.
+const startSize = sizes ? (sizes.find(s => !s.sold_out) || sizes[0]) : null;
+const allSoldOut = !!sizes && sizes.every(s => s.sold_out);
+const startPrice = startSize ? startSize.price : (product.price || 0);
 const minPrice = sizes ? Math.min(...sizes.map(s => s.price)) : (product.price || 0);
 const maxPrice = sizes ? Math.max(...sizes.map(s => s.price)) : (product.price || 0);
 const isOil = product.category === 'oils';
@@ -105,9 +108,9 @@ const offerExtra = price => ({
     }
   }
 });
-const offerFor = price => ({
+const offerFor = (price, soldOut) => ({
   '@type': 'Offer', price: price.toFixed(2), priceCurrency: 'CAD',
-  availability: 'https://schema.org/InStock', url: pageUrl,
+  availability: soldOut ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock', url: pageUrl,
   ...offerExtra(price)
 });
 const brand = { '@type': 'Brand', name: 'Scent World Canada' };
@@ -131,7 +134,7 @@ const description = product.short_desc || product.name;
       image: images.map(imgAbs),
       description,
       brand,
-      offers: offerFor(s.price)
+      offers: offerFor(s.price, s.sold_out)
     }))
   } : {
     '@type': 'Product',
@@ -269,6 +272,7 @@ nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display
 .pd-stock-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(39,174,96,.5);animation:stockPulse 2.2s ease-out infinite}
 @keyframes stockPulse{0%{box-shadow:0 0 0 0 rgba(39,174,96,.45)}70%{box-shadow:0 0 0 6px rgba(39,174,96,0)}100%{box-shadow:0 0 0 0 rgba(39,174,96,0)}}
 @media(prefers-reduced-motion:reduce){.pd-stock-dot{animation:none}}
+.pd-stock-out{color:var(--txt)}.pd-stock-out .pd-stock-dot{background:var(--txt);animation:none}
 .pd-shipping{font-size:.78rem;color:var(--cream2);font-weight:300;margin-bottom:.4rem}
 .pd-eta{font-size:.74rem;color:var(--txt);font-weight:300;margin-bottom:1.8rem}
 .pd-eta strong{color:var(--gold);font-weight:500}
@@ -320,6 +324,10 @@ nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display
 .pd-size-btn .sz-vol{font-size:1rem;font-weight:500;letter-spacing:.04em}
 .pd-size-btn .sz-price{font-size:.72rem;color:var(--gold);font-family:var(--df);font-style:italic}
 .pd-size-btn.active .sz-vol{color:var(--gold)}
+.pd-size-btn.sold-out,.pd-size-btn.sold-out:hover{opacity:.45;cursor:not-allowed;border-color:var(--bdr);background:var(--bg2)}
+.pd-size-btn.sold-out .sz-vol{text-decoration:line-through}
+.pd-size-btn.sold-out .sz-price{color:var(--txt);font-style:normal;letter-spacing:.08em;text-transform:uppercase;font-family:var(--bf)}
+.pd-atc:disabled,.pd-sticky-atc:disabled{opacity:.5;cursor:not-allowed}
 
 /* Qty + Add */
 .pd-purchase{margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--bdr);display:flex;gap:1rem;align-items:stretch;flex-wrap:wrap}
@@ -532,7 +540,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
       <span class="pd-price" id="priceDisplay">$<%= startPrice.toFixed(2) %></span>
       <span class="pd-price-cur">CAD</span>
     </div>
-    <div class="pd-stock"><span class="pd-stock-dot"></span>In Stock — ready to ship</div>
+    <% if (allSoldOut) { %><div class="pd-stock pd-stock-out"><span class="pd-stock-dot"></span>Sold out</div>
+    <% } else { %><div class="pd-stock"><span class="pd-stock-dot"></span>In Stock — ready to ship</div><% } %>
     <div class="pd-shipping">
       Ships from Halifax in <strong>1–2 business days</strong> · <strong>Free shipping</strong> over $150 CAD
     </div>
@@ -573,12 +582,12 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
 
     <% if (sizes && sizes.length > 1) { %>
     <div class="pd-selector">
-      <div class="pd-sel-label">Choose Size: <span class="pd-sel-value" id="sizeLabel"><%= sizes[0].label %></span></div>
+      <div class="pd-sel-label">Choose Size: <span class="pd-sel-value" id="sizeLabel"><%= startSize.label %></span></div>
       <div class="pd-sizes" id="sizeButtons">
         <% sizes.forEach((s, i) => { %>
-        <button class="pd-size-btn <%= i === 0 ? 'active' : '' %>" data-label="<%= s.label %>" data-price="<%= s.price %>" onclick="selectSize(this)">
+        <button class="pd-size-btn <%= s === startSize && !s.sold_out ? 'active' : '' %><%= s.sold_out ? ' sold-out' : '' %>" data-label="<%= s.label %>" data-price="<%= s.price %>" onclick="selectSize(this)"<%= s.sold_out ? ' disabled aria-disabled=true' : '' %>>
           <span class="sz-vol"><%= s.label %></span>
-          <span class="sz-price">$<%= s.price.toFixed(2) %></span>
+          <span class="sz-price"><%= s.sold_out ? 'Sold out' : '$' + s.price.toFixed(2) %></span>
         </button>
         <% }) %>
       </div>
@@ -625,7 +634,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
         <div class="pd-qty-num" id="qtyDisplay">1</div>
         <button onclick="changeQty(1)" aria-label="Increase quantity">+</button>
       </div>
-      <button class="pd-atc" id="atcBtn" onclick="addToCart()">
+      <button class="pd-atc" id="atcBtn" onclick="addToCart()"<%= allSoldOut ? ' disabled' : '' %>>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         Add to Cart
       </button>
@@ -770,7 +779,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
     <span class="pd-sticky-name"><%= product.name %></span>
     <span class="pd-sticky-price" id="stickyPrice">$<%= startPrice.toFixed(2) %></span>
   </div>
-  <button class="pd-sticky-atc" onclick="addToCart()">Add to Cart</button>
+  <button class="pd-sticky-atc" onclick="addToCart()"<%= allSoldOut ? ' disabled' : '' %>><%= allSoldOut ? 'Sold out' : 'Add to Cart' %></button>
 </div>
 
 <!-- CART DRAWER -->
@@ -834,7 +843,7 @@ function updateBadge() {
 updateBadge();
 
 let qty = 1;
-let selectedSize = PRODUCT.sizes ? PRODUCT.sizes[0] : null;
+let selectedSize = PRODUCT.sizes ? (PRODUCT.sizes.find(s => !s.sold_out) || null) : null;
 
 function changeQty(d) {
   qty = Math.max(1, qty + d);
@@ -922,9 +931,12 @@ function selectBundleOil(slug) {
       <div class="item-price">from $${(o.price || 0).toFixed(2)}</div>
     </div>`).join('');
   const sizes = bundleOil.sizes || [];
-  bundleSize = sizes[0] || null;
-  document.getElementById('bundleSizeButtons').innerHTML = sizes.map((s, i) => `
-    <button class="pd-size-btn ${i === 0 ? 'active' : ''}" data-i="${i}" onclick="selectBundleSize(this)">
+  bundleSize = sizes.find(s => !s.sold_out) || null;
+  document.getElementById('bundleSizeButtons').innerHTML = sizes.map((s, i) => s.sold_out ? `
+    <button class="pd-size-btn sold-out" disabled aria-disabled="true">
+      <span class="sz-vol">${s.label}</span><span class="sz-price">Sold out</span>
+    </button>` : `
+    <button class="pd-size-btn ${s === bundleSize ? 'active' : ''}" data-i="${i}" onclick="selectBundleSize(this)">
       <span class="sz-vol">${s.label}</span><span class="sz-price">+$${s.price.toFixed(2)}</span>
     </button>`).join('');
   updateBundleTotal();
