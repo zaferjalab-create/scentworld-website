@@ -6,6 +6,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const db = require('../database');
 const { snapshotDb } = require('../lib/backup');
+const { sendNotification } = require('../lib/email');
 
 module.exports = function adminRoutes({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog }) {
   const router = express.Router();
@@ -38,6 +39,10 @@ router.post('/api/admin/login', loginLimiter, async (req, res) => {
     }
     req.session.adminId = admin.id;
     req.session.adminEmail = admin.email;
+    // Every sign-in is emailed to the owner, so one they didn't make stands out.
+    const when = new Date().toLocaleString('en-CA', { timeZone: 'America/Halifax', dateStyle: 'medium', timeStyle: 'short' });
+    sendNotification('Admin sign-in', `${admin.email} signed in to the website admin.\n\nWhen: ${when} (Halifax)\nIP: ${req.ip}\nDevice: ${String(req.get('user-agent') || 'unknown').slice(0, 200)}\n\nNot you? Change the admin password straight away (admin → Settings).`)
+      .catch(e => console.error('Sign-in alert failed:', e.message));
     res.json({ success: true, redirect: ADMIN_BASE + '/' });
   });
 });
@@ -439,6 +444,8 @@ router.post('/api/admin/change-password', requireAdmin, async (req, res) => {
   req.session.regenerate(err => {
     if (err) console.error('Session regenerate error:', err.message);
     else { req.session.adminId = adminId; req.session.adminEmail = adminEmail; }
+    // Sign out every other device (sessions last 30 days and survive restarts).
+    try { db.prepare('DELETE FROM sessions WHERE sid != ?').run(req.sessionID); } catch (e) { /* no session table */ }
     res.json({ success: true, message: 'Password updated' });
   });
 });
@@ -476,10 +483,21 @@ router.get(ADMIN_BASE + '/index.html', requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
 });
 
-// Serve admin login + static assets under the secret path (login page itself is
-// public, but only reachable if you know ADMIN_PATH). The old /admin/ path is not
-// mounted, so it 404s like any unknown URL.
+// Serve admin login + static assets under the secret path.
 router.use(ADMIN_BASE, express.static(path.join(__dirname, '..', 'admin')));
+
+// Easy entrance (owner, 2026-10-26): scentworld.ca/admin shows the sign-in form,
+// or goes straight to the panel when already signed in. The form is served here
+// rather than redirected, so the secret path is only revealed after signing in.
+// The login API was always public; password, rate limit and the sign-in alert
+// are what protect it.
+if (ADMIN_BASE !== '/admin') {
+  router.get(['/admin', '/admin/', '/admin/login.html'], (req, res) => {
+    if (req.session && req.session.adminId) return res.redirect(ADMIN_BASE + '/');
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
+  });
+}
 
   return router;
 };

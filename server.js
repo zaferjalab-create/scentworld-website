@@ -20,6 +20,7 @@ const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
 const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails');
 const { notifyBooking, notifyQuote } = require('./lib/lead-emails');
 const { parseSizes, inStock, withStock } = require('./lib/sizes');
+const { SqliteSessionStore } = require('./lib/session-store');
 
 const crypto = require('crypto');
 const app = express();
@@ -211,6 +212,7 @@ const STATIC_OPTS = {
 app.use(express.static(path.join(__dirname, 'public'), STATIC_OPTS));
 app.use('/images/products', express.static(UPLOAD_IMG_DIR, STATIC_OPTS));
 app.use(session({
+  store: new SqliteSessionStore(db),
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -218,8 +220,9 @@ app.use(session({
     secure: 'auto',         // HTTPS-only when the connection is HTTPS (works via trust proxy)
     httpOnly: true,         // not readable by JS (blocks cookie theft via XSS)
     sameSite: 'strict',     // admin-only cookie; never sent on cross-site requests (CSRF)
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    maxAge: 30 * 24 * 60 * 60 * 1000 // stay signed in for 30 days of inactivity
+  },
+  rolling: true // each visit restarts the 30 days
 }));
 
 // CSRF defence for the admin API — the only cookie-authenticated area. The
