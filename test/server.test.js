@@ -186,11 +186,16 @@ test('product videos: gallery video + VideoObject, homepage reel, cached range-s
   assert.match(r.headers.get('cache-control'), /max-age=2592000/);
 });
 
-test('hidden products redirect to their shop category; robots skips the API', async () => {
-  // l100 is a hidden (not deleted) diffuser
+test('hidden products answer 410 Gone with a link to their category; robots skips the API', async () => {
+  // l100 is a hidden (not deleted) diffuser. 410 makes Google drop it instead
+  // of flagging a redirect to the price-less shop list as "missing price".
   const r = await get('/products/l100', { redirect: 'manual' });
-  assert.equal(r.status, 302);
-  assert.equal(r.headers.get('location'), '/shop?filter=diffusers');
+  assert.equal(r.status, 410);
+  const html = await r.text();
+  assert.ok(html.includes('is no longer available') && html.includes('href="/shop?filter=diffusers"'));
+  assert.ok(html.includes('noindex') && !html.includes('application/ld+json'), 'no product data for Google');
+  // aerosols have no live products left, so the link is the whole shop
+  assert.ok((await (await get('/products/aerosol-gold')).text()).includes('href="/shop" class="btn btn-primary"'));
   assert.equal((await get('/products/no-such-thing')).status, 404);
   assert.ok((await (await get('/robots.txt')).text()).includes('Disallow: /api/'));
 });
@@ -261,7 +266,7 @@ test('October 2026 catalogue: 29 oils in five collections, S100 + S300 on sale',
   assert.ok(shop.includes('id="collBar"') && shop.includes('data-collection="hotel"'), 'collection filter');
   assert.ok(shop.includes('Hotel Collection') && shop.includes('The Business Collection'));
   assert.ok(!shop.includes('/products/juniper'), 'retired oils are not listed');
-  assert.equal((await get('/products/juniper', { redirect: 'manual' })).status, 302, 'retired oil pages redirect to the shop');
+  assert.equal((await get('/products/juniper', { redirect: 'manual' })).status, 410, 'retired oil pages are gone');
   assert.ok((await (await get('/products/white-tea')).text()).includes('/shop?collection=hotel'));
 
   const diffusers = db.prepare("SELECT slug, price FROM products WHERE category = 'diffusers' AND active = 1 ORDER BY sort_order").all();
@@ -584,7 +589,7 @@ test('scheduled Stripe sale: 25% off every product for 4-7 Nov (Halifax time), t
   }
 });
 
-test('aerosol range is off sale: no products, no filter button, old pages redirect', async () => {
+test('aerosol range is off sale: no products, no filter button, old pages are gone', async () => {
   assert.equal(db.prepare("SELECT count(*) c FROM products WHERE category = 'aerosol' AND active = 1").get().c, 0);
   for (const page of ['/', '/shop']) {
     const html = await (await get(page)).text();
@@ -592,7 +597,7 @@ test('aerosol range is off sale: no products, no filter button, old pages redire
     assert.ok(!html.includes('/products/aerosol-'), page + ' links to no aerosol product');
   }
   const r = await get('/products/aerosol-gold', { redirect: 'manual' });
-  assert.equal(r.status, 302);
+  assert.equal(r.status, 410);
   assert.ok(!(await (await get('/catalog.csv')).text()).includes('aerosol'), 'not in the product feed');
 });
 

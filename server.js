@@ -710,11 +710,16 @@ app.get('/', (req, res) => {
 app.get('/products/:slug', (req, res, next) => {
   const product = db.prepare('SELECT * FROM products WHERE slug = ? AND active = 1').get(req.params.slug);
   if (!product) {
-    // A hidden (inactive) product sends visitors to its category in the shop
-    // instead of a dead-end 404. 302 = temporary, so Google keeps the URL and the
-    // page simply returns when the product is re-activated in the admin.
-    const hidden = db.prepare('SELECT category FROM products WHERE slug = ? AND active = 0').get(req.params.slug);
-    if (hidden) return res.redirect(302, `/shop?filter=${encodeURIComponent(hidden.category)}`);
+    // A hidden (inactive) product answers 410 Gone so Google drops it from Search
+    // and Merchant Center (a redirect to the price-less shop list got it flagged
+    // "missing price"). Visitors get a "no longer available" page linking to the
+    // category; re-activating the product in the admin brings the page back.
+    const hidden = db.prepare('SELECT name, category FROM products WHERE slug = ? AND active = 0').get(req.params.slug);
+    if (hidden) {
+      const live = db.prepare('SELECT 1 FROM products WHERE category = ? AND active = 1').get(hidden.category);
+      const shopUrl = live ? `/shop?filter=${encodeURIComponent(hidden.category)}` : '/shop';
+      return res.status(410).render('404', { retired: { name: hidden.name, shopUrl } });
+    }
     return next(); // unknown slug -> 404
   }
   const all = getActiveProducts();

@@ -13,7 +13,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Page Not Found | Scent World Canada</title>
+<title><%= typeof retired !== 'undefined' ? 'No Longer Available' : 'Page Not Found' %> | Scent World Canada</title>
 <meta name="robots" content="noindex, follow">
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -68,6 +68,15 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
 <main style="min-height:72vh;display:flex;align-items:center;justify-content:center;padding:7.5rem 1.5rem 4rem">
 <div class="wrap">
   <div class="logo">SCENT WORLD CANADA</div>
+<% if (typeof retired !== 'undefined') { %>
+  <div class="divider"></div>
+  <h1><%= retired.name %> is no longer available</h1>
+  <p>This product has left our range. Take a look at what's in the shop now, or contact us and we'll help you find a close match.</p>
+  <div class="btns">
+    <a href="<%= retired.shopUrl %>" class="btn btn-primary">Shop Now</a>
+    <a href="/#contact" class="btn btn-ghost">Contact Us</a>
+  </div>
+<% } else { %>
   <div class="code">404</div>
   <div class="divider"></div>
   <h1>Page Not Found</h1>
@@ -76,6 +85,7 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
     <a href="/" class="btn btn-primary">Return Home</a>
     <a href="/#contact" class="btn btn-ghost">Contact Us</a>
   </div>
+<% } %>
 </div>
 </main>
 <%- include('partials/footer') %>
