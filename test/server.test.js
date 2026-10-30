@@ -382,6 +382,11 @@ test('100 ml + 200 ml oils are sold out everywhere; 500 ml still sells', async (
   // shop + homepage one-click add the 500 ml
   assert.ok((await (await get('/shop')).text()).includes('"size":"500ml"'));
   assert.ok((await (await get('/')).text()).includes('"size":"500ml"'));
+  // header search shows the in-stock price, not the sold-out 100 ml one
+  const { results } = await (await get('/api/search?q=' + encodeURIComponent('oud'))).json();
+  const oud = results.find(r => r.slug === 'oud');
+  const oudPrice = JSON.parse(db.prepare("SELECT sizes FROM products WHERE slug = 'oud'").get().sizes).find(s => s.label === '500ml').price;
+  assert.equal(oud.price, oudPrice);
   // Google feed: small sizes out of stock
   const feed = (await (await get('/catalog.csv')).text()).split('\n');
   assert.ok(feed.find(l => l.startsWith(`"${oil.slug}-100ml"`)).includes(',out of stock,'));

@@ -775,10 +775,10 @@ app.get('/api/search', (req, res) => {
   if (q.length < 2) return res.json({ success: true, results: [] });
   const like = `%${q}%`;
   const rows = db.prepare(
-    `SELECT slug, name, price, image_url, category FROM products
+    `SELECT slug, name, price, sizes, image_url, category FROM products
      WHERE active = 1 AND (name LIKE ? OR short_desc LIKE ?)
      ORDER BY sort_order LIMIT 6`
-  ).all(like, like);
+  ).all(like, like).map(withStock);
   const CAT = { diffusers: 'Diffuser', oils: 'Fragrance Oil', home_car: 'Home & Car', aerosol: 'Aerosol' };
   res.json({
     success: true,
