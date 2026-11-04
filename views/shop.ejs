@@ -99,6 +99,9 @@ a{color:var(--gold);text-decoration:none}
 .sp-row{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:.8rem}
 .sp-price{font-family:var(--df);color:var(--gold);font-size:1.05rem;font-weight:500}
 .sp-price small{color:var(--txt);font-size:.62rem;font-family:var(--bf);font-weight:300}
+.was-price{color:var(--txt);text-decoration:line-through;font-size:.72em;margin-right:.4rem;font-weight:300}
+.promo-tag{display:inline-block;margin-left:.5rem;padding:.15rem .5rem;background:var(--gold);color:var(--bg);font-family:var(--bf);font-size:.6rem;letter-spacing:.12em;font-weight:600;vertical-align:middle;border-radius:2px}
+
 .sp-atc{padding:.55rem 1rem;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:var(--bf);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .3s;white-space:nowrap}
 .sp-atc:hover{background:var(--gold);color:var(--bg)}
 .sp-atc.added{background:var(--ok);border-color:var(--ok);color:#fff}
@@ -201,7 +204,7 @@ a{color:var(--gold);text-decoration:none}
       <% if (p.rating_count) { %><div class="sp-stars"><span><%= '★'.repeat(Math.round(p.rating_avg)) + '☆'.repeat(5 - Math.round(p.rating_avg)) %></span> <em><%= p.rating_avg.toFixed(1) %> (<%= p.rating_count %>)</em></div><% } %>
       <% if (p.coverage) { %><div class="sp-cov">Coverage: <%= p.coverage %></div><% } %>
       <div class="sp-row">
-        <div class="sp-price"><% if (ps) { %><small>from </small><% } %>$<%= price.toFixed(2) %></div>
+        <div class="sp-price"><% if (ps) { %><small>from </small><% } %><% if (p.regular_price > price) { %><s class="was-price">$<%= p.regular_price.toFixed(2) %></s><% } %>$<%= price.toFixed(2) %></div>
         <% if (p.sold_out) { %><button class="sp-atc" disabled style="opacity:.5;cursor:not-allowed">Sold out</button>
         <% } else { %><button class="sp-atc" onclick='quickAdd(<%- JSON.stringify({id: p.id, slug: p.slug, name: p.name, price: price, category: p.category, image_url: p.image_url, size: ps ? p.default_size : null}) %>, this)'>Add<%= ps ? ' ' + p.default_size : '' %> to Cart</button><% } %>
       </div>

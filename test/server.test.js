@@ -103,6 +103,7 @@ Object.assign(process.env, {
   STRIPE_API_URL,
   RESEND_API_KEY: '',
   NODE_ENV: 'test',
+  PROMO_NOW: '2026-10-20T12:00:00-03:00', // regular prices (lib/promo.js); campaign tests move it
 });
 
 const quiet = console.log;
@@ -543,7 +544,7 @@ test('Stripe catalogue sync: Oil 100/200/500 ml + Gift Oil Set, idempotent, olde
   }
 });
 
-test('scheduled Stripe sale: 25% off every product for 4-7 Nov (Halifax time), then back to regular', async () => {
+test('in-person Stripe sale follows the campaign calendar: 25% off Nov 4-9 (Halifax time), then back to regular', async () => {
   const { syncStripeCatalogue, saleSettings } = require('../lib/stripe-catalog');
   const api = new URL(STRIPE_API_URL);
   const fake = require('stripe')('sk_test_dummy', { host: api.hostname, port: api.port, protocol: 'http' });
@@ -551,10 +552,11 @@ test('scheduled Stripe sale: 25% off every product for 4-7 Nov (Halifax time), t
   const run = iso => syncStripeCatalogue(fake, db, 'https://www.scentworld.ca', at(iso));
   const active = id => [...fakePrices.values()].filter(x => x.product === id && x.active).map(x => x.unit_amount);
 
-  // the owner's default: 25%, 2026-11-04 .. 2026-11-07, inclusive, in Halifax time (UTC-4 until the clocks change on Nov 1, then UTC-4/-3...)
-  assert.deepEqual([saleSettings(db, at('2026-11-03T20:00:00-04:00')).active, saleSettings(db, at('2026-11-04T00:30:00-04:00')).active], [false, true]);
-  assert.deepEqual([saleSettings(db, at('2026-11-07T23:30:00-04:00')).active, saleSettings(db, at('2026-11-08T00:30:00-04:00')).active], [true, false]);
-  assert.equal(saleSettings(db, at('2026-11-05T12:00:00-04:00')).state, 'sale:25:2026-11-04:2026-11-07');
+  // November sale: 25%, 2026-11-04 .. 2026-11-09 inclusive, Halifax time (UTC-4 after Nov 1)
+  assert.deepEqual([saleSettings(db, at('2026-11-03T23:59:00-04:00')).active, saleSettings(db, at('2026-11-04T00:01:00-04:00')).active], [false, true]);
+  assert.deepEqual([saleSettings(db, at('2026-11-09T23:59:00-04:00')).active, saleSettings(db, at('2026-11-10T00:01:00-04:00')).active], [true, false]);
+  assert.equal(saleSettings(db, at('2026-11-08T12:00:00-04:00')).active, true, 'the old Nov 7 end date no longer cuts the sale short');
+  assert.equal(saleSettings(db, at('2026-11-05T12:00:00-04:00')).state, 'campaign:november:2026-11-04:2026-11-09');
 
   // a product the owner made by hand: S300 at $1,199.00
   fakeProducts.clear(); fakePrices.clear();
@@ -566,7 +568,7 @@ test('scheduled Stripe sale: 25% off every product for 4-7 Nov (Halifax time), t
   assert.deepEqual([active('sw-oil-100ml'), active('prod_s300')], [[4900], [119900]], 'regular prices before the sale');
 
   const during = await run('2026-11-05T12:00:00-04:00');
-  assert.equal(during.sale, '25% off until 2026-11-07');
+  assert.equal(during.sale, 'november until 2026-11-09');
   assert.deepEqual(during.items, ['Oil 100 ml $36.75', 'Oil 200 ml $66.75', 'Oil 500 ml $141.75', 'Gift Oil Set $74.25']);
   assert.deepEqual([active('sw-oil-100ml'), active('sw-gift-oil-set'), active('prod_s300')], [[3675], [7425], [89925]], 'exactly one (discounted) active price per product');
   assert.equal(during.saleApplied, 1);
@@ -576,21 +578,102 @@ test('scheduled Stripe sale: 25% off every product for 4-7 Nov (Halifax time), t
   const again = await run('2026-11-06T09:00:00-04:00');
   assert.deepEqual([again.pricesCreated, again.pricesArchived, again.saleApplied, again.saleRemoved], [0, 0, 0, 0], 'no churn while the sale runs');
 
-  const after = await run('2026-11-08T08:00:00-04:00');
+  const after = await run('2026-11-10T08:00:00-04:00');
   assert.equal(after.sale, 'off');
   assert.equal(after.saleRemoved, 1);
   assert.deepEqual([active('sw-oil-100ml'), active('sw-gift-oil-set'), active('prod_s300')], [[4900], [9900], [119900]], 'regular prices are back');
   assert.equal(fakeProducts.get('prod_s300').default_price, 'price_s300', 'the original price object is restored');
   assert.equal(after.pricesCreated, 0, 'old regular prices are re-used, not duplicated');
 
-  // cancelling in admin (empty percentage) = no sale even inside the dates
-  const pct = db.prepare("SELECT value FROM settings WHERE key = 'sale_percent'").get().value;
+  // Christmas: 15% / 20% by product, straight after Black Friday's 25%
+  fakePrices.set('price_s100', { id: 'price_s100', object: 'price', type: 'one_time', product: 'prod_s100', active: true, currency: 'cad', unit_amount: 69900, tax_behavior: 'exclusive', metadata: {} });
+  fakeProducts.set('prod_s100', { id: 'prod_s100', object: 'product', active: true, name: 'S100', default_price: 'price_s100' });
+  await run('2026-11-30T12:00:00-04:00');
+  assert.deepEqual([active('prod_s300'), active('prod_s100'), active('sw-gift-oil-set')], [[89925], [52425], [7425]], 'Black Friday: 25% off');
+  const xmas = await run('2026-12-01T00:20:00-04:00');
+  assert.deepEqual(xmas.items, ['Oil 100 ml $39.20', 'Oil 200 ml $71.20', 'Oil 500 ml $151.20', 'Gift Oil Set $84.15']);
+  assert.deepEqual([active('prod_s300'), active('prod_s100')], [[101915], [55920]], 'Christmas: S300 15%, S100 20%');
+  await run('2026-12-25T09:00:00-04:00');
+  assert.deepEqual([active('prod_s300'), active('prod_s100'), active('sw-gift-oil-set')], [[119900], [69900], [9900]], 'regular after Christmas');
+  assert.equal(fakeProducts.get('prod_s100').default_price, 'price_s100');
+
+  // between campaigns the manual sale from admin Settings still works, and an empty percentage cancels it
+  const get = k => db.prepare('SELECT value FROM settings WHERE key = ?').get(k).value;
+  const saved = ['sale_percent', 'sale_start', 'sale_end'].map(k => [k, get(k)]);
+  const set = (k, v) => db.prepare('UPDATE settings SET value = ? WHERE key = ?').run(v, k);
   try {
-    db.prepare("UPDATE settings SET value = '' WHERE key = 'sale_percent'").run();
-    assert.equal((await run('2026-11-05T12:00:00-04:00')).sale, 'off');
-    assert.deepEqual(active('prod_s300'), [119900]);
+    set('sale_percent', '10'); set('sale_start', '2026-11-15'); set('sale_end', '2026-11-16');
+    assert.equal(saleSettings(db, at('2026-11-15T12:00:00-04:00')).state, 'sale:10:2026-11-15:2026-11-16');
+    set('sale_percent', '');
+    assert.equal(saleSettings(db, at('2026-11-15T12:00:00-04:00')).active, false);
   } finally {
-    db.prepare("UPDATE settings SET value = ? WHERE key = 'sale_percent'").run(pct);
+    for (const [k, v] of saved) set(k, v);
+  }
+});
+
+test('holiday campaigns on the website: sale prices everywhere, charged at checkout, no promo codes, poster replaces WELCOME10', async () => {
+  const promo = require('../lib/promo');
+  const at = iso => new Date(iso);
+  assert.deepEqual(['2026-11-03T23:59:00-04:00', '2026-11-04T00:00:00-04:00', '2026-11-09T23:59:00-04:00', '2026-11-10T00:00:00-04:00',
+    '2026-11-26T23:59:00-04:00', '2026-11-27T00:00:00-04:00', '2026-11-30T23:59:00-04:00', '2026-12-01T00:00:00-04:00',
+    '2026-12-24T23:59:00-04:00', '2026-12-25T00:00:00-04:00'].map(t => (promo.activeCampaign(at(t)) || {}).id || null),
+  [null, 'november', 'november', null, null, 'black-friday', 'black-friday', 'christmas', 'christmas', null]);
+  const xmas = promo.CAMPAIGNS.find(c => c.id === 'christmas');
+  const price = (slug, category, regular) => [promo.salePrice(regular, 25), promo.salePrice(regular, xmas.percent({ slug, category }))];
+  assert.deepEqual(price('s20', 'diffusers', 199), [149.25, 169.15]);
+  assert.deepEqual(price('s30', 'diffusers', 349), [261.75, 296.65]);
+  assert.deepEqual(price('s100', 'diffusers', 699), [524.25, 559.2]);
+  assert.deepEqual(price('s200', 'diffusers', 899), [674.25, 719.2]);
+  assert.deepEqual(price('s300', 'diffusers', 1199), [899.25, 1019.15]);
+  assert.deepEqual(price('car-diffuser', 'home_car', 149), [111.75, 126.65]);
+  assert.deepEqual(price('car-gift-set', 'home_car', 249), [186.75, 199.2]);
+  assert.deepEqual(price('vienna', 'oils', 189), [141.75, 151.2]);
+
+  const s20 = db.prepare("SELECT id, price FROM products WHERE slug = 's20'").get();
+  const oil = db.prepare("SELECT id, slug, sizes FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
+  const ml500 = JSON.parse(oil.sizes).find(s => s.label === '500ml').price;
+  const prev = process.env.PROMO_NOW;
+  try {
+    process.env.PROMO_NOW = '2026-11-05T12:00:00-04:00';
+    const api = (await (await get('/api/products')).json()).products.find(p => p.id === s20.id);
+    assert.deepEqual([api.price, api.regular_price, api.promo_pct], [promo.salePrice(s20.price, 25), s20.price, 25]);
+    const page = await (await get('/products/s20')).text();
+    assert.ok(page.includes('$' + promo.salePrice(s20.price, 25).toFixed(2)) && page.includes('$' + s20.price.toFixed(2)), 'sale + struck regular price');
+    assert.ok(page.includes('"price":"' + promo.salePrice(s20.price, 25).toFixed(2) + '"'), 'structured data carries the price shown');
+    const home = await (await get('/')).text();
+    assert.ok(home.includes('class="promo-bar"') && home.includes('id="swPromo"') && home.includes('/images/promo/november-sale.jpg'));
+    assert.ok(!home.includes('id="swPop"') && !home.includes('WELCOME10'), 'no WELCOME10 popup during a campaign');
+    const shop = await (await get('/shop')).text();
+    assert.ok(shop.includes('was-price'));
+
+    stripeCalls.length = 0;
+    const r = await postJson('/api/checkout', { items: [{ id: s20.id, quantity: 1 }, { id: oil.id, quantity: 1, size: '500ml' }] });
+    assert.equal(r.status, 200);
+    const p = stripeCalls.find(c => c.path === '/v1/checkout/sessions').params;
+    assert.equal(p.get('line_items[0][price_data][unit_amount]'), String(Math.round(promo.salePrice(s20.price, 25) * 100)));
+    assert.equal(p.get('line_items[1][price_data][unit_amount]'), String(Math.round(promo.salePrice(ml500, 25) * 100)));
+    assert.equal(p.get('allow_promotion_codes'), 'false', 'codes off: offers cannot be combined');
+
+    const feed = await (await get('/catalog.csv')).text();
+    const row = feed.split('\n').find(l => l.startsWith(`"${oil.slug}-500ml"`));
+    assert.ok(row.includes(`"${promo.salePrice(ml500, 25).toFixed(2)} CAD"`) && row.includes('"2026-11-04T00:00-04:00/2026-11-09T23:59-04:00"'), row);
+
+    process.env.PROMO_NOW = '2026-12-10T12:00:00-04:00';
+    const s100 = (await (await get('/api/products/s100')).json()).product;
+    assert.equal(s100.promo_pct, 20);
+    assert.equal((await (await get('/api/products/s20')).json()).product.promo_pct, 15);
+
+    process.env.PROMO_NOW = '2026-11-10T00:01:00-04:00';
+    const gap = await (await get('/')).text();
+    assert.ok(!gap.includes('class="promo-bar"') && gap.includes('id="swPop"'), 'gap: no bar, WELCOME10 popup is back');
+    assert.equal((await (await get('/api/products/s20')).json()).product.price, s20.price);
+    stripeCalls.length = 0;
+    await postJson('/api/checkout', { items: [{ id: s20.id, quantity: 1 }] });
+    const g = stripeCalls.find(c => c.path === '/v1/checkout/sessions').params;
+    assert.equal(g.get('allow_promotion_codes'), 'true');
+    assert.equal(g.get('line_items[0][price_data][unit_amount]'), String(s20.price * 100));
+  } finally {
+    process.env.PROMO_NOW = prev;
   }
 });
 

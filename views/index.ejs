@@ -421,6 +421,9 @@ section{padding:7rem 4vw}
 .pc-stars em{font-style:normal;font-size:.64rem;color:var(--txt2);font-weight:200}
 .pcov{font-size:.68rem;color:var(--txt2);margin-bottom:.8rem}
 .pp{font-family:var(--df);font-size:1.4rem;color:var(--gold);font-weight:400;margin-bottom:.9rem}
+.was-price{color:var(--txt);text-decoration:line-through;font-size:.72em;margin-right:.4rem;font-weight:300}
+.promo-tag{display:inline-block;margin-left:.5rem;padding:.15rem .5rem;background:var(--gold);color:var(--bg);font-family:var(--bf);font-size:.6rem;letter-spacing:.12em;font-weight:600;vertical-align:middle;border-radius:2px}
+
 .pp span{font-size:.68rem;color:var(--txt2);font-family:var(--bf);font-weight:200}
 .atc{width:100%;padding:.7rem 1rem;background:transparent;border:1px solid var(--bdr);color:var(--cream2);font-family:var(--bf);font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .35s;margin-top:auto}
 .atc:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,165,92,.05)}
@@ -759,7 +762,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
         <% if (p.rating_count) { %><div class="pc-stars"><span><%= '★'.repeat(Math.round(p.rating_avg)) + '☆'.repeat(5 - Math.round(p.rating_avg)) %></span> <em><%= p.rating_avg.toFixed(1) %> (<%= p.rating_count %>)</em></div><% } %>
         <p class="pdesc"><%= p.short_desc || '' %></p>
         <% if (p.coverage) { %><p class="pcov">Coverage: <%= p.coverage %></p><% } %>
-        <% if (p.price) { %><div class="pp">$<%= p.price.toFixed(2) %> <span>CAD</span></div><% } %>
+        <% if (p.price) { %><div class="pp"><% if (p.regular_price > p.price) { %><s class="was-price">$<%= p.regular_price.toFixed(2) %></s><% } %>$<%= p.price.toFixed(2) %> <span>CAD</span></div><% } %>
         <% if (p.sold_out) { %><button class="atc" disabled style="opacity:.5;cursor:not-allowed">Sold out</button>
         <% } else if (p.price) { %>
         <button class="atc" onclick='(function(btn){addToCart(<%- JSON.stringify(p.default_size
@@ -1331,7 +1334,7 @@ function renderProducts() {
     } else {
       img = `<div class="pi-ph">${icon}<span>${label}</span></div>`;
     }
-    const priceHtml = p.price ? `<div class="pp">$${p.price.toFixed(2)} <span>CAD</span></div>` : '';
+    const priceHtml = p.price ? `<div class="pp">${p.regular_price > p.price ? `<s class="was-price">$${p.regular_price.toFixed(2)}</s>` : ''}$${p.price.toFixed(2)} <span>CAD</span></div>` : '';
     // Sized products (oils) add their cheapest in-stock size; see lib/sizes.js
     const sizeArgs = p.default_size ? `,size:'${p.default_size}',cartKey:'${p.id}-${p.default_size}'` : '';
     const cartName = p.default_size ? `${pName} (${p.default_size})` : pName;

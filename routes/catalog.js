@@ -3,6 +3,7 @@ const express = require('express');
 const db = require('../database');
 const { shippingRules, shippingCost } = require('../lib/shipping');
 const { COLLECTIONS } = require('../lib/collections');
+const { CAMPAIGNS, activeCampaign, salePrice, feedSaleDates, halifaxDate } = require('../lib/promo');
 const router = express.Router();
 
 // Meta/Google product catalog feed (CSV format)
@@ -11,13 +12,19 @@ router.get('/catalog.csv', (req, res) => {
     const rules = shippingRules();
     const products = db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all();
     const BASE = 'https://www.scentworld.ca';
+    // Running campaign, or the next one, with its effective dates: Google
+    // switches the sale price on and off at the exact times by itself.
+    const today = halifaxDate();
+    const campaign = activeCampaign() || CAMPAIGNS.find(c => c.start > today) || null;
+    const saleDates = campaign ? feedSaleDates(campaign) : '';
+    const running = !!activeCampaign();
     const csvHeader = [
       'id', 'title', 'description', 'availability', 'condition', 'price', 'link',
       'image_link', 'brand', 'google_product_category', 'product_type', 'sale_price',
       'inventory', 'gtin', 'mpn', 'shipping', 'currency',
       // Size variants of one product share item_group_id so Google Shopping
       // groups them (100/200/500 ml) instead of listing unrelated items.
-      'item_group_id', 'size'
+      'item_group_id', 'size', 'sale_price_effective_date'
     ].join(',');
     const rows = [csvHeader];
 
@@ -36,7 +43,10 @@ router.get('/catalog.csv', (req, res) => {
         const desc = (p.short_desc || p.name).replace(/"/g, '""').replace(/\n/g, ' ');
         const link = `${BASE}/products/${p.slug}`;
         const img = p.image_url ? (p.image_url.startsWith('http') ? p.image_url : `${BASE}${p.image_url}`) : `${BASE}/images/logo.png`;
-        const price = `${(v.price || p.price || 0).toFixed(2)} CAD`;
+        const regular = v.price || p.price || 0;
+        const price = `${regular.toFixed(2)} CAD`;
+        const pct = campaign && regular > 0 ? campaign.percent(p) : 0;
+        const sale = pct > 0 ? `"${salePrice(regular, pct).toFixed(2)} CAD"` : '';
         const category = p.category === 'oils' ? 'Health & Beauty > Personal Care > Fragrance' :
                          p.category === 'diffusers' ? 'Home & Garden > Decor > Home Fragrance Accessories > Fragrance Oil Diffusers' :
                          'Home & Garden > Decor > Home Fragrance';
@@ -52,14 +62,15 @@ router.get('/catalog.csv', (req, res) => {
           '"Scent World Canada"',
           `"${category}"`,
           `"${p.category}${COLLECTIONS[p.collection] ? ' > ' + COLLECTIONS[p.collection] : ''}"`,
-          '', // sale_price
+          sale, // sale_price (campaign, lib/promo.js)
           v.soldOut ? '0' : '100', // inventory
           '', // gtin
           `"${id}"`, // mpn
-          `"CA::Standard:${shippingCost(v.price || p.price || 0, rules).toFixed(2)} CAD"`,
+          `"CA::Standard:${shippingCost(running && pct > 0 ? salePrice(regular, pct) : regular, rules).toFixed(2)} CAD"`,
           'CAD',
           v.label ? `"${p.slug}"` : '',
-          v.label ? `"${String(v.label).replace(/"/g, '""')}"` : ''
+          v.label ? `"${String(v.label).replace(/"/g, '""')}"` : '',
+          sale ? `"${saleDates}"` : ''
         ];
         rows.push(row.join(','));
       }

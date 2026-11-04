@@ -30,6 +30,8 @@ const specs = [
 const startSize = sizes ? (sizes.find(s => !s.sold_out) || sizes[0]) : null;
 const allSoldOut = !!sizes && sizes.every(s => s.sold_out);
 const startPrice = startSize ? startSize.price : (product.price || 0);
+// Regular price during a holiday campaign (lib/promo.js), struck through.
+const startWas = startSize ? (startSize.regular_price || 0) : (product.regular_price || 0);
 const minPrice = sizes ? Math.min(...sizes.map(s => s.price)) : (product.price || 0);
 const maxPrice = sizes ? Math.max(...sizes.map(s => s.price)) : (product.price || 0);
 const isOil = product.category === 'oils';
@@ -255,6 +257,10 @@ nav{position:sticky;top:0;left:0;right:0;z-index:1000;padding:1.2rem 4vw;display
 .pd-price-row{display:flex;align-items:baseline;gap:.8rem;margin-bottom:.4rem}
 .pd-price{font-family:var(--df);font-size:2.4rem;color:var(--gold);font-weight:500;line-height:1}
 .pd-price-cur{font-size:.85rem;color:var(--cream2);letter-spacing:.1em;font-weight:300}
+.pd-was{font-family:var(--df);font-size:1.3rem;color:var(--txt);text-decoration:line-through;font-weight:300}
+.pd-was:empty{display:none}
+.pd-promo{display:inline-block;margin-bottom:.6rem;padding:.3rem .7rem;background:var(--gold);color:var(--bg);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.sz-was{display:block;font-size:.62rem;color:var(--txt);text-decoration:line-through;font-style:normal}
 /* Sticky mobile add-to-cart bar */
 .pd-sticky-bar{position:fixed;left:0;right:0;bottom:0;z-index:120;display:flex;align-items:center;gap:1rem;padding:.7rem 4vw calc(.7rem + env(safe-area-inset-bottom));background:rgba(11,9,8,.97);backdrop-filter:blur(10px);border-top:1px solid var(--bdr);transform:translateY(110%);transition:transform .3s ease;pointer-events:none}
 .pd-sticky-bar.show{transform:translateY(0);pointer-events:auto}
@@ -536,7 +542,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
     </div>
     <% } %>
 
+    <% if (product.promo_pct) { %><div class="pd-promo"><%= product.promo_name %> · <%= product.promo_pct %>% off · applied at checkout</div><% } %>
     <div class="pd-price-row">
+      <span class="pd-was" id="wasDisplay"><%= startWas > startPrice ? '$' + startWas.toFixed(2) : '' %></span>
       <span class="pd-price" id="priceDisplay">$<%= startPrice.toFixed(2) %></span>
       <span class="pd-price-cur">CAD</span>
     </div>
@@ -585,9 +593,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
       <div class="pd-sel-label">Choose Size: <span class="pd-sel-value" id="sizeLabel"><%= startSize.label %></span></div>
       <div class="pd-sizes" id="sizeButtons">
         <% sizes.forEach((s, i) => { %>
-        <button class="pd-size-btn <%= s === startSize && !s.sold_out ? 'active' : '' %><%= s.sold_out ? ' sold-out' : '' %>" data-label="<%= s.label %>" data-price="<%= s.price %>" onclick="selectSize(this)"<%= s.sold_out ? ' disabled aria-disabled=true' : '' %>>
+        <button class="pd-size-btn <%= s === startSize && !s.sold_out ? 'active' : '' %><%= s.sold_out ? ' sold-out' : '' %>" data-label="<%= s.label %>" data-price="<%= s.price %>" data-was="<%= s.regular_price || '' %>" onclick="selectSize(this)"<%= s.sold_out ? ' disabled aria-disabled=true' : '' %>>
           <span class="sz-vol"><%= s.label %></span>
-          <span class="sz-price"><%= s.sold_out ? 'Sold out' : '$' + s.price.toFixed(2) %></span>
+          <span class="sz-price"><%= s.sold_out ? 'Sold out' : '$' + s.price.toFixed(2) %><% if (!s.sold_out && s.regular_price > s.price) { %><s class="sz-was">$<%= s.regular_price.toFixed(2) %></s><% } %></span>
         </button>
         <% }) %>
       </div>
@@ -854,6 +862,8 @@ function selectSize(btn) {
   selectedSize = { label: btn.dataset.label, price: parseFloat(btn.dataset.price) };
   document.querySelectorAll('#sizeButtons .pd-size-btn').forEach(b => b.classList.toggle('active', b === btn));
   document.getElementById('priceDisplay').textContent = '$' + selectedSize.price.toFixed(2);
+  const was = parseFloat(btn.dataset.was);
+  document.getElementById('wasDisplay').textContent = was > selectedSize.price ? '$' + was.toFixed(2) : '';
   document.getElementById('sizeLabel').textContent = selectedSize.label;
   const sp = document.getElementById('stickyPrice');
   if (sp) sp.textContent = '$' + selectedSize.price.toFixed(2);

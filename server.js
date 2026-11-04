@@ -20,6 +20,7 @@ const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
 const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails');
 const { notifyBooking, notifyQuote } = require('./lib/lead-emails');
 const { parseSizes, inStock, withStock } = require('./lib/sizes');
+const { activeCampaign, promoProduct } = require('./lib/promo');
 const { SqliteSessionStore } = require('./lib/session-store');
 
 const crypto = require('crypto');
@@ -122,6 +123,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// The running holiday campaign, if any, for the announcement bar and popup.
+app.use((req, res, next) => { res.locals.promo = activeCampaign(); next(); });
 
 // gzip/deflate responses — HTML pages are 100-170KB uncompressed.
 app.use(compression());
@@ -337,7 +341,7 @@ app.get('/api/products', (req, res) => {
   } else {
     products = db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all();
   }
-  res.json({ success: true, products });
+  res.json({ success: true, products: products.map(p => promoProduct(p)) });
 });
 
 // Submit a product review (held for admin approval)
@@ -365,7 +369,7 @@ app.post('/api/reviews', formLimiter, (req, res) => {
 app.get('/api/products/:slug', (req, res) => {
   const product = db.prepare('SELECT * FROM products WHERE slug = ? AND active = 1').get(req.params.slug);
   if (!product) return res.status(404).json({ success: false, error: 'Product not found' });
-  res.json({ success: true, product });
+  res.json({ success: true, product: promoProduct(product) });
 });
 
 // ═══════════════════════════════════════
@@ -394,7 +398,8 @@ app.post('/api/checkout', async (req, res) => {
     const metaItems = [];
     let subtotal = 0;
     for (const item of items) {
-      const product = db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.id);
+      // Campaign prices are applied here, on the server (lib/promo.js).
+      const product = promoProduct(db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.id));
       if (!product) return res.status(400).json({ success: false, error: `Product ${item.id} not available` });
       // Clamp quantity to a sane positive integer so a tampered cart can't send
       // Stripe a huge, zero, negative, or non-numeric quantity.
@@ -453,7 +458,8 @@ app.post('/api/checkout', async (req, res) => {
       phone_number_collection: { enabled: true },   // for the courier and delivery questions
       // Free at/above the admin threshold, flat rate below it (lib/shipping.js).
       shipping_options: [stripeShippingOption(subtotal)],
-      allow_promotion_codes: true,   // customers can enter promo/discount codes
+      // Promo codes (WELCOME10...) only between campaigns: offers can't be combined.
+      allow_promotion_codes: !activeCampaign(),
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/#products`,
       metadata: { items: JSON.stringify(metaItems) },
@@ -633,7 +639,7 @@ app.use(require('./routes/admin')({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLO
 
 // ── Product helpers ──
 function getActiveProducts() {
-  return db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all().map(withStock);
+  return db.prepare('SELECT * FROM products WHERE active = 1 ORDER BY sort_order').all().map(p => withStock(promoProduct(p)));
 }
 function parseCoverageSqft(p) {
   // Bucket on whichever field carries a sq-ft figure. spec_coverage may hold a
@@ -708,7 +714,7 @@ app.get('/', (req, res) => {
 
 // Clean product detail URLs: /products/:slug (SSR)
 app.get('/products/:slug', (req, res, next) => {
-  const product = db.prepare('SELECT * FROM products WHERE slug = ? AND active = 1').get(req.params.slug);
+  const product = promoProduct(db.prepare('SELECT * FROM products WHERE slug = ? AND active = 1').get(req.params.slug));
   if (!product) {
     // A hidden (inactive) product answers 410 Gone so Google drops it from Search
     // and Merchant Center (a redirect to the price-less shop list got it flagged
@@ -763,7 +769,7 @@ app.get('/search', (req, res) => {
     const like = `%${q}%`;
     products = db.prepare(
       `SELECT * FROM products WHERE active = 1 AND (name LIKE ? OR short_desc LIKE ? OR full_desc LIKE ?) ORDER BY sort_order`
-    ).all(like, like, like).map(withStock);
+    ).all(like, like, like).map(p => withStock(promoProduct(p)));
   }
   res.render('shop', { products: shopLocals(products), q, buckets: sizeBuckets() });
 });
@@ -778,7 +784,7 @@ app.get('/api/search', (req, res) => {
     `SELECT slug, name, price, sizes, image_url, category FROM products
      WHERE active = 1 AND (name LIKE ? OR short_desc LIKE ?)
      ORDER BY sort_order LIMIT 6`
-  ).all(like, like).map(withStock);
+  ).all(like, like).map(p => withStock(promoProduct(p)));
   const CAT = { diffusers: 'Diffuser', oils: 'Fragrance Oil', home_car: 'Home & Car', aerosol: 'Aerosol' };
   res.json({
     success: true,
