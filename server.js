@@ -16,6 +16,7 @@ const { resendEmail, escapeHtml, sendNotification, sendConfirmation } = require(
 const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
 const { scheduleShipmentRefresh } = require('./lib/shiptime');
+const { scheduleCampaignEmails } = require('./lib/campaign-emails');
 const { stripeShippingOption, shippingRules } = require('./lib/shipping');
 const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
 const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails');
@@ -981,6 +982,7 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   scheduleDailyBackup();
   scheduleReviewRequests();
   scheduleShipmentRefresh(db);
+  scheduleCampaignEmails(db);
   if (process.env.NODE_ENV === 'production') backfillOrderDetails();
   syncStripeCatalogIfDue();
   setInterval(syncStripeCatalogIfDue, 15 * 60 * 1000).unref(); // picks up the sale start/end

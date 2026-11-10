@@ -145,6 +145,17 @@ router.post('/api/admin/campaign-emails/:id/test', requireAdmin, async (req, res
   const ok = await campaignEmails.sendOne(db, req.params.id, null, to).catch(() => false);
   res.status(ok ? 200 : 502).json(ok ? { success: true, to } : { success: false, error: 'The email service did not accept the test. Check the server log.' });
 });
+router.post('/api/admin/campaign-emails/:id/schedule', requireAdmin, (req, res) => {
+  const id = req.params.id;
+  if (!campaignEmails.renderCampaignEmail(db, id, null)) return res.status(404).json({ success: false, error: 'Unknown campaign email' });
+  if (req.body.confirm !== id) return res.status(400).json({ success: false, error: 'Confirmation missing.' });
+  try { campaignEmails.schedule(db, id); res.json({ success: true }); } catch (err) { res.status(409).json({ success: false, error: err.message }); }
+});
+router.post('/api/admin/campaign-emails/:id/unschedule', requireAdmin, (req, res) => {
+  if (!campaignEmails.renderCampaignEmail(db, req.params.id, null)) return res.status(404).json({ success: false, error: 'Unknown campaign email' });
+  campaignEmails.cancelSchedule(db, req.params.id);
+  res.json({ success: true });
+});
 router.post('/api/admin/campaign-emails/:id/send', requireAdmin, (req, res) => {
   const id = req.params.id;
   if (!campaignEmails.renderCampaignEmail(db, id, null)) return res.status(404).json({ success: false, error: 'Unknown campaign email' });

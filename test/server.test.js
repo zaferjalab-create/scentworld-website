@@ -910,3 +910,57 @@ test('ShipTime: rates and labels only on the admin button, one label per order, 
     fake.close();
   }
 });
+
+test('scheduled campaign emails: approved once, send themselves on their day, only while the campaign runs', async () => {
+  const ce = require('../lib/campaign-emails');
+  const at = iso => new Date(iso);
+  const clean = () => { db.prepare("DELETE FROM settings WHERE key LIKE 'campaign_schedule:%' OR key LIKE 'campaign_email:%'").run(); };
+  clean();
+  db.prepare("INSERT OR IGNORE INTO subscribers (email, first_name) VALUES ('sched-test@example.test', 'Sam')").run();
+  db.prepare("UPDATE subscribers SET status = 'active' WHERE email = 'sched-test@example.test'").run();
+  const cookie = await login();
+  const H = { Cookie: cookie, Origin: BASE };
+  try {
+    // approval needs the admin and an explicit confirm
+    assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/schedule', { confirm: 'black-friday-launch' }, { Accept: 'application/json', Origin: BASE })).status, 401);
+    assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/schedule', {}, H)).status, 400);
+    assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/schedule', { confirm: 'black-friday-launch' }, H)).status, 200);
+    const listed = (await (await get('/api/admin/campaign-emails', { headers: { Cookie: cookie } })).json()).emails.find(e => e.id === 'black-friday-launch');
+    assert.equal(listed.schedule.state, 'scheduled');
+
+    // before 8:00 a.m. on the day, and the days before: nothing happens
+    assert.deepEqual(await ce.runDue(db, at('2026-11-26T12:00:00-04:00'), { delayMs: 0 }), []);
+    assert.deepEqual(await ce.runDue(db, at('2026-11-27T07:59:00-04:00'), { delayMs: 0 }), []);
+    assert.equal(ce.campaignStatus(db, 'black-friday-launch'), null);
+    // at 8:00 on Nov 27 it goes out, exactly once
+    const sent = await ce.runDue(db, at('2026-11-27T08:00:00-04:00'), { delayMs: 0 });
+    assert.deepEqual(sent.map(x => [x.id, x.result]), [['black-friday-launch', 'sent']]);
+    assert.ok(ce.campaignStatus(db, 'black-friday-launch').finishedAt);
+    assert.equal(ce.getSchedule(db, 'black-friday-launch').state, 'sent');
+    assert.deepEqual(await ce.runDue(db, at('2026-11-27T09:00:00-04:00'), { delayMs: 0 }), [], 'never twice');
+
+    // an email whose day has long passed is not sent late; it is marked missed
+    ce.schedule(db, 'cyber-monday-last-day');
+    const missed = await ce.runDue(db, at('2026-12-03T10:00:00-04:00'), { delayMs: 0 });
+    assert.deepEqual(missed.map(x => [x.id, x.result]), [['cyber-monday-last-day', 'missed']]);
+    assert.equal(ce.campaignStatus(db, 'cyber-monday-last-day'), null);
+
+    // the Christmas email goes out on Dec 1, inside its campaign
+    clean();
+    ce.schedule(db, 'christmas-launch');
+    assert.deepEqual((await ce.runDue(db, at('2026-12-01T08:30:00-04:00'), { delayMs: 0 })).map(x => x.result), ['sent'], 'Dec 1 is inside Christmas');
+    clean();
+
+    // cancelling removes the schedule; an already-sent email cannot be scheduled again
+    ce.schedule(db, 'black-friday-launch');
+    assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/unschedule', {}, H)).status, 200);
+    assert.equal(ce.getSchedule(db, 'black-friday-launch'), null);
+    await ce.sendCampaign(db, 'black-friday-launch', { delayMs: 0 });
+    assert.throws(() => ce.schedule(db, 'black-friday-launch'), /already been sent/);
+    assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/schedule', { confirm: 'black-friday-launch' }, H)).status, 409);
+    assert.throws(() => ce.schedule(db, 'nope'), /Unknown/);
+  } finally {
+    clean();
+    db.prepare("DELETE FROM subscribers WHERE email = 'sched-test@example.test'").run();
+  }
+});

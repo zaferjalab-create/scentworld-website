@@ -577,13 +577,23 @@ async function loadCampaignEmails(){
   const r=await fetch(API+'/campaign-emails');const d=await r.json();
   document.getElementById('tbl-campaign-emails').innerHTML=(d.emails||[]).map(e=>{
     const s=e.status;
-    const status=!s?'Not sent':s.finishedAt?`Sent to ${s.sent}${s.failed?` (${s.failed} failed)`:''} on ${new Date(s.finishedAt).toLocaleDateString()}`:`Sending… ${s.sent+s.failed} of ${s.total}`;
+    const sc=e.schedule;
+    const status=!s?(sc&&sc.state==='scheduled'?`Scheduled: sends itself ${e.sendOn} at ${e.sendHour}:00 a.m. Halifax time`:sc&&sc.state==='missed'?'Not sent (its day passed). Send by hand if you still want it.':sc&&sc.state==='error'?'Error: '+sc.error:'Not sent'):s.finishedAt?`Sent to ${s.sent}${s.failed?` (${s.failed} failed)`:''} on ${new Date(s.finishedAt).toLocaleDateString()}`:`Sending… ${s.sent+s.failed} of ${s.total}`;
     return `<tr><td>${esc(e.name)}</td><td>${esc(e.subject)}</td><td>${esc(e.sendOn)}</td><td>${esc(status)}</td>
     <td><a class="btn btn-sm btn-outline" href="${API}/campaign-emails/${e.id}/preview" target="_blank" rel="noopener">Preview</a>
     <button class="btn btn-sm btn-outline" onclick="testCampaignEmail('${e.id}',this)">Send test to me</button>
-    ${s?'':`<button class="btn btn-sm" onclick="sendCampaignEmail('${e.id}','${esc(e.name)}',${e.recipients})">Send to ${e.recipients} subscriber${e.recipients===1?'':'s'}</button>`}</td></tr>`;
+    ${s?'':(sc&&sc.state==='scheduled'?`<button class="btn btn-sm btn-outline" onclick="unscheduleCampaignEmail('${e.id}')">Cancel schedule</button>`:`<button class="btn btn-sm btn-gold" onclick="scheduleCampaignEmail('${e.id}','${esc(e.name)}','${esc(e.sendOn)}')">Schedule for ${esc(e.sendOn)}</button>`)}
+    ${s?'':`<button class="btn btn-sm" onclick="sendCampaignEmail('${e.id}','${esc(e.name)}',${e.recipients})">Send now to ${e.recipients}</button>`}</td></tr>`;
   }).join('');
   if((d.emails||[]).some(e=>e.status&&!e.status.finishedAt))setTimeout(loadCampaignEmails,4000);
+}
+async function scheduleCampaignEmail(id,name,day){
+  if(!confirm('Schedule "'+name+'"?\n\nIt will send itself to everyone subscribed on '+day+' at 8:00 a.m. Halifax time. You can cancel until then.'))return;
+  const r=await fetch(API+'/campaign-emails/'+id+'/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirm:id})});const d=await r.json();
+  if(!d.success)alert(d.error||'Could not schedule');loadCampaignEmails();
+}
+async function unscheduleCampaignEmail(id){
+  await fetch(API+'/campaign-emails/'+id+'/unschedule',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});loadCampaignEmails();
 }
 async function testCampaignEmail(id,btn){
   btn.disabled=true;const r=await fetch(API+'/campaign-emails/'+id+'/test',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const d=await r.json();btn.disabled=false;
