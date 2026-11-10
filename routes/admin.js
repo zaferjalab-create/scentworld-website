@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../database');
 const { snapshotDb } = require('../lib/backup');
 const { sendNotification } = require('../lib/email');
+const campaignEmails = require('../lib/campaign-emails');
 
 module.exports = function adminRoutes({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog }) {
   const router = express.Router();
@@ -123,6 +124,35 @@ function csvCell(v) {
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   return '"' + s.replace(/"/g, '""') + '"';
 }
+// ── Holiday campaign emails (lib/campaign-emails.js) ──
+// Preview, send a test to the business inbox, then send to subscribers. Each
+// campaign goes out once; nothing is ever sent without a click here.
+router.get('/api/admin/campaign-emails', requireAdmin, (req, res) => {
+  res.json({ success: true, emails: campaignEmails.listCampaignEmails(db) });
+});
+router.get('/api/admin/campaign-emails/:id/preview', requireAdmin, (req, res) => {
+  const m = campaignEmails.renderCampaignEmail(db, req.params.id, null);
+  if (!m) return res.status(404).send('Unknown campaign email');
+  // The preview is shown inside the admin page, so it may be framed by us.
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(m.html);
+});
+router.post('/api/admin/campaign-emails/:id/test', requireAdmin, async (req, res) => {
+  if (!campaignEmails.renderCampaignEmail(db, req.params.id, null)) return res.status(404).json({ success: false, error: 'Unknown campaign email' });
+  const to = process.env.NOTIFY_EMAIL_COPY || process.env.NOTIFY_EMAIL || 'hello@scentworld.ca';
+  const ok = await campaignEmails.sendOne(db, req.params.id, null, to).catch(() => false);
+  res.status(ok ? 200 : 502).json(ok ? { success: true, to } : { success: false, error: 'The email service did not accept the test. Check the server log.' });
+});
+router.post('/api/admin/campaign-emails/:id/send', requireAdmin, (req, res) => {
+  const id = req.params.id;
+  if (!campaignEmails.renderCampaignEmail(db, id, null)) return res.status(404).json({ success: false, error: 'Unknown campaign email' });
+  if (campaignEmails.campaignStatus(db, id)) return res.status(409).json({ success: false, error: 'This campaign email has already been sent.' });
+  if (req.body.confirm !== id) return res.status(400).json({ success: false, error: 'Confirmation missing.' });
+  // Runs in the background (one email at a time); the admin page polls the list for progress.
+  campaignEmails.sendCampaign(db, id).catch(err => console.error('Campaign email error:', err.message));
+  res.json({ success: true, started: true });
+});
+
 router.get('/api/admin/subscribers/export', requireAdmin, (req, res) => {
   const subscribers = db.prepare('SELECT email, first_name, status, created_at FROM subscribers ORDER BY created_at DESC').all();
   const csv = 'Email,Name,Status,Date\n' + subscribers.map(s =>

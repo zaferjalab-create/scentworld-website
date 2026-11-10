@@ -21,6 +21,7 @@ const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails
 const { notifyBooking, notifyQuote } = require('./lib/lead-emails');
 const { parseSizes, inStock, withStock } = require('./lib/sizes');
 const { activeCampaign, promoProduct } = require('./lib/promo');
+const { unsubscribe } = require('./lib/campaign-emails');
 const { SqliteSessionStore } = require('./lib/session-store');
 
 const crypto = require('crypto');
@@ -330,6 +331,25 @@ app.post('/api/subscribe', formLimiter, (req, res) => {
     console.error('Subscribe error:', err);
     res.status(500).json({ success: false, error: 'Something went wrong' });
   }
+});
+
+// Newsletter unsubscribe. The link in every campaign email (lib/campaign-emails.js)
+// lands here; mail apps with a built-in "Unsubscribe" button POST to the same URL.
+function unsubscribePage(ok) {
+  const msg = ok
+    ? ['You are unsubscribed', 'You will not receive any more marketing emails from Scent World Canada. Order confirmations for purchases are still sent.']
+    : ['This unsubscribe link is not valid', 'Please use the link in your most recent email, or write to hello@scentworld.ca and we will remove you by hand.'];
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${msg[0]} | Scent World Canada</title></head>
+<body style="margin:0;background:#0b0908;color:#f5f0e6;font-family:Georgia,serif;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center">
+<div style="max-width:440px;padding:2rem"><div style="color:#c9a55c;letter-spacing:.2em;font-size:1.3rem;margin-bottom:1.6rem">SCENT WORLD CANADA</div>
+<h1 style="font-weight:normal;font-size:1.6rem;margin:0 0 1rem">${msg[0]}</h1>
+<p style="font-family:Arial,sans-serif;color:#cdc5b8;line-height:1.7;font-size:1rem">${msg[1]}</p>
+<p style="margin-top:2rem"><a href="/" style="color:#c9a55c;font-family:Arial,sans-serif;font-size:.9rem">Back to scentworld.ca</a></p></div></body></html>`;
+}
+app.all('/unsubscribe', (req, res) => {
+  if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
+  const ok = unsubscribe(db, req.query.s, req.query.t);
+  res.status(ok ? 200 : 400).send(unsubscribePage(ok));
 });
 
 // Get products (public)

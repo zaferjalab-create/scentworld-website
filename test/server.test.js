@@ -728,3 +728,63 @@ test('booking + quote notifications carry every detail; booking needs a phone', 
   const home = await (await get('/')).text();
   assert.ok(/name="phone" class="f-input" required/.test(home) && home.includes('name="space_type"') && home.includes('name="space_size"'));
 });
+
+test('campaign emails: real prices, unsubscribe link that works, admin-only, sent once', async () => {
+  const ce = require('../lib/campaign-emails');
+  const promo = require('../lib/promo');
+  db.prepare("INSERT OR IGNORE INTO subscribers (email, first_name) VALUES ('casl-test@example.test', 'Dana')").run();
+  const sub = db.prepare("SELECT id, email, first_name FROM subscribers WHERE email = 'casl-test@example.test'").get();
+  db.prepare("UPDATE subscribers SET status = 'active' WHERE id = ?").run(sub.id);
+
+  // content: campaign prices from the product table, sender identity, unsubscribe
+  const s20 = db.prepare("SELECT price FROM products WHERE slug = 's20'").get().price;
+  const bf = ce.renderCampaignEmail(db, 'black-friday-launch', sub);
+  const money = n => '$' + n.toLocaleString('en-CA', { minimumFractionDigits: 2 });
+  assert.ok(bf.html.includes(money(promo.salePrice(s20, 25))) && bf.html.includes(money(s20)), 'sale + regular price');
+  assert.ok(bf.html.includes('6156 Quinpool Road') && bf.html.includes('hello@scentworld.ca') && bf.html.includes('Hi Dana,'));
+  assert.ok(bf.html.includes(bf.unsub) && bf.text.includes(bf.unsub) && /\/unsubscribe\?s=\d+&t=[\w-]{32}$/.test(bf.unsub));
+  assert.ok(!/essential oil|\bpure\b|therap|hypoallergenic/i.test(bf.text), 'brand wording rules');
+  const xmas = ce.renderCampaignEmail(db, 'christmas-launch', sub);
+  assert.ok(xmas.html.includes(money(promo.salePrice(s20, 15))) && xmas.html.includes('/images/promo/christmas.jpg'));
+  assert.equal(ce.renderCampaignEmail(db, 'nope', sub), null);
+  for (const img of ['black-friday.jpg', 'christmas.jpg']) assert.equal((await get('/images/promo/' + img)).status, 200);
+
+  // unsubscribe: a wrong token does nothing; the real link (GET or one-click POST) unsubscribes
+  const path = bf.unsub.replace('https://www.scentworld.ca', '');
+  assert.equal((await get(`/unsubscribe?s=${sub.id}&t=${'x'.repeat(32)}`)).status, 400);
+  assert.equal(db.prepare('SELECT status FROM subscribers WHERE id = ?').get(sub.id).status, 'active');
+  const ok = await get(path);
+  assert.equal(ok.status, 200);
+  assert.ok((await ok.text()).includes('You are unsubscribed'));
+  assert.equal(db.prepare('SELECT status FROM subscribers WHERE id = ?').get(sub.id).status, 'unsubscribed');
+  db.prepare("UPDATE subscribers SET status = 'active' WHERE id = ?").run(sub.id);
+  assert.equal((await fetch(BASE + path, { method: 'POST' })).status, 200);
+  assert.equal(db.prepare('SELECT status FROM subscribers WHERE id = ?').get(sub.id).status, 'unsubscribed');
+
+  // admin only
+  assert.equal((await get('/api/admin/campaign-emails', { headers: { Accept: 'application/json' } })).status, 401);
+  assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/send', { confirm: 'black-friday-launch' }, { Accept: 'application/json', Origin: BASE })).status, 401);
+  const cookie = await login();
+  const list = await (await get('/api/admin/campaign-emails', { headers: { Cookie: cookie } })).json();
+  assert.deepEqual(list.emails.map(e => e.id), ['black-friday-launch', 'cyber-monday-last-day', 'christmas-launch']);
+  assert.ok(list.emails.every(e => e.status === null), 'nothing has been sent');
+  const preview = await (await get('/api/admin/campaign-emails/cyber-monday-last-day/preview', { headers: { Cookie: cookie } })).text();
+  assert.ok(preview.includes('25% off ends tonight'));
+  // sending needs the explicit confirmation, and a campaign goes out once (unsubscribed people are skipped)
+  assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/send', {}, { Cookie: cookie, Origin: BASE })).status, 400);
+  const first = await ce.sendCampaign(db, 'black-friday-launch', { delayMs: 0 });
+  assert.ok(first.finishedAt && first.sent === 0, 'RESEND_API_KEY is empty in tests: nothing really goes out');
+  await assert.rejects(ce.sendCampaign(db, 'black-friday-launch', { delayMs: 0 }), /already been sent/);
+  assert.equal((await postJson('/api/admin/campaign-emails/black-friday-launch/send', { confirm: 'black-friday-launch' }, { Cookie: cookie, Origin: BASE })).status, 409);
+  db.prepare("DELETE FROM settings WHERE key = 'campaign_email:black-friday-launch'").run();
+  db.prepare('DELETE FROM subscribers WHERE id = ?').run(sub.id);
+
+  // the campaign popup now carries the Black Friday and Christmas posters
+  const prev = process.env.PROMO_NOW;
+  try {
+    process.env.PROMO_NOW = '2026-11-28T12:00:00-04:00';
+    assert.ok((await (await get('/')).text()).includes('/images/promo/black-friday.jpg'));
+    process.env.PROMO_NOW = '2026-12-10T12:00:00-04:00';
+    assert.ok((await (await get('/')).text()).includes('/images/promo/christmas.jpg'));
+  } finally { process.env.PROMO_NOW = prev; }
+});
