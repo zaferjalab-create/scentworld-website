@@ -334,6 +334,17 @@ try {
   console.error('❌ reviews/testimonials migration error:', e.message);
 }
 
+// Migration: shipping (ShipTime label + tracking) columns on orders.
+try {
+  const cols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
+  for (const [name, type] of [['shiptime_ship_id', 'INTEGER'], ['tracking_number', 'TEXT'], ['carrier', 'TEXT'], ['tracking_url', 'TEXT'],
+    ['shipment_status', 'TEXT'], ['shipment_cost', 'REAL'], ['shipped_at', 'DATETIME']]) {
+    if (!cols.includes(name)) db.exec(`ALTER TABLE orders ADD COLUMN ${name} ${type}`);
+  }
+} catch (e) {
+  console.error('❌ orders shipping columns migration error:', e.message);
+}
+
 // Migration: track whether a post-purchase review-request email has been sent
 // for an order, so the daily job never emails the same customer twice.
 try {

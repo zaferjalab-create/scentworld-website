@@ -15,6 +15,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, stripeApi
 const { resendEmail, escapeHtml, sendNotification, sendConfirmation } = require('./lib/email');
 const { scheduleDailyBackup } = require('./lib/backup');
 const { scheduleReviewRequests } = require('./lib/review-requests');
+const { scheduleShipmentRefresh } = require('./lib/shiptime');
 const { stripeShippingOption, shippingRules } = require('./lib/shipping');
 const { syncStripeCatalogue, saleSettings } = require('./lib/stripe-catalog');
 const { notifyOwnerOfOrder, customerOrderDetails } = require('./lib/order-emails');
@@ -643,6 +644,9 @@ app.post('/api/order-lookup', formLimiter, (req, res) => {
       city: order.shipping_city || null,
       province: order.shipping_province || null,
       items: items.map(i => ({ name: i.product_name, qty: i.quantity, total: i.total_price })),
+      carrier: order.carrier || null,
+      tracking_number: order.tracking_number || null,
+      tracking_url: /^https:\/\//.test(order.tracking_url || '') ? order.tracking_url : null,
     },
   });
 });
@@ -976,6 +980,7 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`   API:      http://localhost:${PORT}/api/products\n`);
   scheduleDailyBackup();
   scheduleReviewRequests();
+  scheduleShipmentRefresh(db);
   if (process.env.NODE_ENV === 'production') backfillOrderDetails();
   syncStripeCatalogIfDue();
   setInterval(syncStripeCatalogIfDue, 15 * 60 * 1000).unref(); // picks up the sale start/end

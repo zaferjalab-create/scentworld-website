@@ -116,6 +116,7 @@ document.getElementById('trForm').addEventListener('submit', function (e) {
         '<div class="tr-row"><span class="k">Order</span><span class="v">' + esc(o.order_number) + '</span></div>' +
         '<div class="tr-row"><span class="k">Status</span><span class="v"><span class="tr-badge ' + esc(st) + '">' + esc(STATUS_TEXT[st] || st) + '</span></span></div>' +
         '<div class="tr-row"><span class="k">Placed</span><span class="v">' + esc(fmtDate(o.created_at)) + '</span></div>' +
+        (o.tracking_number ? '<div class="tr-row"><span class="k">Tracking</span><span class="v">' + esc((o.carrier ? o.carrier + ' · ' : '') + o.tracking_number) + (o.tracking_url ? ' · <a href="' + esc(o.tracking_url) + '" target="_blank" rel="noopener" style="color:var(--gold)">Track your parcel</a>' : '') + '</span></div>' : '') +
         (loc ? '<div class="tr-row"><span class="k">Shipping to</span><span class="v">' + esc(loc) + '</span></div>' : '') +
         '<div class="tr-row"><span class="k">Total</span><span class="v">' + money(o.total) + '</span></div>' +
         (itemsHtml ? '<div class="tr-items"><h4>Items</h4>' + itemsHtml + '</div>' : '');

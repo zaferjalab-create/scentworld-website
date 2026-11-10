@@ -788,3 +788,125 @@ test('campaign emails: real prices, unsubscribe link that works, admin-only, sen
     assert.ok((await (await get('/')).text()).includes('/images/promo/christmas.jpg'));
   } finally { process.env.PROMO_NOW = prev; }
 });
+
+test('ShipTime: rates and labels only on the admin button, one label per order, tracking reaches the customer', async () => {
+  const shiptime = require('../lib/shiptime');
+  const { shippedEmail } = require('../lib/order-emails');
+  const calls = [];
+  let shipStatus = 'MANIFESTED';
+  const fake = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      calls.push({ method: req.method, url: req.url, auth: req.headers.authorization || '', body });
+      const json = (obj, code = 200) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      if (req.url === '/oauth2/token') {
+        const f = new URLSearchParams(body);
+        return f.get('grant_type') === 'client_credentials' && f.get('client_id') === 'test-id' && f.get('client_secret') === 'test-secret'
+          ? json({ access_token: 'tok-1', token_type: 'Bearer', expires_in: 3600 }) : json({ error: 'invalid_client' }, 401);
+      }
+      if (req.headers.authorization !== 'Bearer tok-1') return json({ message: 'unauthorized' }, 401);
+      if (req.url === '/rest/rates') return json({ availableRates: [
+        { quoteId: 'q2', serviceId: 's2', carrierId: 'c2', carrierName: 'Purolator', serviceName: 'Ground', totalCharge: { amount: 2150, currency: 'CAD' }, totalBeforeTaxes: { amount: 1870, currency: 'CAD' }, transitDays: 2, transitDaysMax: 3 },
+        { quoteId: 'q1', serviceId: 's1', carrierId: 'c1', carrierName: 'Canada Post', serviceName: 'Regular', totalCharge: { amount: 1432, currency: 'CAD' }, totalBeforeTaxes: { amount: 1245, currency: 'CAD' }, transitDays: 3, transitDaysMax: 5 }] });
+      if (req.url === '/rest/shipments' && req.method === 'POST') return json({ shipId: 9001, trackingNumbers: ['TRK123'], carrierTrackingUrl: 'https://track.example.test/TRK123', labelUrl: 'x' });
+      if (req.url === '/rest/shipments/9001/label') { res.writeHead(200, { 'Content-Type': 'application/pdf' }); return res.end(Buffer.from('%PDF-1.4 test')); }
+      if (req.url === '/rest/track/9001') return json({ trackingRecord: { currentStatus: shipStatus, history: [{ name: 'Picked up', status: 'IN_TRANSIT', location: 'Halifax', timestamp: '2026-11-12T10:00:00' }] } });
+      json({ message: 'not found' }, 404);
+    });
+  });
+  await new Promise(r => fake.listen(0, '127.0.0.1', r));
+  const prevEnv = { ...process.env };
+  try {
+    // box rules: oils are 10 x 5 x 7 in at 2 lb, one box per bottle; anything else needs a box typed in
+    const oil = db.prepare("SELECT id, name FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
+    const mk = (suffix, country, province) => {
+      const n = 'SW-SHIP' + suffix;
+      const r = db.prepare(`INSERT INTO orders (order_number, customer_name, customer_email, customer_phone, shipping_line1, shipping_city, shipping_province, shipping_postal, shipping_country, subtotal, tax, shipping_cost, total, status, payment_status)
+        VALUES (?, 'Jo Tester', 'jo@example.test', '902-555-0100', '1 Test St', 'Moncton', ?, 'e1c 1a1', ?, 189, 28.35, 0, 217.35, 'confirmed', 'paid')`).run(n, province, country);
+      db.prepare("INSERT INTO order_items (order_id, product_id, product_name, product_category, quantity, unit_price, total_price) VALUES (?, ?, 'Vienna Oil, 500ml', 'oils', 2, 189, 378)").run(r.lastInsertRowid, oil.id);
+      return r.lastInsertRowid;
+    };
+    const id = mk('1', 'CA', 'New Brunswick');
+    const cookie = await login();
+    const H = { Cookie: cookie, Origin: BASE };
+    const info0 = await (await get(`/api/admin/orders/${id}/shipping`, { headers: { Cookie: cookie } })).json();
+    assert.equal(info0.connected, false, 'not connected until the credentials are set');
+    assert.deepEqual(info0.packages.map(p => [p.length, p.width, p.height, p.weight]), [[10, 5, 7, 2], [10, 5, 7, 2]]);
+    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: info0.packages }, H)).status, 400, 'rates need credentials');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, {}, { Accept: 'application/json', Origin: BASE })).status, 401, 'admin only');
+
+    Object.assign(process.env, { SHIPTIME_API_URL: 'http://127.0.0.1:' + fake.address().port, SHIPTIME_CLIENT_ID: 'test-id', SHIPTIME_CLIENT_SECRET: 'test-secret' });
+    delete process.env.SHIPTIME_BASIC_USER;
+    assert.equal((await (await get(`/api/admin/orders/${id}/shipping`, { headers: { Cookie: cookie } })).json()).connected, true);
+
+    const quote = await (await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: info0.packages, shipDate: '2026-11-12' }, H)).json();
+    assert.deepEqual(quote.rates.map(r => [r.carrier, r.total]), [['Canada Post', 14.32], ['Purolator', 21.5]], 'cents become dollars, cheapest first');
+    const rateCall = calls.find(c => c.url === '/rest/rates');
+    const sent = JSON.parse(rateCall.body);
+    assert.equal(sent.to.state, 'NB', 'province name becomes its code');
+    assert.equal(sent.to.postalCode, 'E1C1A1');
+    assert.equal(sent.from.streetAddress, '6254 Almon Street');
+    assert.equal(sent.lineItems.length, 2);
+    assert.equal(sent.shipDate, '2026-11-12');
+    assert.equal(calls.filter(c => c.url === '/rest/shipments').length, 0, 'asking for rates never buys anything');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: [] }, H)).status, 400, 'a box is required');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: [{ length: 0, width: 5, height: 7, weight: 2 }] }, H)).status, 400);
+
+    // buying: needs a chosen service; the order is claimed first so it can only be bought once
+    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/ship`, { packages: info0.packages }, H)).status, 400);
+    const pick = quote.rates[0];
+    const body = { quoteId: pick.quoteId, serviceId: pick.serviceId, carrierId: pick.carrierId, carrier: pick.carrier, cost: pick.total, packages: info0.packages, shipDate: '2026-11-12' };
+    const bought = await postJson(`/api/admin/orders/${id}/shiptime/ship`, body, H);
+    assert.equal(bought.status, 200);
+    const b = await bought.json();
+    assert.deepEqual([b.shipId, b.tracking], [9001, 'TRK123']);
+    const after = db.prepare('SELECT status, tracking_number, carrier, shipment_cost, tracking_url FROM orders WHERE id = ?').get(id);
+    assert.deepEqual([after.status, after.tracking_number, after.carrier, after.shipment_cost], ['shipped', 'TRK123', 'Canada Post', 14.32]);
+    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/ship`, body, H)).status, 409, 'a second label for the same order is refused');
+    assert.equal(calls.filter(c => c.url === '/rest/shipments' && c.method === 'POST').length, 1, 'exactly one purchase');
+
+    // label PDF passes through; tracking refresh marks it delivered
+    const pdf = await get(`/api/admin/orders/${id}/shiptime/label`, { headers: { Cookie: cookie } });
+    assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+    assert.ok((await pdf.text()).startsWith('%PDF'));
+    shipStatus = 'DELIVERED';
+    const ref = await (await postJson(`/api/admin/orders/${id}/shiptime/refresh`, {}, H)).json();
+    assert.equal(ref.status, 'DELIVERED');
+    assert.equal(db.prepare('SELECT status FROM orders WHERE id = ?').get(id).status, 'delivered');
+
+    // the customer sees the tracking on /track (needs order number + email)
+    const look = await (await postJson('/api/order-lookup', { order_number: 'SW-SHIP1', email: 'jo@example.test' })).json();
+    assert.deepEqual([look.order.carrier, look.order.tracking_number, look.order.tracking_url], ['Canada Post', 'TRK123', 'https://track.example.test/TRK123']);
+
+    // a failed purchase releases the claim so it can be retried
+    const id2 = mk('2', 'CA', 'NS');
+    const failing = await postJson(`/api/admin/orders/${id2}/shiptime/ship`, { ...body, quoteId: 'q1', carrierId: 'c1', packages: [] }, H);
+    assert.equal(failing.status, 502);
+    assert.equal(db.prepare('SELECT shiptime_ship_id FROM orders WHERE id = ?').get(id2).shiptime_ship_id, null);
+
+    // outside Canada: no automatic label (customs); tracking can be added by hand
+    const id3 = mk('3', 'US', 'NY');
+    assert.equal((await postJson(`/api/admin/orders/${id3}/shiptime/rates`, { packages: info0.packages }, H)).status, 400);
+    assert.equal((await postJson(`/api/admin/orders/${id3}/tracking`, { tracking_number: 'X', tracking_url: 'http://insecure.test' }, H)).status, 400, 'https links only');
+    assert.equal((await postJson(`/api/admin/orders/${id3}/tracking`, {}, H)).status, 400);
+    const manual = await postJson(`/api/admin/orders/${id3}/tracking`, { carrier: 'UPS', tracking_number: '1Z999', tracking_url: 'https://ups.example.test/1Z999' }, H);
+    assert.equal(manual.status, 200);
+    assert.deepEqual(Object.values(db.prepare('SELECT status, tracking_number, carrier FROM orders WHERE id = ?').get(id3)), ['shipped', '1Z999', 'UPS']);
+
+    // the shipped email: tracking link only if it is https
+    const o = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+    const em = shippedEmail(o, 'Canada Post', 'TRK123', 'https://track.example.test/TRK123');
+    assert.ok(em.subject.includes('SW-SHIP1') && em.html.includes('TRK123') && em.html.includes('href="https://track.example.test/TRK123"') && em.text.includes('Track your parcel'));
+    assert.ok(!shippedEmail(o, 'X', 'T1', 'javascript:alert(1)').html.includes('javascript:'));
+
+    // token is cached and reused (one sign-in for all of the above)
+    assert.equal(calls.filter(c => c.url === '/oauth2/token').length, 1);
+    assert.equal(shiptime.nextShipDate(new Date('2026-11-14T15:00:00Z')), '2026-11-16', 'a Saturday ships Monday');
+  } finally {
+    for (const k of ['SHIPTIME_API_URL', 'SHIPTIME_CLIENT_ID', 'SHIPTIME_CLIENT_SECRET', 'SHIPTIME_BASIC_USER']) { if (k in prevEnv) process.env[k] = prevEnv[k]; else delete process.env[k]; }
+    db.prepare("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE 'SW-SHIP%')").run();
+    db.prepare("DELETE FROM orders WHERE order_number LIKE 'SW-SHIP%'").run();
+    fake.close();
+  }
+});
