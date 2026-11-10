@@ -411,6 +411,10 @@ router.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
 const orderItems = id => db.prepare('SELECT product_name, product_category, quantity FROM order_items WHERE order_id = ?').all(id);
 const getOrder = id => db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
 
+router.get('/api/admin/shiptime/test', requireAdmin, async (req, res) => {
+  res.json({ success: true, ...(await shiptime.checkConnection()) });
+});
+
 router.get('/api/admin/orders/:id/shipping', requireAdmin, (req, res) => {
   const o = getOrder(req.params.id);
   if (!o) return res.status(404).json({ success: false, error: 'Not found' });

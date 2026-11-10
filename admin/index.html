@@ -445,7 +445,7 @@ async function renderShipping(id){
   }
   const pk=d.packages.map(p=>boxRow(p)).join('');
   box.innerHTML=`<div style="${S}">SHIPPING</div>
-    ${d.connected?'':`<div style="margin:.4rem 0;color:var(--txt2)">ShipTime is not connected yet. You can still record tracking by hand below.</div>`}
+    ${d.connected?`<div style="margin:.3rem 0"><a href="#" onclick="testShiptime();return false">Test ShipTime connection</a></div>`:`<div style="margin:.4rem 0;color:var(--txt2)">ShipTime is not connected yet. You can still record tracking by hand below.</div>`}
     ${d.connected&&!d.canada?`<div style="margin:.4rem 0;color:var(--txt2)">This order ships outside Canada and needs a customs invoice. Create it in ShipTime, then add the tracking by hand below.</div>`:''}
     ${d.connected&&d.canada?`<div style="margin:.5rem 0 .3rem;font-size:.8rem">${d.needBox.length?`<span style="color:var(--gold)">Enter the box for: ${esc(d.needBox.join(', '))}.</span> `:''}Boxes (inches, pounds):</div>
     <div id="boxes-${id}">${pk}</div>
@@ -458,6 +458,13 @@ async function renderShipping(id){
       <input id="tnum-${id}" placeholder="Tracking number" class="btn btn-sm btn-outline" style="padding:.3rem .5rem;width:180px">
       <input id="turl-${id}" placeholder="Tracking link (https://…)" class="btn btn-sm btn-outline" style="padding:.3rem .5rem;width:220px">
       <button class="btn btn-sm btn-gold" onclick="saveTracking(${id})">Mark shipped and email customer</button></div></details>`;
+}
+async function testShiptime(){
+  const d=await (await fetch(API+'/shiptime/test')).json();
+  const NL=String.fromCharCode(10);
+  alert((d.ok?'ShipTime accepted the sign-in. You can get rates.':'ShipTime did NOT accept the sign-in.'+NL+NL+(d.error||''))+NL+NL+
+    'Client ID length: '+d.clientIdLength+(d.spaceInClientId?' (contains a space)':'')+NL+
+    'Secret length: '+d.secretLength+(d.spaceInSecret?' (contains a space)':'')+NL+'Mode: '+d.mode);
 }
 function boxRow(p){
   const f=(k,w)=>`<input data-k="${k}" type="number" step="0.1" min="0" value="${p&&p[k]?p[k]:''}" placeholder="${k[0].toUpperCase()}" title="${k}" class="btn btn-sm btn-outline" style="padding:.3rem .4rem;width:${w||64}px">`;
