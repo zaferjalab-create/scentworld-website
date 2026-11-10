@@ -122,6 +122,21 @@ a{color:var(--gold);text-decoration:none}
   .shop-selects{margin-left:0;width:100%}
   .shop-sel{flex:1}
 }
+
+/* ── Phone layout (Nov 2026): readable text and 44px tap targets. Selects use
+      16px so iPhones don't zoom the page when one is opened. ── */
+@media(max-width:768px){
+  .shop-sub{font-size:.92rem}
+  .pf-btn{min-height:44px;padding:.6rem .95rem;font-size:.72rem;letter-spacing:.08em}
+  .coll-btn{min-height:40px;padding:.5rem .9rem;font-size:.7rem;letter-spacing:.06em}
+  .shop-sel{font-size:16px;min-height:44px;letter-spacing:0}
+  .shop-count{font-size:.8rem}
+  .sp-cat{font-size:.68rem;letter-spacing:.12em}
+  .sp-name{font-size:1rem}
+  .sp-cov{font-size:.8rem}
+  .sp-price{font-size:1.15rem}
+  .sp-atc{min-height:44px;padding:.5rem .4rem;font-size:.8rem;letter-spacing:.08em}
+}
 </style>
 </head>
 <body>

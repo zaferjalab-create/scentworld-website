@@ -648,6 +648,38 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
 .booking-box{padding:2.2rem 1.4rem}
 .spaces-head{padding-top:1rem}
 }
+
+/* ── Phone layout (Nov 2026): products near the top, two per row with the whole
+      photo showing, text people can read and buttons they can tap (44px). ── */
+@media(max-width:768px){
+.hero{min-height:0;padding:6.5rem 0 2.4rem}
+.hs{display:none}
+.hp{margin-bottom:1.8rem}
+.trust{gap:.5rem 1.4rem;padding:1rem 5vw}
+.ti{font-size:.7rem;letter-spacing:.1em}
+.products{padding-top:2.6rem;display:flex;flex-direction:column}
+.products .ph{margin-bottom:1.2rem;gap:.4rem}
+.products .ph .st{margin-bottom:.4rem}
+.products .ph .sd{display:none}
+.products .pf{order:1;margin-bottom:1.2rem;gap:.5rem}
+.products .pg{order:2;grid-template-columns:repeat(2,1fr);gap:.7rem}
+.products .finder{order:3;margin:2rem 0 0}
+.products .shop-all-cta{order:4}
+.pf-btn{min-height:44px;padding:.6rem .95rem;font-size:.72rem;letter-spacing:.08em}
+.finder-opts a{min-height:56px;font-size:.88rem;justify-content:center}
+.finder-opts a small{font-size:.72rem}
+.pi{height:auto;aspect-ratio:1/1}
+.pb{padding:.8rem .8rem .9rem}
+.pcat{font-size:.68rem;letter-spacing:.12em;margin-bottom:.35rem}
+.pn{font-size:1rem;line-height:1.3;margin-bottom:.35rem}
+.pdesc{display:none}
+.pcov{font-size:.78rem;margin-bottom:.5rem}
+.pp{font-size:1.15rem;margin-bottom:.7rem}
+.pp span{font-size:.7rem}
+.atc{min-height:44px;padding:.5rem .4rem;font-size:.8rem;letter-spacing:.08em;border-color:var(--gold);color:var(--gold)}
+.pb > a:last-child{display:none!important}
+.pc .wish-btn{top:.5rem;right:.5rem}
+}
 </style>
 </head>
 <body>

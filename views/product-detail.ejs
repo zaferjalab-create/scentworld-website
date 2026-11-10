@@ -479,6 +479,53 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
 .reviews-empty a:hover{background:var(--gold);color:var(--bg)}
 .pd-oil-links{display:flex;flex-direction:column}
 @media(max-width:768px){.pd-section{padding-bottom:2.2rem}.rel-row{grid-template-columns:repeat(2,1fr);gap:.9rem}}
+
+/* ── Phone layout (Nov 2026): name above the photo; price, size and Add to Cart
+      straight under it; the rest of the details follow. .pd-info's children join
+      .pd-wrap (display:contents) so they can be put in that order without
+      changing the desktop page. ── */
+.pd-dots{display:none;justify-content:center;gap:.45rem;margin-top:.7rem;min-height:7px}
+.pd-dots span{width:7px;height:7px;border-radius:4px;background:var(--txt2);transition:all .3s}
+.pd-dots span.on{background:var(--gold);width:18px}
+.zoom-tip{display:none;position:absolute;left:0;right:0;bottom:1.4rem;text-align:center;color:var(--cream2);font-size:.8rem;letter-spacing:.06em;pointer-events:none}
+.zoom-overlay img{touch-action:none;transform-origin:center center}
+@media(hover:none){.zoom-tip{display:block}}
+@media(max-width:768px){
+.crumb{padding-bottom:0;font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb span{margin:0 .35rem}
+.pd-wrap{display:flex;flex-direction:column;align-items:stretch;gap:0;padding-top:.9rem}
+.pd-info{display:contents}
+.pd-info > *{order:10}
+.pd-info > .pd-cat{order:1;align-self:flex-start;margin-bottom:.4rem;font-size:.7rem;letter-spacing:.18em}
+.pd-info > .pd-name{order:1;font-size:1.6rem;margin-bottom:.8rem}
+.pd-info > .pd-rating{order:1;margin-bottom:.8rem;padding-bottom:0;border-bottom:none}
+.pd-gallery{order:2;margin-bottom:1.2rem}
+.pd-info > .pd-promo{order:3;align-self:flex-start}
+.pd-info > .pd-price-row{order:3}
+.pd-info > .pd-stock{order:3;margin-bottom:1.1rem;font-size:.9rem}
+.pd-info > .pd-selector{order:4;margin-bottom:1.2rem}
+.pd-info > .pd-purchase{order:5;margin-top:0;padding-top:0;border-top:none}
+.pd-info > .pd-pay{order:5;margin-bottom:1.6rem;font-size:.8rem}
+.pd-price{font-size:2rem}
+.pd-shipping{font-size:.9rem;line-height:1.5}
+.pd-eta{font-size:.86rem;margin-bottom:1.3rem}
+.pd-desc{font-size:1rem;line-height:1.7;margin-bottom:1.4rem}
+.pd-sel-label{font-size:.74rem;letter-spacing:.14em}
+.pd-size-btn .sz-price{font-size:.82rem}
+.pd-atc{font-size:.84rem;letter-spacing:.12em;min-width:0;padding:0 .8rem;white-space:nowrap}
+.pd-purchase{gap:.7rem;flex-wrap:nowrap}
+.pd-qty button{width:44px}.pd-qty .pd-qty-num{min-width:40px;padding:0 .6rem}
+.pd-thumbs{gap:.5rem;margin-top:.6rem;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pd-thumbs::-webkit-scrollbar{display:none}
+.pd-thumb{width:60px;height:60px}
+.zoom-hint{font-size:.64rem;letter-spacing:.12em}
+.pd-watch{font-size:.66rem}
+.pd-trust-item .t-title{font-size:.74rem;letter-spacing:.08em}
+.pd-trust-item .t-sub{font-size:.8rem}
+.pd-dots{display:flex}
+.zoom-overlay{padding:.5rem}
+.zoom-overlay img{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -497,7 +544,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
     <div class="pd-main-img" id="mainImgBox">
       <% if (images.length) { %>
         <img src="<%= images[0] %>" alt="<%= product.name %>" id="mainImg" onclick="openZoom()" onerror="this.onerror=null;this.src='/images/placeholder.svg'">
-        <div class="zoom-hint">↗ Click to zoom</div>
+        <div class="zoom-hint" id="zoomHint">↗ Click to zoom</div>
       <% } else { %>
         <img src="/images/placeholder.svg" alt="<%= product.name %>" id="mainImg">
       <% } %>
@@ -512,6 +559,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
       <% } %>
     </div>
     <% if (images.length > 1 || video) { %>
+    <div class="pd-dots" id="pdDots" aria-hidden="true"></div>
     <div class="pd-thumbs">
       <% images.forEach((img, i) => { %>
       <div class="pd-thumb <%= i === 0 ? 'active' : '' %>" data-src="<%= img %>" onclick="selectThumb(this)">
@@ -825,6 +873,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
 <div class="zoom-overlay" id="zoomOverlay">
   <button class="zoom-close" onclick="closeZoom()">✕</button>
   <img id="zoomImg" src="" alt="">
+  <div class="zoom-tip">Pinch or double-tap to zoom</div>
 </div>
 
 <!-- Toast -->
@@ -898,6 +947,7 @@ function selectThumb(el) {
   }
   if (!isVideo) document.getElementById('mainImg').src = el.dataset.src;
   document.querySelectorAll('.pd-thumb').forEach(t => t.classList.toggle('active', t === el));
+  if (window.paintGalleryDots) window.paintGalleryDots();
 }
 function toggleDropdown(id) { document.getElementById(id).classList.toggle('open'); }
 document.addEventListener('click', e => {
@@ -1112,10 +1162,77 @@ document.getElementById('checkoutBtn').addEventListener('click', async function(
 function openZoom() {
   document.getElementById('zoomImg').src = document.getElementById('mainImg').src;
   document.getElementById('zoomOverlay').classList.add('open');
+  if (window.resetZoom) window.resetZoom();
 }
 function closeZoom() { document.getElementById('zoomOverlay').classList.remove('open'); }
 document.getElementById('zoomOverlay').addEventListener('click', e => { if (e.target.id === 'zoomOverlay') closeZoom(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeZoom(); closeCart(); } });
+
+// ── Phone gallery: swipe between photos, dots that show how many there are,
+//    and pinch / double-tap zoom in the full-screen view ──
+(function () {
+  const box = document.getElementById('mainImgBox');
+  const dots = document.getElementById('pdDots');
+  const thumbs = () => [...document.querySelectorAll('.pd-thumb')];
+  const activeIndex = t => Math.max(0, t.findIndex(x => x.classList.contains('active')));
+  window.paintGalleryDots = function () {
+    if (!dots) return;
+    const t = thumbs(), at = activeIndex(t);
+    dots.innerHTML = t.length > 1 ? t.map((_, i) => '<span' + (i === at ? ' class="on"' : '') + '></span>').join('') : '';
+  };
+  window.paintGalleryDots();
+  const touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+  const hint = document.getElementById('zoomHint');
+  if (touch && hint) hint.textContent = '↗ Tap to zoom';
+
+  // swipe left / right on the main photo
+  if (box) {
+    let sx = 0, sy = 0, on = false;
+    box.addEventListener('touchstart', e => {
+      on = e.touches.length === 1;
+      if (on) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }
+    }, { passive: true });
+    box.addEventListener('touchend', e => {
+      if (!on) return; on = false;
+      const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // a tap or a vertical scroll
+      const t = thumbs(); if (t.length < 2) return;
+      selectThumb(t[(activeIndex(t) + (dx < 0 ? 1 : -1) + t.length) % t.length]);
+    }, { passive: true });
+  }
+
+  // pinch, drag and double-tap inside the zoom overlay
+  const zi = document.getElementById('zoomImg');
+  if (!zi) return;
+  let scale = 1, tx = 0, ty = 0, start = null, lastTap = 0;
+  const apply = () => {
+    const mx = (scale - 1) * zi.offsetWidth / 2, my = (scale - 1) * zi.offsetHeight / 2;
+    tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty));
+    zi.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+  };
+  window.resetZoom = function () { scale = 1; tx = ty = 0; apply(); };
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const oneFinger = t => ({ x: t.clientX - tx, y: t.clientY - ty });
+  zi.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) { start = { d: dist(e.touches), scale: scale }; return; }
+    const now = Date.now();
+    if (now - lastTap < 300) { if (scale > 1) window.resetZoom(); else { scale = 2.5; apply(); } lastTap = 0; }
+    else lastTap = now;
+    start = oneFinger(e.touches[0]);
+  }, { passive: true });
+  zi.addEventListener('touchmove', e => {
+    if (!start) return;
+    if (e.touches.length === 2 && start.d) {
+      scale = Math.max(1, Math.min(4, start.scale * dist(e.touches) / start.d));
+      apply(); e.preventDefault();
+    } else if (e.touches.length === 1 && scale > 1 && start.x !== undefined) {
+      tx = e.touches[0].clientX - start.x; ty = e.touches[0].clientY - start.y;
+      apply(); e.preventDefault();
+    }
+  }, { passive: false });
+  zi.addEventListener('touchend', e => { start = e.touches.length === 1 ? oneFinger(e.touches[0]) : null; });
+})();
+
 
 // ── Review form ─────────────────────────────────────────
 let revRating = 0;
