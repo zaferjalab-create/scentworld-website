@@ -11,7 +11,7 @@ const campaignEmails = require('../lib/campaign-emails');
 const carriers = require('../lib/carriers');
 const { sendShippedEmail } = require('../lib/order-emails');
 
-module.exports = function adminRoutes({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog }) {
+module.exports = function adminRoutes({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog, importInPerson }) {
   const router = express.Router();
 
 // ═══════════════════════════════════════
@@ -69,8 +69,10 @@ router.get('/api/admin/stats', requireAdmin, (req, res) => {
   const bookings = db.prepare("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending FROM bookings").get();
   const subscribers = db.prepare("SELECT COUNT(*) as total FROM subscribers WHERE status = 'active'").get();
   const products = db.prepare("SELECT COUNT(*) as total FROM products WHERE active = 1").get();
-  const orders = db.prepare("SELECT COUNT(*) as total, COALESCE(SUM(total), 0) as revenue FROM orders WHERE payment_status = 'paid'").get();
-  res.json({ success: true, stats: { contacts, bookings, subscribers, products, orders } });
+  // to_ship = paid orders still waiting to go out (status stays 'confirmed' until a label or tracking is added)
+  const orders = db.prepare("SELECT COUNT(*) as total, COALESCE(SUM(total), 0) as revenue, COALESCE(SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END), 0) as to_ship FROM orders WHERE payment_status = 'paid'").get();
+  const reviews = db.prepare("SELECT COALESCE(SUM(CASE WHEN approved = 0 THEN 1 ELSE 0 END), 0) as pending FROM reviews").get();
+  res.json({ success: true, stats: { contacts, bookings, subscribers, products, orders, reviews } });
 });
 
 // Contacts CRUD
@@ -404,6 +406,15 @@ router.put('/api/admin/settings', requireAdmin, (req, res) => {
 });
 
 // Orders
+// Pull in-person card-reader sales from Stripe now (also runs by itself every 15 minutes on the live site).
+router.post('/api/admin/orders/import-in-person', requireAdmin, async (req, res) => {
+  try {
+    res.json({ success: true, ...(await importInPerson()) });
+  } catch (err) {
+    res.status(502).json({ success: false, error: 'Could not read in-person sales from Stripe: ' + err.message });
+  }
+});
+
 router.get('/api/admin/orders', requireAdmin, (req, res) => {
   const orders = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
   res.json({ success: true, orders });
@@ -518,8 +529,10 @@ router.post('/api/admin/orders/:id/tracking', requireAdmin, async (req, res) => 
 });
 
 router.patch('/api/admin/orders/:id', requireAdmin, (req, res) => {
-  const { status } = req.body;
-  db.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, req.params.id);
+  // status and/or the owner's private note on the order; whatever is not sent stays as it was
+  const status = req.body.status ? String(req.body.status) : null;
+  const notes = typeof req.body.notes === 'string' ? req.body.notes.trim().slice(0, 1000) : null;
+  db.prepare('UPDATE orders SET status = COALESCE(?, status), notes = COALESCE(?, notes), updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, notes, req.params.id);
   res.json({ success: true });
 });
 

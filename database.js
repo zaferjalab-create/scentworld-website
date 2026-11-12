@@ -711,6 +711,14 @@ try {
   console.error('❌ orders.shipping_line2 migration error:', e.message);
 }
 
+// Where each order came from (website, facebook, instagram, google, in_person...). Older orders stay NULL = website.
+try {
+  const cols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
+  for (const name of ['source', 'source_detail']) if (!cols.includes(name)) db.exec(`ALTER TABLE orders ADD COLUMN ${name} TEXT`);
+} catch (e) {
+  console.error('❌ orders source migration error:', e.message);
+}
+
 // Shipping rate set by the owner (2026-09-24): CA$12.99 flat under the $150
 // free-shipping threshold. Applied once (settings flag) so a later change in
 // admin → Settings (including clearing it for free shipping) is kept.

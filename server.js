@@ -25,6 +25,7 @@ const { parseSizes, inStock, withStock } = require('./lib/sizes');
 const { activeCampaign, promoProduct } = require('./lib/promo');
 const { unsubscribe } = require('./lib/campaign-emails');
 const { SqliteSessionStore } = require('./lib/session-store');
+const orderSource = require('./lib/order-source');
 
 const crypto = require('crypto');
 const app = express();
@@ -216,6 +217,8 @@ const STATIC_OPTS = {
     }
   },
 };
+// Remember which site/ad/post brought the visitor (lib/order-source.js) so orders can say where they came from.
+app.use(orderSource.trackSource(ADMIN_BASE));
 app.use(express.static(path.join(__dirname, 'public'), STATIC_OPTS));
 app.use('/images/products', express.static(UPLOAD_IMG_DIR, STATIC_OPTS));
 app.use(session({
@@ -484,7 +487,7 @@ app.post('/api/checkout', async (req, res) => {
       allow_promotion_codes: !activeCampaign(),
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/#products`,
-      metadata: { items: JSON.stringify(metaItems) },
+      metadata: { items: JSON.stringify(metaItems), ...orderSource.sourceForCheckout(req) },
     });
 
     res.json({ success: true, url: session.url });
@@ -533,12 +536,13 @@ function recordOrderFromSession(session) {
     const result = db.prepare(`
       INSERT INTO orders (order_number, customer_name, customer_email, customer_phone, shipping_line1, shipping_line2,
         shipping_city, shipping_province, shipping_postal, shipping_country, subtotal, tax, shipping_cost, total,
-        stripe_session_id, stripe_payment_intent, payment_status, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'confirmed')
+        stripe_session_id, stripe_payment_intent, payment_status, status, source, source_detail)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'confirmed', ?, ?)
     `).run(
       orderNumber, c.name, c.email, c.phone, c.line1, c.line2, c.city, c.province, c.postal, c.country,
       session.amount_subtotal / 100, tax, shippingCost, session.amount_total / 100,
-      session.id, c.paymentIntent
+      session.id, c.paymentIntent,
+      orderSource.LABELS[session.metadata?.source] ? session.metadata.source : 'website', session.metadata?.source_detail || null
     );
     orderId = result.lastInsertRowid;
   } catch (e) {
@@ -655,7 +659,7 @@ app.post('/api/order-lookup', formLimiter, (req, res) => {
 // Product feed + admin panel/API (see routes/). Mounted here so route order
 // relative to the public API above and the pages below is unchanged.
 app.use(require('./routes/catalog'));
-app.use(require('./routes/admin')({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog }));
+app.use(require('./routes/admin')({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog, importInPerson: () => importInPerson() }));
 
 
 // ═══════════════════════════════════════
@@ -950,6 +954,7 @@ function syncStripeCatalog() {
     return result;
   });
 }
+const importInPerson = () => orderSource.importInPersonSales(stripe, db);
 let stripeSyncRunning = false;
 function syncStripeCatalogIfDue() {
   if (process.env.NODE_ENV !== 'production' || stripeSyncRunning) return;
@@ -986,6 +991,12 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   if (process.env.NODE_ENV === 'production') backfillOrderDetails();
   syncStripeCatalogIfDue();
   setInterval(syncStripeCatalogIfDue, 15 * 60 * 1000).unref(); // picks up the sale start/end
+  if (process.env.NODE_ENV === 'production') {
+    // In-person card-reader sales taken in the Stripe app show up as orders ("In person (Stripe)").
+    const pullInPerson = () => importInPerson().catch(e => console.error('In-person sales import failed:', e.message));
+    pullInPerson();
+    setInterval(pullInPerson, 15 * 60 * 1000).unref();
+  }
 });
 
 module.exports = app;

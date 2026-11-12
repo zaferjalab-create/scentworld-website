@@ -57,6 +57,28 @@ tr:hover td{background:rgba(255,255,255,.01)}
 .badge-active{background:rgba(39,174,96,.15);color:var(--ok)}
 .empty{padding:3rem;text-align:center;color:var(--txt2);font-size:.85rem}
 
+/* NEW-ACTIVITY ALERTS: numbers turn bright coral and pulse while something is waiting for you */
+:root{--new:#ff5a3c}
+.stat-num.alert{color:var(--new);animation:swpulse 1.6s ease-in-out infinite}
+.stat-card.alert{border-color:var(--new);box-shadow:0 0 0 1px rgba(255,90,60,.25)}
+.stat-sub b.alert{color:var(--new)}
+@keyframes swpulse{0%,100%{opacity:1}50%{opacity:.55}}
+.nav-count{margin-left:auto;min-width:1.3rem;padding:.05rem .4rem;border-radius:999px;background:var(--new);color:#fff;font-size:.62rem;font-weight:600;text-align:center;letter-spacing:0}
+.nav-count[hidden]{display:none}
+tr.row-new td{background:rgba(255,90,60,.07)}
+tr.row-new td:first-child{box-shadow:inset 3px 0 0 var(--new)}
+tr.row-new:hover td{background:rgba(255,90,60,.11)}
+.badge-todo{background:rgba(255,90,60,.18);color:var(--new);font-weight:600}
+.src-tag{display:inline-block;padding:.15rem .55rem;border-radius:2px;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600;background:rgba(255,255,255,.08);color:var(--cream2)}
+.src-facebook{background:rgba(24,119,242,.2);color:#6aa6ff}
+.src-instagram{background:rgba(225,48,108,.2);color:#ff7aa8}
+.src-google,.src-google_ads{background:rgba(251,188,5,.18);color:#fbbc05}
+.src-in_person{background:rgba(39,174,96,.2);color:#5fd68b}
+.src-website{background:rgba(201,165,92,.18);color:var(--gold)}
+.loc-tag{display:inline-block;margin-top:.25rem;padding:.1rem .45rem;border-radius:2px;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.06);color:var(--cream2)}
+.loc-tag.far{background:rgba(52,152,219,.18);color:#6cb8ee}
+.loc-tag.local{background:rgba(39,174,96,.16);color:var(--ok)}
+
 /* SECTIONS */
 .section{display:none}.section.active{display:block}
 
@@ -83,12 +105,12 @@ tr:hover td{background:rgba(255,255,255,.01)}
   <div class="sidebar">
     <div class="sidebar-brand"><h2>Scent World</h2><p>Admin Panel</p></div>
     <div class="nav-item active" data-page="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</div>
-    <div class="nav-item" data-page="contacts"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Quote Requests</div>
-    <div class="nav-item" data-page="bookings"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Bookings</div>
+    <div class="nav-item" data-page="contacts"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Quote Requests<span class="nav-count" id="nc-contacts" hidden></span></div>
+    <div class="nav-item" data-page="bookings"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Bookings<span class="nav-count" id="nc-bookings" hidden></span></div>
     <div class="nav-item" data-page="subscribers"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Subscribers</div>
     <div class="nav-item" data-page="products"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Products</div>
-    <div class="nav-item" data-page="orders"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Orders</div>
-    <div class="nav-item" data-page="reviews"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Reviews</div>
+    <div class="nav-item" data-page="orders"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Orders<span class="nav-count" id="nc-orders" hidden></span></div>
+    <div class="nav-item" data-page="reviews"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Reviews<span class="nav-count" id="nc-reviews" hidden></span></div>
     <div class="nav-item" data-page="testimonials"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Testimonials</div>
     <div class="nav-sep"></div>
     <div class="nav-item" data-page="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</div>
@@ -102,9 +124,9 @@ tr:hover td{background:rgba(255,255,255,.01)}
       <h1 class="page-title">Dashboard</h1>
       <p class="page-desc">Welcome back. Here's your overview.</p>
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num" id="stat-orders">0</div><div class="stat-label">Orders</div><div class="stat-sub" id="stat-revenue"></div></div>
-        <div class="stat-card"><div class="stat-num" id="stat-contacts">0</div><div class="stat-label">Quote Requests</div><div class="stat-sub" id="stat-contacts-new"></div></div>
-        <div class="stat-card"><div class="stat-num" id="stat-bookings">0</div><div class="stat-label">Bookings</div><div class="stat-sub" id="stat-bookings-pending"></div></div>
+        <div class="stat-card" id="card-orders"><div class="stat-num" id="stat-orders">0</div><div class="stat-label">Orders</div><div class="stat-sub" id="stat-orders-ship"></div><div class="stat-sub" id="stat-revenue"></div></div>
+        <div class="stat-card" id="card-contacts"><div class="stat-num" id="stat-contacts">0</div><div class="stat-label">Quote Requests</div><div class="stat-sub" id="stat-contacts-new"></div></div>
+        <div class="stat-card" id="card-bookings"><div class="stat-num" id="stat-bookings">0</div><div class="stat-label">Bookings</div><div class="stat-sub" id="stat-bookings-pending"></div></div>
         <div class="stat-card"><div class="stat-num" id="stat-subs">0</div><div class="stat-label">Subscribers</div><div class="stat-sub">Active</div></div>
         <div class="stat-card"><div class="stat-num" id="stat-products">0</div><div class="stat-label">Products</div><div class="stat-sub">In catalog</div></div>
       </div>
@@ -146,10 +168,10 @@ tr:hover td{background:rgba(255,255,255,.01)}
     <!-- ORDERS -->
     <div class="section" id="sec-orders">
       <h1 class="page-title">Orders</h1>
-      <p class="page-desc">Online orders placed through your Stripe checkout.</p>
+      <p class="page-desc">Every sale, with where it came from: your website, Facebook, Instagram, Google, or a Stripe in-person sale.</p>
       <div class="card">
-        <div class="card-head"><h3>All Orders</h3></div>
-        <table><thead><tr><th>Order #</th><th>Customer</th><th>Ship to</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <div class="card-head"><h3>All Orders</h3><div class="card-actions"><select id="order-src-filter" class="btn btn-sm btn-outline" onchange="renderOrders()" style="cursor:pointer"></select><button class="btn btn-sm btn-outline" onclick="importInPersonSales(this)">Sync in-person sales</button></div></div>
+        <table><thead><tr><th>Order #</th><th>Customer</th><th>Bought from</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
         <tbody id="tbl-orders"></tbody></table>
       </div>
     </div>
@@ -388,20 +410,52 @@ async function saveTestimonial(){
 async function deleteTestimonial(id){if(!confirm('Delete this testimonial?'))return;await fetch(API+'/testimonials/'+id,{method:'DELETE'});loadTestimonials();}
 
 // Dashboard
+// Numbers turn coral (and the sidebar shows a count) while something is waiting for you:
+// orders not shipped yet, new quote requests, pending bookings, reviews to approve.
+let lastWaiting=null;
+function applyStats(s){
+  const toShip=Number(s.orders.to_ship||0), newQ=Number(s.contacts.new_count||0), pendB=Number(s.bookings.pending||0), revW=Number(s.reviews&&s.reviews.pending||0);
+  const flag=(numId,cardId,on)=>{document.getElementById(numId).classList.toggle('alert',on);document.getElementById(cardId).classList.toggle('alert',on);};
+  document.getElementById('stat-orders').textContent=s.orders.total;
+  flag('stat-orders','card-orders',toShip>0);
+  document.getElementById('stat-orders-ship').innerHTML=toShip?`<b class="alert">${toShip} to ship</b>`:'All shipped';
+  document.getElementById('stat-revenue').innerHTML=s.orders.revenue?`<b>$${Number(s.orders.revenue).toFixed(2)} CAD</b>`:'No sales yet';
+  document.getElementById('stat-contacts').textContent=s.contacts.total;
+  flag('stat-contacts','card-contacts',newQ>0);
+  document.getElementById('stat-contacts-new').innerHTML=newQ?`<b class="alert">${newQ} new</b>`:'All reviewed';
+  document.getElementById('stat-bookings').textContent=s.bookings.total;
+  flag('stat-bookings','card-bookings',pendB>0);
+  document.getElementById('stat-bookings-pending').innerHTML=pendB?`<b class="alert">${pendB} pending</b>`:'All handled';
+  document.getElementById('stat-subs').textContent=s.subscribers.total;
+  document.getElementById('stat-products').textContent=s.products.total;
+  const nc=(id,n)=>{const el=document.getElementById(id);el.textContent=n;el.hidden=!n;};
+  nc('nc-orders',toShip);nc('nc-contacts',newQ);nc('nc-bookings',pendB);nc('nc-reviews',revW);
+  const total=toShip+newQ+pendB;
+  document.title=(total?'('+total+') ':'')+'Scent World Admin';
+  return {toShip,newQ,pendB};
+}
 async function loadDashboard(){
   const r=await fetch(API+'/stats');const d=await r.json();
-  document.getElementById('stat-orders').textContent=d.stats.orders.total;
-  document.getElementById('stat-revenue').innerHTML=d.stats.orders.revenue?`<b>$${Number(d.stats.orders.revenue).toFixed(2)} CAD</b>`:'No sales yet';
-  document.getElementById('stat-contacts').textContent=d.stats.contacts.total;
-  document.getElementById('stat-contacts-new').innerHTML=d.stats.contacts.new_count?`<b>${d.stats.contacts.new_count} new</b>`:'All reviewed';
-  document.getElementById('stat-bookings').textContent=d.stats.bookings.total;
-  document.getElementById('stat-bookings-pending').innerHTML=d.stats.bookings.pending?`<b>${d.stats.bookings.pending} pending</b>`:'All handled';
-  document.getElementById('stat-subs').textContent=d.stats.subscribers.total;
-  document.getElementById('stat-products').textContent=d.stats.products.total;
+  const w=applyStats(d.stats);lastWaiting=w.toShip+'|'+w.newQ+'|'+w.pendB;
   const r2=await fetch(API+'/contacts');const d2=await r2.json();
   const tbody=document.getElementById('dash-contacts');
-  tbody.innerHTML=d2.contacts.slice(0,5).map(c=>`<tr><td>${esc(c.first_name)} ${esc(c.last_name)}</td><td>${esc(c.email)}</td><td>${esc(c.customer_type||'-')}</td><td><span class="badge badge-${c.status==='new'?'new':'done'}">${esc(c.status)}</span></td><td>${new Date(c.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No requests yet</td></tr>';
+  tbody.innerHTML=d2.contacts.slice(0,5).map(c=>`<tr class="${c.status==='new'?'row-new':''}"><td>${esc(c.first_name)} ${esc(c.last_name)}</td><td>${esc(c.email)}</td><td>${esc(c.customer_type||'-')}</td><td><span class="badge badge-${c.status==='new'?'todo':'done'}">${esc(c.status)}</span></td><td>${new Date(c.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No requests yet</td></tr>';
 }
+// Check for new activity every minute while the admin is open, and refresh the page you're looking at.
+setInterval(async()=>{
+  try{
+    const d=await (await fetch(API+'/stats')).json();if(!d.success)return;
+    const w=applyStats(d.stats), key=w.toShip+'|'+w.newQ+'|'+w.pendB;
+    if(lastWaiting!==null&&lastWaiting!==key){
+      const active=document.querySelector('.nav-item.active');const page=active&&active.dataset.page;
+      if(page==='dashboard')loadDashboard();
+      if(page==='contacts')loadContacts();
+      if(page==='bookings')loadBookings();
+      if(page==='orders'&&!document.querySelector('.order-detail'))loadOrders();
+    }
+    lastWaiting=key;
+  }catch(e){}
+},60000);
 
 // Orders
 // Everything needed to pack and ship one order, shown under its row.
@@ -421,12 +475,15 @@ async function toggleOrder(id, btn){
       <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">TO PACK</div><ul style="margin:.4rem 0 0 1rem">${items}</ul></div>
       <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">SHIP TO</div>${addr.map(esc).join('<br>') || '—'}</div>
       <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">CUSTOMER</div>Email: <a href="mailto:${esc(o.customer_email)}">${esc(o.customer_email || '—')}</a><br>Phone: ${o.customer_phone ? `<a href="tel:${esc(o.customer_phone)}">${esc(o.customer_phone)}</a>` : '—'}</div>
+      <div style="grid-column:1/-1"><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">WHERE IT WAS BOUGHT</div><span class="src-tag src-${srcKey(o)}">${esc(srcText(o))}</span> ${srcKey(o)==='in_person'?'Paid at a Stripe card reader, handed over in person':(o.source&&o.source!=='website'?'Customer came to scentworld.ca from '+esc(SRC_LABELS[srcKey(o)])+' and paid online':'Bought on scentworld.ca (direct visit or no referrer recorded)')+' · delivery to '+esc(orderLocation(o).place||'—')+' ('+esc(orderLocation(o).tag)+')'}<br>
+        <textarea id="onote-${o.id}" placeholder="Your note on this order (private)" style="width:100%;margin-top:.4rem;min-height:52px;background:rgba(255,255,255,.03);border:1px solid var(--bdr);color:var(--cream);padding:.5rem;font-family:inherit">${esc(o.notes||'')}</textarea>
+        <button class="btn btn-sm btn-outline" onclick="saveOrderNote(${o.id})">Save note</button> <span id="onote-msg-${o.id}" style="font-size:.75rem;color:var(--ok)"></span></div>
       <div id="ship-${o.id}" style="grid-column:1/-1"></div>
       <div><div style="color:var(--gold);letter-spacing:.15em;font-size:.7rem">PAYMENT</div>Subtotal ${money(o.subtotal)}<br>Shipping ${o.shipping_cost ? money(o.shipping_cost) : 'Free'}<br>Tax ${money(o.tax)}<br><strong>Total ${money(o.total)} CAD</strong>${o.stripe_payment_intent ? `<br><a href="https://dashboard.stripe.com/payments/${esc(o.stripe_payment_intent)}" target="_blank" rel="noopener">Open in Stripe ↗</a>` : ''}</div>
     </div></td>`;
   row.after(tr);
   btn.textContent = 'Hide';
-  renderShipping(o.id);
+  if(srcKey(o)!=='in_person')renderShipping(o.id);else{const b=document.getElementById('ship-'+o.id);if(b)b.remove();}
 }
 
 // ── Shipping (ShipTime + ParcelHub): quote, buy a label, follow the parcel ──
@@ -508,16 +565,29 @@ async function refreshShipment(id){
   h.innerHTML=d.success?(d.history.map(e=>`${esc(e.time||'')} ${esc(e.name||e.status||'')} ${esc(e.location||'')}`).join('<br>')||esc(d.status||'No scans yet')):`<span style="color:var(--err)">${esc(d.error)}</span>`;
 }
 
+const SRC_LABELS={website:'Website',facebook:'Facebook',instagram:'Instagram',google:'Google search',google_ads:'Google Ads',tiktok:'TikTok',linkedin:'LinkedIn',email:'Email',other:'Other site',in_person:'In person (Stripe)'};
+const srcKey=o=>SRC_LABELS[o.source]?o.source:'website';
+const srcText=o=>SRC_LABELS[srcKey(o)]+(o.source_detail&&srcKey(o)!=='website'?' · '+o.source_detail:'');
+let ordersCache=[];
 async function loadOrders(){
   const r=await fetch(API+'/orders');const d=await r.json();
+  ordersCache=d.orders;renderOrders();
+}
+function renderOrders(){
   const statuses={confirmed:'done',shipped:'active',delivered:'active',cancelled:'pending',refunded:'pending'};
-  document.getElementById('tbl-orders').innerHTML=d.orders.map(o=>`<tr>
-    <td style="font-family:var(--df);color:var(--gold)">${esc(o.order_number)}</td>
+  const sel=document.getElementById('order-src-filter'), want=sel?sel.value:'';
+  if(sel){const counts={};ordersCache.forEach(o=>{counts[srcKey(o)]=(counts[srcKey(o)]||0)+1;});
+    sel.innerHTML='<option value="">All sources ('+ordersCache.length+')</option>'+Object.keys(SRC_LABELS).filter(k=>counts[k]).map(k=>'<option value="'+k+'"'+(k===want?' selected':'')+'>'+SRC_LABELS[k]+' ('+counts[k]+')</option>').join('');}
+  const rows=ordersCache.filter(o=>!want||srcKey(o)===want);
+  document.getElementById('tbl-orders').innerHTML=rows.map(o=>{
+    const todo=o.status==='confirmed'&&o.payment_status==='paid', L=orderLocation(o), inPerson=srcKey(o)==='in_person';
+    return `<tr class="${todo?'row-new':''}">
+    <td style="font-family:var(--df);color:var(--gold)">${esc(o.order_number)}${todo?'<div><span class="badge badge-todo">New</span></div>':''}</td>
     <td>${esc(o.customer_name||'-')}<div style="font-size:.75rem;color:var(--txt2)">${esc(o.customer_email||'')}</div></td>
-    <td style="font-size:.8rem">${esc([o.shipping_city,o.shipping_province].filter(Boolean).join(', ')||'-')}</td>
+    <td style="font-size:.8rem"><span class="src-tag src-${srcKey(o)}">${esc(srcText(o))}</span>${inPerson?'':`<div style="margin-top:.3rem">${esc(L.place||'-')}</div><div><span class="loc-tag ${L.cls}">${esc(L.tag)}</span></div>`}${o.notes?`<div style="font-size:.72rem;color:var(--gold);margin-top:.2rem">Note: ${esc(o.notes.slice(0,80))}${o.notes.length>80?'…':''}</div>`:''}</td>
     <td style="color:var(--gold)">$${Number(o.total).toFixed(2)} CAD</td>
-    <td><span class="badge badge-${statuses[o.status]||'new'}">${esc(o.status)}</span></td>
-    <td>${new Date(o.created_at).toLocaleDateString()}</td>
+    <td><span class="badge badge-${todo?'todo':(statuses[o.status]||'new')}">${esc(todo?'to ship':o.status)}</span></td>
+    <td>${new Date(o.created_at.replace(' ','T')+'Z').toLocaleDateString()}</td>
     <td>
       <button class="btn btn-sm btn-gold" onclick="toggleOrder(${o.id},this)" style="margin-right:.4rem">Details</button>
       <select class="btn btn-sm btn-outline" onchange="updateOrder(${o.id},this.value);this.blur()" style="cursor:pointer;padding:.3rem .5rem">
@@ -529,7 +599,30 @@ async function loadOrders(){
         <option value="refunded">Refunded</option>
       </select>
     </td>
-  </tr>`).join('')||'<tr><td colspan="7" class="empty">No orders yet — they\'ll appear here after customers checkout.</td></tr>';
+  </tr>`;}).join('')||'<tr><td colspan="7" class="empty">No orders yet — they will appear here after customers checkout.</td></tr>';
+}
+async function importInPersonSales(btn){
+  btn.disabled=true;const t=btn.textContent;btn.textContent='Checking Stripe…';
+  try{const d=await (await fetch(API+'/orders/import-in-person',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+    alert(d.success?(d.imported?d.imported+' in-person sale'+(d.imported>1?'s':'')+' added.':'No new in-person sales ('+d.seen+' Stripe payments checked, last 30 days).'):d.error);
+    if(d.success){loadOrders();loadDashboard();}
+  }catch(e){alert('Could not reach Stripe.');}
+  btn.disabled=false;btn.textContent=t;
+}
+// Where an order was placed from: the delivery city/province/country, plus a one-word region tag
+function orderLocation(o){
+  const prov=String(o.shipping_province||'').trim(), ctry=String(o.shipping_country||'CA').toUpperCase();
+  const place=[o.shipping_city,prov,ctry==='CA'?'':ctry].filter(Boolean).join(', ');
+  if(ctry==='CA'){
+    const ns=/^(ns|nova scotia)$/i.test(prov);
+    return {place:[o.shipping_city,prov,'Canada'].filter(Boolean).join(', '),tag:ns?'Nova Scotia':'Other province',cls:ns?'local':''};
+  }
+  return {place:place||ctry,tag:ctry==='US'?'United States':'International',cls:'far'};
+}
+async function saveOrderNote(id){
+  const el=document.getElementById('onote-'+id);
+  const r=await fetch(API+'/orders/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:el.value})});
+  const d=await r.json();document.getElementById('onote-msg-'+id).textContent=d.success?'Saved':'Could not save';
 }
 async function updateOrder(id,status){
   if(!status)return;
@@ -540,10 +633,10 @@ async function updateOrder(id,status){
 // Contacts
 async function loadContacts(){
   const r=await fetch(API+'/contacts');const d=await r.json();
-  document.getElementById('tbl-contacts').innerHTML=d.contacts.map(c=>`<tr>
+  document.getElementById('tbl-contacts').innerHTML=d.contacts.map(c=>`<tr class="${c.status==='new'?'row-new':''}">
     <td>${esc(c.first_name)} ${esc(c.last_name)}</td><td>${esc(c.email)}</td><td>${esc(c.phone||'-')}</td>
     <td>${esc(c.customer_type||'-')}</td><td>${esc(c.product_interest||'-')}${c.message?`<div style="font-size:.78rem;color:var(--txt2);margin-top:.3rem;white-space:pre-wrap;max-width:320px">“${esc(c.message)}”</div>`:''}</td>
-    <td><span class="badge badge-${c.status==='new'?'new':'done'}">${esc(c.status)}</span></td>
+    <td><span class="badge badge-${c.status==='new'?'todo':'done'}">${esc(c.status)}</span></td>
     <td>${new Date(c.created_at).toLocaleDateString()}</td>
     <td><button class="btn btn-sm btn-ok" onclick="updateContact(${c.id},'reviewed')">✓</button> <button class="btn btn-sm btn-err" onclick="deleteContact(${c.id})">✕</button></td>
   </tr>`).join('')||'<tr><td colspan="8" class="empty">No quote requests yet</td></tr>';
@@ -554,7 +647,7 @@ async function deleteContact(id){if(!confirm('Delete this request?'))return;awai
 // Bookings
 async function loadBookings(){
   const r=await fetch(API+'/bookings');const d=await r.json();
-  document.getElementById('tbl-bookings').innerHTML=d.bookings.map(b=>`<tr>
+  document.getElementById('tbl-bookings').innerHTML=d.bookings.map(b=>`<tr class="${b.status==='pending'?'row-new':''}">
     <td>${esc(b.first_name)} ${esc(b.last_name)}<br><small style="color:var(--txt2)">${esc(b.business_name||'')}</small></td>
     <td>${esc(b.email)}<br><small style="color:var(--txt2)">${esc(b.phone||'')}</small></td>
     <td>${esc(b.preferred_date)}</td><td>${esc(b.preferred_time)}</td>

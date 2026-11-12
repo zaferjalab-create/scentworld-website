@@ -128,6 +128,21 @@ test('settings, orders, reviews and testimonials', async () => {
   await ok('DELETE', `/api/admin/testimonials/${t.id}`);
 });
 
+test('new-activity counts: unshipped orders, new requests, pending bookings; order notes', async () => {
+  const before = (await ok('GET', '/api/admin/stats')).stats;
+  const o = db.prepare("INSERT INTO orders (order_number, customer_name, customer_email, subtotal, total, payment_status, status) VALUES ('SW-T2','T','t@example.com',10,10,'paid','confirmed')").run();
+  assert.equal((await ok('GET', '/api/admin/stats')).stats.orders.to_ship, before.orders.to_ship + 1, 'a paid, unshipped order counts');
+  await ok('PATCH', `/api/admin/orders/${o.lastInsertRowid}`, { notes: 'Gift, please wrap' });
+  const row = db.prepare('SELECT status, notes FROM orders WHERE id = ?').get(o.lastInsertRowid);
+  assert.equal(row.notes, 'Gift, please wrap');
+  assert.equal(row.status, 'confirmed', 'saving a note leaves the status alone');
+  await ok('PATCH', `/api/admin/orders/${o.lastInsertRowid}`, { status: 'shipped' });
+  const after = (await ok('GET', '/api/admin/stats')).stats;
+  assert.equal(after.orders.to_ship, before.orders.to_ship, 'shipping clears the highlight');
+  assert.equal(db.prepare('SELECT notes FROM orders WHERE id = ?').get(o.lastInsertRowid).notes, 'Gift, please wrap', 'changing status keeps the note');
+  assert.equal(typeof after.reviews.pending, 'number');
+});
+
 test('backup download is a valid SQLite file', async () => {
   const r = await api('GET', '/api/admin/backup');
   assert.equal(r.status, 200);

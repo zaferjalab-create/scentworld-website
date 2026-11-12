@@ -1120,3 +1120,60 @@ test('ParcelHub as a second shipping service: one rate list across both, one lab
     fakePh.close(); fakeSt.close();
   }
 });
+
+// ── Where an order came from (lib/order-source.js) ──────
+test('order source: Facebook, Instagram, Google and other visits are told apart', () => {
+  const { classify } = require('../lib/order-source');
+  const src = a => (classify(a) || {}).source || null;
+  assert.equal(src({ query: { utm_source: 'instagram' } }), 'instagram');
+  assert.equal(src({ query: { utm_source: 'ig' } }), 'instagram');
+  assert.equal(src({ query: { utm_source: 'facebook', utm_medium: 'paid' } }), 'facebook');
+  assert.equal(src({ query: { utm_source: 'google', utm_medium: 'cpc' } }), 'google_ads');
+  assert.equal(src({ query: { gclid: 'abc' } }), 'google_ads');
+  assert.equal(src({ referer: 'https://www.google.ca/' }), 'google');
+  assert.equal(src({ referer: 'https://l.instagram.com/?u=x' }), 'instagram');
+  assert.equal(src({ referer: 'https://m.facebook.com/' }), 'facebook');
+  assert.equal(src({ query: { fbclid: 'x' } }), 'facebook');
+  assert.equal(src({ query: { fbclid: 'x' }, userAgent: 'Mozilla/5.0 Instagram 300.0' }), 'instagram', 'Instagram in-app browser');
+  assert.equal(src({ userAgent: 'Mozilla/5.0 [FBAN/FBIOS;FBAV/450]' }), 'facebook', 'Facebook in-app browser');
+  assert.equal(src({ referer: 'https://blog.example.org/post' }), 'other');
+  assert.equal(src({}), null, 'typed address or bookmark: no clue, keeps any earlier source');
+  assert.equal(src({ referer: 'https://www.scentworld.ca/shop', siteHost: 'www.scentworld.ca' }), null, 'our own pages do not count');
+});
+
+test('order source: cookie from the landing page reaches checkout and the order', async () => {
+  const landing = await get('/?utm_source=instagram&utm_campaign=bf', { headers: { Accept: 'text/html' } });
+  const cookie = landing.headers.getSetCookie().map(c => c.split(';')[0]).find(c => c.startsWith('sw_src='));
+  assert.ok(cookie, 'landing page remembers the source');
+  // a later direct visit must not erase it
+  const again = await get('/shop', { headers: { Accept: 'text/html', Cookie: cookie } });
+  assert.equal(again.headers.getSetCookie().filter(c => c.startsWith('sw_src=')).length, 0);
+  const product = db.prepare('SELECT id FROM products WHERE active = 1 AND price > 0 ORDER BY id LIMIT 1').get();
+  const before = stripeCalls.length;
+  assert.equal((await postJson('/api/checkout', { items: [{ id: product.id, quantity: 1 }] }, { Cookie: cookie })).status, 200);
+  const call = stripeCalls.slice(before).find(c => c.path === '/v1/checkout/sessions');
+  assert.equal(call.params.get('metadata[source]'), 'instagram');
+
+  const sid = 'cs_test_src_' + Date.now();
+  await signedWebhook({ ...paidSession(sid), payment_intent: 'pi_src_1', metadata: { items: JSON.stringify([{ id: 1, qty: 1 }]), source: 'instagram', source_detail: ' / bf' } });
+  assert.equal(db.prepare('SELECT source FROM orders WHERE stripe_session_id = ?').get(sid).source, 'instagram');
+  const sid2 = 'cs_test_src2_' + Date.now();
+  await signedWebhook({ ...paidSession(sid2), payment_intent: 'pi_src_2' });
+  assert.equal(db.prepare('SELECT source FROM orders WHERE stripe_session_id = ?').get(sid2).source, 'website', 'no source = website');
+});
+
+test('order source: in-person Stripe card-reader sales are imported once; website payments are ignored', async () => {
+  const { importInPersonSales } = require('../lib/order-source');
+  const now = Math.floor(Date.now() / 1000);
+  const pi = (id, type, extra = {}) => ({ id, status: 'succeeded', amount: 5000, amount_received: 5000, created: now - 60, description: null, latest_charge: { refunded: false, billing_details: {}, payment_method_details: { type } }, ...extra });
+  const fake = { paymentIntents: { list: async () => ({ has_more: false, data: [pi('pi_inperson_AAAA1111', 'card_present'), pi('pi_web_BBBB2222', 'card'), pi('pi_inperson_CCCC3333', 'card_present', { status: 'requires_capture' })] }) } };
+  const first = await importInPersonSales(fake, db);
+  assert.equal(first.imported, 1);
+  assert.equal((await importInPersonSales(fake, db)).imported, 0, 'second run adds nothing');
+  const row = db.prepare("SELECT * FROM orders WHERE stripe_payment_intent = 'pi_inperson_AAAA1111'").get();
+  assert.equal(row.source, 'in_person');
+  assert.equal(row.total, 50);
+  assert.equal(row.status, 'delivered', 'handed over in store: never shows as "to ship"');
+  assert.equal(row.customer_email, null, 'no emails go out for in-person sales');
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM orders WHERE stripe_payment_intent IN ('pi_web_BBBB2222','pi_inperson_CCCC3333')").get().n, 0);
+});
