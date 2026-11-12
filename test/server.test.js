@@ -833,14 +833,14 @@ test('ShipTime: rates and labels only on the admin button, one label per order, 
     const info0 = await (await get(`/api/admin/orders/${id}/shipping`, { headers: { Cookie: cookie } })).json();
     assert.equal(info0.connected, false, 'not connected until the credentials are set');
     assert.deepEqual(info0.packages.map(p => [p.length, p.width, p.height, p.weight]), [[10, 5, 7, 2], [10, 5, 7, 2]]);
-    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: info0.packages }, H)).status, 400, 'rates need credentials');
-    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, {}, { Accept: 'application/json', Origin: BASE })).status, 401, 'admin only');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: info0.packages }, H)).status, 400, 'rates need credentials');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/rates`, {}, { Accept: 'application/json', Origin: BASE })).status, 401, 'admin only');
 
     Object.assign(process.env, { SHIPTIME_API_URL: 'http://127.0.0.1:' + fake.address().port, SHIPTIME_CLIENT_ID: 'test-id', SHIPTIME_CLIENT_SECRET: 'test-secret' });
     delete process.env.SHIPTIME_BASIC_USER;
     assert.equal((await (await get(`/api/admin/orders/${id}/shipping`, { headers: { Cookie: cookie } })).json()).connected, true);
 
-    const quote = await (await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: info0.packages, shipDate: '2026-11-12' }, H)).json();
+    const quote = await (await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: info0.packages, shipDate: '2026-11-12' }, H)).json();
     assert.deepEqual(quote.rates.map(r => [r.carrier, r.total]), [['Canada Post', 14.32], ['Purolator', 21.5]], 'cents become dollars, cheapest first');
     const rateCall = calls.find(c => c.url === '/rest/rates');
     const sent = JSON.parse(rateCall.body);
@@ -850,28 +850,28 @@ test('ShipTime: rates and labels only on the admin button, one label per order, 
     assert.equal(sent.lineItems.length, 2);
     assert.equal(sent.shipDate, '2026-11-12');
     assert.equal(calls.filter(c => c.url === '/rest/shipments').length, 0, 'asking for rates never buys anything');
-    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: [] }, H)).status, 400, 'a box is required');
-    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/rates`, { packages: [{ length: 0, width: 5, height: 7, weight: 2 }] }, H)).status, 400);
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: [] }, H)).status, 400, 'a box is required');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: [{ length: 0, width: 5, height: 7, weight: 2 }] }, H)).status, 400);
 
     // buying: needs a chosen service; the order is claimed first so it can only be bought once
-    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/ship`, { packages: info0.packages }, H)).status, 400);
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/ship`, { packages: info0.packages }, H)).status, 400);
     const pick = quote.rates[0];
     const body = { quoteId: pick.quoteId, serviceId: pick.serviceId, carrierId: pick.carrierId, carrier: pick.carrier, cost: pick.total, packages: info0.packages, shipDate: '2026-11-12' };
-    const bought = await postJson(`/api/admin/orders/${id}/shiptime/ship`, body, H);
+    const bought = await postJson(`/api/admin/orders/${id}/shipping/ship`, body, H);
     assert.equal(bought.status, 200);
     const b = await bought.json();
     assert.deepEqual([b.shipId, b.tracking], [9001, 'TRK123']);
     const after = db.prepare('SELECT status, tracking_number, carrier, shipment_cost, tracking_url FROM orders WHERE id = ?').get(id);
     assert.deepEqual([after.status, after.tracking_number, after.carrier, after.shipment_cost], ['shipped', 'TRK123', 'Canada Post', 14.32]);
-    assert.equal((await postJson(`/api/admin/orders/${id}/shiptime/ship`, body, H)).status, 409, 'a second label for the same order is refused');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/ship`, body, H)).status, 409, 'a second label for the same order is refused');
     assert.equal(calls.filter(c => c.url === '/rest/shipments' && c.method === 'POST').length, 1, 'exactly one purchase');
 
     // label PDF passes through; tracking refresh marks it delivered
-    const pdf = await get(`/api/admin/orders/${id}/shiptime/label`, { headers: { Cookie: cookie } });
+    const pdf = await get(`/api/admin/orders/${id}/shipping/label`, { headers: { Cookie: cookie } });
     assert.equal(pdf.headers.get('content-type'), 'application/pdf');
     assert.ok((await pdf.text()).startsWith('%PDF'));
     shipStatus = 'DELIVERED';
-    const ref = await (await postJson(`/api/admin/orders/${id}/shiptime/refresh`, {}, H)).json();
+    const ref = await (await postJson(`/api/admin/orders/${id}/shipping/refresh`, {}, H)).json();
     assert.equal(ref.status, 'DELIVERED');
     assert.equal(db.prepare('SELECT status FROM orders WHERE id = ?').get(id).status, 'delivered');
 
@@ -881,13 +881,13 @@ test('ShipTime: rates and labels only on the admin button, one label per order, 
 
     // a failed purchase releases the claim so it can be retried
     const id2 = mk('2', 'CA', 'NS');
-    const failing = await postJson(`/api/admin/orders/${id2}/shiptime/ship`, { ...body, quoteId: 'q1', carrierId: 'c1', packages: [] }, H);
+    const failing = await postJson(`/api/admin/orders/${id2}/shipping/ship`, { ...body, quoteId: 'q1', carrierId: 'c1', packages: [] }, H);
     assert.equal(failing.status, 502);
     assert.equal(db.prepare('SELECT shiptime_ship_id FROM orders WHERE id = ?').get(id2).shiptime_ship_id, null);
 
     // outside Canada: no automatic label (customs); tracking can be added by hand
     const id3 = mk('3', 'US', 'NY');
-    assert.equal((await postJson(`/api/admin/orders/${id3}/shiptime/rates`, { packages: info0.packages }, H)).status, 400);
+    assert.equal((await postJson(`/api/admin/orders/${id3}/shipping/rates`, { packages: info0.packages }, H)).status, 400);
     assert.equal((await postJson(`/api/admin/orders/${id3}/tracking`, { tracking_number: 'X', tracking_url: 'http://insecure.test' }, H)).status, 400, 'https links only');
     assert.equal((await postJson(`/api/admin/orders/${id3}/tracking`, {}, H)).status, 400);
     const manual = await postJson(`/api/admin/orders/${id3}/tracking`, { carrier: 'UPS', tracking_number: '1Z999', tracking_url: 'https://ups.example.test/1Z999' }, H);
@@ -962,5 +962,161 @@ test('scheduled campaign emails: approved once, send themselves on their day, on
   } finally {
     clean();
     db.prepare("DELETE FROM subscribers WHERE email = 'sched-test@example.test'").run();
+  }
+});
+
+test('ParcelHub as a second shipping service: one rate list across both, one label per order, wallet errors explained', async () => {
+  const carriers = require('../lib/carriers');
+  const ph = require('../lib/parcelhub');
+  const phCalls = [];
+  let tracking = [{ event_code: 'PICKED_UP', event_description: 'Picked up', location: 'Halifax', occurred_at: '2026-11-12T10:00:00Z', source: 'api' }];
+  let phBase = '';
+  const fakePh = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      phCalls.push({ method: req.method, url: req.url, auth: req.headers.authorization || '', idem: req.headers['idempotency-key'] || '', body });
+      const out = (obj, code = 200) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      if (req.url === '/files/label.pdf') { res.writeHead(200, { 'Content-Type': 'application/pdf' }); return res.end(Buffer.from('%PDF-1.4 parcelhub')); }
+      if (req.url === '/v1/api-clients/token') {
+        const b = JSON.parse(body || '{}');
+        return b.client_id === 'ph-id' && b.client_secret === 'ph-secret'
+          ? out({ ok: true, data: { access_token: 'ph-tok', expires_at: new Date(Date.now() + 15 * 60000).toISOString(), kid: 'k1' } })
+          : out({ ok: false, error: { code: 'unauthorized', message: 'invalid api key' } }, 401);
+      }
+      if (req.headers.authorization !== 'Bearer ph-tok') return out({ ok: false, error: { code: 'unauthorized', message: 'no token' } }, 401);
+      if (req.url === '/v1/rates') return out({ ok: true, data: { quote_id: '11111111-1111-4111-8111-111111111111', items: [
+        { carrier: 'ups', carrier_display_name: 'UPS', service_code: 'std', service_name: 'Standard', amount_cents: 1250, currency: 'CAD', estimated_days: 3, pickup_supported: true },
+        { carrier: 'canada_post', carrier_display_name: 'Canada Post', service_code: 'reg', service_name: 'Regular Parcel', amount_cents: 1090, currency: 'CAD', estimated_days: 4, pickup_supported: false }],
+        carriers_with_no_options: [{ carrier: 'fedex', carrier_display_name: 'FedEx', reason: 'Dangerous goods are not accepted on this service' }] } });
+      if (req.url === '/v1/shipments' && req.method === 'POST') {
+        const b = JSON.parse(body);
+        if (b.service_code === 'broke') return out({ ok: false, error: { code: 'conflict', message: 'insufficient_funds' } }, 409);
+        return out({ ok: true, data: { id: 'sh-1', tracking_number: null, final_rate_cents: 1231, status: 'paid' } });
+      }
+      if (req.url === '/v1/shipments/sh-1/label') return out({ ok: true, data: { url: phBase + '/files/label.pdf', tracking_number: '1Z999' } });
+      if (req.url === '/v1/shipments/sh-1/tracking') return out({ ok: true, data: { items: tracking } });
+      out({ ok: false, error: { code: 'not_found', message: 'no' } }, 404);
+    });
+  });
+  await new Promise(r => fakePh.listen(0, '127.0.0.1', r));
+  phBase = 'http://127.0.0.1:' + fakePh.address().port;
+  const stCalls = [];
+  const fakeSt = http.createServer((req, res) => {
+    let b = '';
+    req.on('data', c => b += c);
+    req.on('end', () => {
+      stCalls.push(req.url);
+      const out = (obj, code = 200) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      if (req.url === '/oauth2/token') return out({ access_token: 'st-tok', expires_in: 3600 });
+      if (req.url === '/rest/rates') return out({ availableRates: [{ quoteId: 'sq', serviceId: 'ss', carrierId: 'sc', carrierName: 'Purolator', serviceName: 'Ground', totalCharge: { amount: 1469, currency: 'CAD' }, totalBeforeTaxes: { amount: 1300, currency: 'CAD' }, transitDays: 2, transitDaysMax: 3 }] });
+      out({ message: 'down' }, 503);
+    });
+  });
+  await new Promise(r => fakeSt.listen(0, '127.0.0.1', r));
+  const prevEnv = { ...process.env };
+  const clean = () => { for (const k of ['PARCELHUB_API_URL', 'PARCELHUB_CLIENT_ID', 'PARCELHUB_CLIENT_SECRET', 'SHIPTIME_API_URL', 'SHIPTIME_CLIENT_ID', 'SHIPTIME_CLIENT_SECRET', 'SHIPTIME_BASIC_USER']) { if (k in prevEnv) process.env[k] = prevEnv[k]; else delete process.env[k]; } };
+  try {
+    const oil = db.prepare("SELECT id FROM products WHERE category = 'oils' AND active = 1 LIMIT 1").get();
+    const mk = (suffix, country = 'CA', province = 'Nova Scotia') => {
+      const r = db.prepare(`INSERT INTO orders (order_number, customer_name, customer_email, customer_phone, shipping_line1, shipping_city, shipping_province, shipping_postal, shipping_country, subtotal, tax, shipping_cost, total, status, payment_status)
+        VALUES (?, 'Pat Tester', 'pat@example.test', '902-555-0111', '2 Test Rd', 'Halifax', ?, 'b3l1a3', ?, 189, 28.35, 0, 217.35, 'confirmed', 'paid')`).run('SW-PH' + suffix, province, country);
+      db.prepare("INSERT INTO order_items (order_id, product_id, product_name, product_category, quantity, unit_price, total_price) VALUES (?, ?, 'Vienna Oil, 500ml', 'oils', 1, 189, 189)").run(r.lastInsertRowid, oil.id);
+      return r.lastInsertRowid;
+    };
+    const cookie = await login();
+    const H = { Cookie: cookie, Origin: BASE };
+    const boxes = [{ length: 10, width: 5, height: 7, weight: 2 }];
+    const id = mk('1');
+
+    // nothing connected yet
+    const none = await (await get(`/api/admin/orders/${id}/shipping`, { headers: { Cookie: cookie } })).json();
+    assert.deepEqual(none.providers.map(p => [p.id, p.connected]), [['shiptime', false], ['parcelhub', false]]);
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: boxes }, H)).status, 400);
+
+    // a wrong key is explained, and the connection test never shows the values
+    Object.assign(process.env, { PARCELHUB_API_URL: phBase, PARCELHUB_CLIENT_ID: 'wrong', PARCELHUB_CLIENT_SECRET: 'wrong' });
+    const bad = await (await get('/api/admin/shipping/test/parcelhub', { headers: { Cookie: cookie } })).json();
+    assert.equal(bad.ok, false);
+    assert.ok(/invalid api key/.test(bad.error) && !JSON.stringify(bad).includes('wrong"'), 'reason shown, secret not echoed');
+    assert.deepEqual([bad.clientIdLength, bad.secretLength], [5, 5]);
+    assert.equal((await get('/api/admin/shipping/test/nope', { headers: { Cookie: cookie } })).status, 404);
+
+    // ParcelHub alone
+    Object.assign(process.env, { PARCELHUB_CLIENT_ID: ' ph-id\n', PARCELHUB_CLIENT_SECRET: 'ph-secret ' });
+    assert.equal((await (await get('/api/admin/shipping/test/parcelhub', { headers: { Cookie: cookie } })).json()).ok, true, 'pasted whitespace is ignored');
+    const solo = await (await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: boxes, shipDate: '2026-11-16' }, H)).json();
+    assert.deepEqual(solo.rates.map(r => [r.providerName, r.carrier, r.total, r.taxExtra]), [['ParcelHub', 'Canada Post', 10.9, true], ['ParcelHub', 'UPS', 12.5, true]]);
+    assert.ok(solo.messages.some(m => /FedEx/.test(m) && /Dangerous goods/.test(m)), 'a carrier that cannot take it says why');
+    const rateCall = JSON.parse(phCalls.find(c => c.url === '/v1/rates').body);
+    assert.deepEqual(rateCall.packages, [{ length: 10, width: 5, height: 7, weight: 2, dimension_unit: 'in', weight_unit: 'lb' }]);
+    assert.deepEqual([rateCall.to.state, rateCall.to.postal_code, rateCall.to.country, rateCall.from.street, rateCall.from.postal_code], ['NS', 'B3L 1A3', 'CA', '6254 Almon Street', 'B3L 1V2']);
+    assert.equal(rateCall.ship_date, '2026-11-16');
+    assert.equal(phCalls.filter(c => c.url === '/v1/shipments').length, 0, 'quotes never buy');
+
+    // both services: one list, cheapest first, labelled by service
+    Object.assign(process.env, { SHIPTIME_API_URL: 'http://127.0.0.1:' + fakeSt.address().port, SHIPTIME_CLIENT_ID: 'a', SHIPTIME_CLIENT_SECRET: 'b' });
+    const both = await (await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: boxes }, H)).json();
+    assert.deepEqual(both.rates.map(r => [r.providerName, r.carrier]), [['ParcelHub', 'Canada Post'], ['ParcelHub', 'UPS'], ['ShipTime', 'Purolator']]);
+    assert.equal(both.errors.length, 0);
+    // one service down does not hide the other
+    Object.assign(process.env, { SHIPTIME_API_URL: 'http://127.0.0.1:1' });
+    const partial = await (await postJson(`/api/admin/orders/${id}/shipping/rates`, { packages: boxes }, H)).json();
+    assert.equal(partial.rates.length, 2);
+    assert.equal(partial.errors.length, 1);
+    assert.equal(partial.errors[0].provider, 'shiptime');
+    delete process.env.SHIPTIME_CLIENT_ID; delete process.env.SHIPTIME_CLIENT_SECRET; delete process.env.SHIPTIME_API_URL;
+
+    // buying: the wallet being empty is explained and releases the order
+    const pick = solo.rates[0];
+    const buy = { provider: 'parcelhub', quoteId: pick.quoteId, serviceId: pick.serviceId, carrierId: pick.carrierId, carrier: pick.carrier, service: pick.service, cost: pick.total, packages: boxes, shipDate: '2026-11-16' };
+    const broke = await postJson(`/api/admin/orders/${id}/shipping/ship`, { ...buy, serviceId: 'broke' }, H);
+    assert.equal(broke.status, 502);
+    assert.ok(/wallet does not cover/.test((await broke.json()).error));
+    assert.equal(db.prepare('SELECT shipping_provider FROM orders WHERE id = ?').get(id).shipping_provider, null);
+
+    const bought = await postJson(`/api/admin/orders/${id}/shipping/ship`, buy, H);
+    assert.equal(bought.status, 200);
+    const b = await bought.json();
+    assert.deepEqual([b.provider, b.shipId, b.tracking], ['ParcelHub', 'sh-1', '1Z999']);
+    const buyCall = phCalls.filter(c => c.url === '/v1/shipments' && c.method === 'POST').pop();
+    const sent = JSON.parse(buyCall.body);
+    assert.deepEqual([sent.carrier, sent.service_code, sent.service_name, sent.quote_id, sent.reference_number, sent.email_notifications], ['canada_post', 'reg', 'Regular Parcel', pick.quoteId, 'SW-PH1', false]);
+    assert.ok(buyCall.idem.startsWith('sw-SW-PH1-'), 'an Idempotency-Key is sent so a retry cannot buy twice');
+    const row = db.prepare('SELECT status, shipping_provider, shipment_ref, tracking_number, carrier, shipment_cost, tracking_url FROM orders WHERE id = ?').get(id);
+    assert.deepEqual([row.status, row.shipping_provider, row.shipment_ref, row.tracking_number, row.carrier, row.shipment_cost], ['shipped', 'parcelhub', 'sh-1', '1Z999', 'Canada Post', 12.31]);
+    assert.ok(/canadapost-postescanada\.ca.*1Z999/.test(row.tracking_url), 'customer tracking link');
+    assert.equal((await postJson(`/api/admin/orders/${id}/shipping/ship`, buy, H)).status, 409, 'one label per order');
+    assert.equal(phCalls.filter(c => c.url === '/v1/shipments' && c.method === 'POST' && JSON.parse(c.body).service_code === 'reg').length, 1);
+
+    // label (short-lived link fetched for the admin) and tracking
+    const pdf = await get(`/api/admin/orders/${id}/shipping/label`, { headers: { Cookie: cookie } });
+    assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+    assert.ok((await pdf.text()).startsWith('%PDF'));
+    const mid = await (await postJson(`/api/admin/orders/${id}/shipping/refresh`, {}, H)).json();
+    assert.deepEqual([mid.status, mid.history[0].name], ['IN_TRANSIT', 'Picked up']);
+    tracking = [...tracking, { event_code: 'DELIVERED', event_description: 'Delivered, left at front door', location: 'Halifax', occurred_at: '2026-11-17T15:00:00Z', source: 'api' }];
+    const done = await carriers.refreshOpenShipments(db);
+    assert.equal(done.delivered, 1);
+    assert.equal(db.prepare('SELECT status FROM orders WHERE id = ?').get(id).status, 'delivered');
+    assert.equal(ph.normalizeTracking([{ event_code: 'X', event_description: 'Delivery attempted, not delivered', occurred_at: '2026-11-17T15:00:00Z' }]).currentStatus, 'IN_TRANSIT', 'a failed attempt is not delivered');
+    const info = await (await get(`/api/admin/orders/${id}/shipping`, { headers: { Cookie: cookie } })).json();
+    assert.equal(info.shipment.provider, 'ParcelHub');
+
+    // outside Canada: customs needed, so no automatic label
+    const us = mk('2', 'US', 'NY');
+    const usRates = await postJson(`/api/admin/orders/${us}/shipping/rates`, { packages: boxes }, H);
+    assert.equal(usRates.status, 400);
+    assert.ok(/customs/i.test((await usRates.json()).error));
+
+    // orders labelled with ShipTime before this change still count as ShipTime orders
+    db.prepare("UPDATE orders SET shiptime_ship_id = 4242, shipping_provider = NULL, shipment_ref = NULL WHERE order_number = 'SW-PH2'").run();
+    db.exec("UPDATE orders SET shipping_provider = 'shiptime', shipment_ref = CAST(shiptime_ship_id AS TEXT) WHERE shiptime_ship_id > 0 AND shipping_provider IS NULL");
+    assert.deepEqual(Object.values(db.prepare("SELECT shipping_provider, shipment_ref FROM orders WHERE order_number = 'SW-PH2'").get()), ['shiptime', '4242']);
+  } finally {
+    clean();
+    db.prepare("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE 'SW-PH%')").run();
+    db.prepare("DELETE FROM orders WHERE order_number LIKE 'SW-PH%'").run();
+    fakePh.close(); fakeSt.close();
   }
 });

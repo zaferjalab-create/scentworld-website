@@ -8,7 +8,7 @@ const db = require('../database');
 const { snapshotDb } = require('../lib/backup');
 const { sendNotification } = require('../lib/email');
 const campaignEmails = require('../lib/campaign-emails');
-const shiptime = require('../lib/shiptime');
+const carriers = require('../lib/carriers');
 const { sendShippedEmail } = require('../lib/order-emails');
 
 module.exports = function adminRoutes({ ADMIN_BASE, loginLimiter, REPO_IMG_DIR, UPLOAD_IMG_DIR, syncStripeCatalog }) {
@@ -416,86 +416,93 @@ router.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
   res.json({ success: true, order, items });
 });
 
-// ── Shipping with ShipTime (lib/shiptime.js) ──
-// Rates are free to ask for. Creating a shipment charges the ShipTime account,
+// ── Shipping (lib/carriers.js: ShipTime and ParcelHub) ──
+// Rates are free to ask for. Creating a shipment charges the chosen service's account,
 // so it only happens from the admin button, once per order.
 const orderItems = id => db.prepare('SELECT product_name, product_category, quantity FROM order_items WHERE order_id = ?').all(id);
 const getOrder = id => db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
 
-router.get('/api/admin/shiptime/test', requireAdmin, async (req, res) => {
-  res.json({ success: true, ...(await shiptime.checkConnection()) });
+router.get('/api/admin/shipping/test/:provider', requireAdmin, async (req, res) => {
+  const p = carriers.PROVIDERS[req.params.provider];
+  if (!p) return res.status(404).json({ success: false, error: 'Unknown shipping service' });
+  res.json({ success: true, provider: p.name, ...(await p.mod.checkConnection()) });
 });
 
 router.get('/api/admin/orders/:id/shipping', requireAdmin, (req, res) => {
   const o = getOrder(req.params.id);
   if (!o) return res.status(404).json({ success: false, error: 'Not found' });
-  const { packages, needBox } = shiptime.defaultPackages(orderItems(o.id));
+  const { packages, needBox } = carriers.defaultPackages(orderItems(o.id));
+  const providers = carriers.list();
+  const prov = carriers.PROVIDERS[o.shipping_provider];
   res.json({
-    success: true, connected: shiptime.configured(), mode: shiptime.mode(), canada: (o.shipping_country || 'CA') === 'CA',
-    shipDate: shiptime.nextShipDate(), packages, needBox,
-    shipment: o.shiptime_ship_id > 0 || o.tracking_number ? {
-      shipId: o.shiptime_ship_id > 0 ? o.shiptime_ship_id : null, carrier: o.carrier, tracking: o.tracking_number,
+    success: true, providers, connected: providers.some(p => p.connected), canada: (o.shipping_country || 'CA') === 'CA',
+    shipDate: carriers.nextShipDate(), packages, needBox,
+    shipment: o.shipment_ref || o.tracking_number ? {
+      provider: prov ? prov.name : null, ref: o.shipment_ref || null, carrier: o.carrier, tracking: o.tracking_number,
       url: o.tracking_url, status: o.shipment_status, cost: o.shipment_cost, shippedAt: o.shipped_at,
     } : null,
   });
 });
 
-router.post('/api/admin/orders/:id/shiptime/rates', requireAdmin, async (req, res) => {
+router.post('/api/admin/orders/:id/shipping/rates', requireAdmin, async (req, res) => {
   const o = getOrder(req.params.id);
   if (!o) return res.status(404).json({ success: false, error: 'Not found' });
   try {
-    res.json({ success: true, ...(await shiptime.getRates(o, req.body.packages, req.body.shipDate)) });
+    res.json({ success: true, ...(await carriers.getRates(o, req.body.packages, req.body.shipDate)) });
   } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 });
 
-router.post('/api/admin/orders/:id/shiptime/ship', requireAdmin, async (req, res) => {
+router.post('/api/admin/orders/:id/shipping/ship', requireAdmin, async (req, res) => {
   const o = getOrder(req.params.id);
   if (!o) return res.status(404).json({ success: false, error: 'Not found' });
   const { quoteId, serviceId, carrierId, packages, shipDate, cost, notify } = req.body;
-  if (!quoteId || !serviceId || !carrierId) return res.status(400).json({ success: false, error: 'Pick a service first.' });
+  const providerId = req.body.provider || 'shiptime';
+  const prov = carriers.PROVIDERS[providerId];
+  if (!prov) return res.status(400).json({ success: false, error: 'Unknown shipping service.' });
+  if (!serviceId || !carrierId || (providerId === 'shiptime' && !quoteId)) return res.status(400).json({ success: false, error: 'Pick a service first.' });
   // Claim the order before buying, so a double click (or two admins) can never buy two labels.
-  const claim = db.prepare('UPDATE orders SET shiptime_ship_id = -1 WHERE id = ? AND shiptime_ship_id IS NULL AND tracking_number IS NULL').run(o.id);
+  const claim = db.prepare("UPDATE orders SET shipping_provider = 'pending' WHERE id = ? AND shipping_provider IS NULL AND shiptime_ship_id IS NULL AND tracking_number IS NULL").run(o.id);
   if (!claim.changes) return res.status(409).json({ success: false, error: 'This order already has a shipment.' });
   try {
-    const made = await shiptime.createShipment(o, packages, shipDate, { quoteId, serviceId, carrierId });
+    const made = await carriers.createShipment(providerId, o, packages, shipDate, { quoteId, serviceId, carrierId, service: req.body.service });
     const carrier = req.body.carrier || null;
-    db.prepare(`UPDATE orders SET shiptime_ship_id = ?, tracking_number = ?, carrier = ?, tracking_url = ?, shipment_status = 'MANIFESTED',
-      shipment_cost = ?, shipped_at = CURRENT_TIMESTAMP, status = 'shipped', updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
-      .run(made.shipId, made.tracking, carrier, made.trackingUrl, Number.isFinite(Number(cost)) ? Number(cost) : null, o.id);
+    const price = Number.isFinite(Number(made.cost)) && made.cost != null ? Number(made.cost) : (Number.isFinite(Number(cost)) && cost != null ? Number(cost) : null);
+    db.prepare(`UPDATE orders SET shipping_provider = ?, shipment_ref = ?, ${providerId === 'shiptime' ? 'shiptime_ship_id = ?,' : ''} tracking_number = ?, carrier = ?, tracking_url = ?,
+      shipment_status = 'MANIFESTED', shipment_cost = ?, shipped_at = CURRENT_TIMESTAMP, status = 'shipped', updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+      .run(...[providerId, String(made.shipId), ...(providerId === 'shiptime' ? [made.shipId] : []), made.tracking, carrier, made.trackingUrl, price, o.id]);
     const emailed = notify === false ? false : await sendShippedEmail(getOrder(o.id), carrier, made.tracking, made.trackingUrl).catch(() => false);
-    res.json({ success: true, shipId: made.shipId, tracking: made.tracking, url: made.trackingUrl, emailed, messages: made.messages });
+    res.json({ success: true, provider: prov.name, shipId: made.shipId, tracking: made.tracking, url: made.trackingUrl, emailed, messages: made.messages });
   } catch (err) {
-    db.prepare('UPDATE orders SET shiptime_ship_id = NULL WHERE id = ? AND shiptime_ship_id = -1').run(o.id);
+    db.prepare("UPDATE orders SET shipping_provider = NULL WHERE id = ? AND shipping_provider = 'pending'").run(o.id);
     res.status(502).json({ success: false, error: err.message });
   }
 });
 
-router.get('/api/admin/orders/:id/shiptime/label', requireAdmin, async (req, res) => {
+router.get('/api/admin/orders/:id/shipping/label', requireAdmin, async (req, res) => {
   const o = getOrder(req.params.id);
-  if (!o || !(o.shiptime_ship_id > 0)) return res.status(404).send('No ShipTime label for this order');
+  if (!o || !o.shipment_ref || !carriers.PROVIDERS[o.shipping_provider]) return res.status(404).send('No label for this order');
   try {
-    const pdf = await shiptime.label(o.shiptime_ship_id);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="label-${o.order_number}.pdf"`);
-    res.send(pdf);
+    const f = await carriers.label(o.shipping_provider, o.shipment_ref);
+    res.setHeader('Content-Type', f.type);
+    res.setHeader('Content-Disposition', `inline; filename="label-${o.order_number}.${f.type === 'application/pdf' ? 'pdf' : f.type.split('/')[1]}"`);
+    res.send(f.data);
   } catch (err) { res.status(502).send(err.message); }
 });
 
-router.post('/api/admin/orders/:id/shiptime/refresh', requireAdmin, async (req, res) => {
+router.post('/api/admin/orders/:id/shipping/refresh', requireAdmin, async (req, res) => {
   const o = getOrder(req.params.id);
-  if (!o || !(o.shiptime_ship_id > 0)) return res.status(404).json({ success: false, error: 'No ShipTime shipment for this order' });
+  if (!o || !o.shipment_ref || !carriers.PROVIDERS[o.shipping_provider]) return res.status(404).json({ success: false, error: 'No shipment to follow for this order' });
   try {
-    const t = await shiptime.track(o.shiptime_ship_id);
-    const rec = t.trackingRecord || {};
-    if (rec.currentStatus) {
-      db.prepare('UPDATE orders SET shipment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(rec.currentStatus, o.id);
-      if (rec.currentStatus === 'DELIVERED') db.prepare("UPDATE orders SET status = 'delivered' WHERE id = ? AND status = 'shipped'").run(o.id);
+    const t = await carriers.track(o.shipping_provider, o.shipment_ref);
+    if (t.currentStatus) {
+      db.prepare('UPDATE orders SET shipment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(t.currentStatus, o.id);
+      if (t.currentStatus === 'DELIVERED') db.prepare("UPDATE orders SET status = 'delivered' WHERE id = ? AND status = 'shipped'").run(o.id);
     }
-    res.json({ success: true, status: rec.currentStatus || null, history: (rec.history || []).slice(-8).reverse().map(h => ({ name: h.name, status: h.status, location: h.location, time: h.timestamp || h.time })) });
+    res.json({ success: true, status: t.currentStatus || null, history: t.history.slice(0, 8) });
   } catch (err) { res.status(502).json({ success: false, error: err.message }); }
 });
 
-// Parcels sent some other way (a US order made in ShipTime itself, or a drop-off): record the tracking by hand.
+// Parcels sent some other way (a US order made in the carrier's own site, or a drop-off): record the tracking by hand.
 router.post('/api/admin/orders/:id/tracking', requireAdmin, async (req, res) => {
   const o = getOrder(req.params.id);
   if (!o) return res.status(404).json({ success: false, error: 'Not found' });

@@ -345,6 +345,16 @@ try {
   console.error('❌ orders shipping columns migration error:', e.message);
 }
 
+// Migration: which shipping service made the label (shiptime | parcelhub) and its shipment id.
+// ShipTime ids are numbers, ParcelHub ids are text, so the id gets its own text column.
+try {
+  const cols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
+  for (const name of ['shipping_provider', 'shipment_ref']) if (!cols.includes(name)) db.exec(`ALTER TABLE orders ADD COLUMN ${name} TEXT`);
+  db.exec("UPDATE orders SET shipping_provider = 'shiptime', shipment_ref = CAST(shiptime_ship_id AS TEXT) WHERE shiptime_ship_id > 0 AND shipping_provider IS NULL");
+} catch (e) {
+  console.error('❌ orders shipping provider migration error:', e.message);
+}
+
 // Migration: track whether a post-purchase review-request email has been sent
 // for an order, so the daily job never emails the same customer twice.
 try {

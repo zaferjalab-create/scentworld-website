@@ -429,7 +429,7 @@ async function toggleOrder(id, btn){
   renderShipping(o.id);
 }
 
-// ── Shipping (ShipTime): quote, buy a label, follow the parcel ──
+// ── Shipping (ShipTime + ParcelHub): quote, buy a label, follow the parcel ──
 async function renderShipping(id){
   const box=document.getElementById('ship-'+id);if(!box)return;
   const d=await (await fetch(API+'/orders/'+id+'/shipping')).json();if(!d.success)return;
@@ -437,21 +437,22 @@ async function renderShipping(id){
   if(d.shipment){
     const s=d.shipment;
     box.innerHTML=`<div style="${S}">SHIPPING</div>
-      <div style="margin-top:.4rem">${esc([s.carrier,s.tracking].filter(Boolean).join(' · ')||'Shipped')}${s.status?` · <strong>${esc(s.status.replace(/_/g,' '))}</strong>`:''}${s.cost!=null?` · cost $${Number(s.cost).toFixed(2)}`:''}
+      <div style="margin-top:.4rem">${esc([s.provider,s.carrier,s.tracking].filter(Boolean).join(' · ')||'Shipped')}${s.status?` · <strong>${esc(s.status.replace(/_/g,' '))}</strong>`:''}${s.cost!=null?` · cost $${Number(s.cost).toFixed(2)}`:''}
       ${s.url?` · <a href="${esc(s.url)}" target="_blank" rel="noopener">Track</a>`:''}
-      ${s.shipId?` · <a href="${API}/orders/${id}/shiptime/label" target="_blank" rel="noopener">Print label</a> · <a href="#" onclick="refreshShipment(${id});return false">Refresh tracking</a>`:''}</div>
+      ${s.ref?` · <a href="${API}/orders/${id}/shipping/label" target="_blank" rel="noopener">Print label</a> · <a href="#" onclick="refreshShipment(${id});return false">Refresh tracking</a>`:''}</div>
       <div id="shiphist-${id}" style="font-size:.78rem;color:var(--txt2);margin-top:.4rem"></div>`;
     return;
   }
+  const on=d.providers.filter(p=>p.connected), names=on.map(p=>p.name).join(' + ');
   const pk=d.packages.map(p=>boxRow(p)).join('');
   box.innerHTML=`<div style="${S}">SHIPPING</div>
-    ${d.connected?`<div style="margin:.3rem 0"><a href="#" onclick="testShiptime();return false">Test ShipTime connection</a></div>`:`<div style="margin:.4rem 0;color:var(--txt2)">ShipTime is not connected yet. You can still record tracking by hand below.</div>`}
-    ${d.connected&&!d.canada?`<div style="margin:.4rem 0;color:var(--txt2)">This order ships outside Canada and needs a customs invoice. Create it in ShipTime, then add the tracking by hand below.</div>`:''}
-    ${d.connected&&d.canada?`<div style="margin:.5rem 0 .3rem;font-size:.8rem">${d.needBox.length?`<span style="color:var(--gold)">Enter the box for: ${esc(d.needBox.join(', '))}.</span> `:''}Boxes (inches, pounds):</div>
+    ${on.length?`<div style="margin:.3rem 0">${on.map(p=>`<a href="#" onclick="testShipping('${p.id}');return false" style="margin-right:1rem">Test ${esc(p.name)} connection</a>`).join('')}</div>`:`<div style="margin:.4rem 0;color:var(--txt2)">No shipping service is connected yet (ShipTime or ParcelHub). You can still record tracking by hand below.</div>`}
+    ${on.length&&!d.canada?`<div style="margin:.4rem 0;color:var(--txt2)">This order ships outside Canada and needs customs paperwork. Create it in ShipTime or ParcelHub, then add the tracking by hand below.</div>`:''}
+    ${on.length&&d.canada?`<div style="margin:.5rem 0 .3rem;font-size:.8rem">${d.needBox.length?`<span style="color:var(--gold)">Enter the box for: ${esc(d.needBox.join(', '))}.</span> `:''}Boxes (inches, pounds):</div>
     <div id="boxes-${id}">${pk}</div>
     <div style="margin:.4rem 0"><button class="btn btn-sm btn-outline" onclick="addBox(${id})">+ Add a box</button>
       Ship date <input type="date" id="shipdate-${id}" value="${d.shipDate}" class="btn btn-sm btn-outline" style="padding:.3rem .5rem">
-      <button class="btn btn-sm btn-gold" onclick="getRates(${id})">Get shipping rates${d.mode==='sandbox'?' (sandbox)':''}</button></div>
+      <button class="btn btn-sm btn-gold" onclick="getRates(${id})">Get shipping rates (${esc(names)})</button></div>
     <div id="rates-${id}"></div>`:''}
     <details style="margin-top:.6rem"><summary style="cursor:pointer;color:var(--txt2)">Add tracking by hand</summary>
       <div style="margin-top:.4rem"><input id="tcar-${id}" placeholder="Carrier" class="btn btn-sm btn-outline" style="padding:.3rem .5rem;width:110px">
@@ -459,10 +460,10 @@ async function renderShipping(id){
       <input id="turl-${id}" placeholder="Tracking link (https://…)" class="btn btn-sm btn-outline" style="padding:.3rem .5rem;width:220px">
       <button class="btn btn-sm btn-gold" onclick="saveTracking(${id})">Mark shipped and email customer</button></div></details>`;
 }
-async function testShiptime(){
-  const d=await (await fetch(API+'/shiptime/test')).json();
+async function testShipping(provider){
+  const d=await (await fetch(API+'/shipping/test/'+provider)).json();
   const NL=String.fromCharCode(10);
-  alert((d.ok?'ShipTime accepted the sign-in. You can get rates.':'ShipTime did NOT accept the sign-in.'+NL+NL+(d.error||''))+NL+NL+
+  alert((d.ok?d.provider+' accepted the sign-in. You can get rates.':d.provider+' did NOT accept the sign-in.'+NL+NL+(d.error||''))+NL+NL+
     'Client ID length: '+d.clientIdLength+(d.spaceInClientId?' (contains a space)':'')+NL+
     'Secret length: '+d.secretLength+(d.spaceInSecret?' (contains a space)':'')+NL+'Mode: '+d.mode);
 }
@@ -474,19 +475,22 @@ function addBox(id){document.getElementById('boxes-'+id).insertAdjacentHTML('bef
 function readBoxes(id){return [...document.querySelectorAll('#boxes-'+id+' .boxrow')].map(r=>{const o={description:'Scent World order'};r.querySelectorAll('input').forEach(i=>o[i.dataset.k]=i.value);return o;});}
 async function getRates(id){
   const out=document.getElementById('rates-'+id);out.textContent='Getting rates…';
-  const r=await fetch(API+'/orders/'+id+'/shiptime/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:readBoxes(id),shipDate:document.getElementById('shipdate-'+id).value})});
+  const r=await fetch(API+'/orders/'+id+'/shipping/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:readBoxes(id),shipDate:document.getElementById('shipdate-'+id).value})});
   const d=await r.json();
   if(!d.success){out.innerHTML=`<span style="color:var(--err)">${esc(d.error||'Could not get rates')}</span>`;return;}
-  if(!d.rates.length){out.textContent='ShipTime returned no services for this parcel. '+(d.messages||[]).join(' ');return;}
+  const notes=[...(d.errors||[]).map(e=>e.message),...(d.messages||[])];
+  const noteHtml=notes.length?`<div style="font-size:.78rem;color:var(--txt2);margin-top:.4rem">${notes.map(esc).join('<br>')}</div>`:'';
+  if(!d.rates.length){out.innerHTML='No services returned for this parcel.'+noteHtml;return;}
   window.__rates=window.__rates||{};window.__rates[id]=d.rates;
-  out.innerHTML=`<table style="margin-top:.4rem"><tbody>${d.rates.map((q,i)=>`<tr><td>${esc(q.carrier)} · ${esc(q.service)}</td><td>${q.transitDays!=null?esc(q.transitDays)+(q.transitDaysMax&&q.transitDaysMax!==q.transitDays?'–'+esc(q.transitDaysMax):'')+' days':''}</td>
-    <td><strong>${q.total!=null?'$'+q.total.toFixed(2):'—'}</strong></td><td><button class="btn btn-sm btn-gold" onclick="buyLabel(${id},${i})">Buy label</button></td></tr>`).join('')}</tbody></table>
+  out.innerHTML=`<table style="margin-top:.4rem"><tbody>${d.rates.map((q,i)=>`<tr><td>${esc(q.carrier)} · ${esc(q.service)}<div style="font-size:.72rem;color:var(--txt2)">via ${esc(q.providerName)}${q.dropOff?' · drop-off only':''}</div></td><td>${q.transitDays!=null?esc(q.transitDays)+(q.transitDaysMax&&q.transitDaysMax!==q.transitDays?'–'+esc(q.transitDaysMax):'')+' days':''}</td>
+    <td><strong>${q.total!=null?'$'+q.total.toFixed(2):'—'}</strong>${q.taxExtra?'<div style="font-size:.72rem;color:var(--txt2)">+ tax</div>':''}</td><td><button class="btn btn-sm btn-gold" onclick="buyLabel(${id},${i})">Buy label</button></td></tr>`).join('')}</tbody></table>${noteHtml}
     <label style="font-size:.8rem"><input type="checkbox" id="notify-${id}" checked> Email the customer their tracking</label>`;
 }
 async function buyLabel(id,i){
   const q=window.__rates[id][i];
-  if(!confirm(`Buy this label?\n\n${q.carrier} · ${q.service}\n$${q.total!=null?q.total.toFixed(2):'?'} will be charged to your ShipTime account.`))return;
-  const r=await fetch(API+'/orders/'+id+'/shiptime/ship',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quoteId:q.quoteId,serviceId:q.serviceId,carrierId:q.carrierId,carrier:q.carrier,cost:q.total,packages:readBoxes(id),shipDate:document.getElementById('shipdate-'+id).value,notify:document.getElementById('notify-'+id).checked})});
+  const acct=q.provider==='parcelhub'?'ParcelHub wallet':'ShipTime account';
+  if(!confirm(`Buy this label?\n\n${q.carrier} · ${q.service} (via ${q.providerName})\n$${q.total!=null?q.total.toFixed(2):'?'}${q.taxExtra?' plus tax':''} will be charged to your ${acct}.`))return;
+  const r=await fetch(API+'/orders/'+id+'/shipping/ship',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider:q.provider,quoteId:q.quoteId,serviceId:q.serviceId,carrierId:q.carrierId,carrier:q.carrier,service:q.service,cost:q.total,packages:readBoxes(id),shipDate:document.getElementById('shipdate-'+id).value,notify:document.getElementById('notify-'+id).checked})});
   const d=await r.json();
   if(!d.success){alert(d.error||'Could not create the shipment');return;}
   alert('Label created'+(d.tracking?'. Tracking '+d.tracking:'')+(d.emailed?'. Customer emailed.':'.'));
@@ -500,7 +504,7 @@ async function saveTracking(id){
 }
 async function refreshShipment(id){
   const h=document.getElementById('shiphist-'+id);h.textContent='Checking…';
-  const d=await (await fetch(API+'/orders/'+id+'/shiptime/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+  const d=await (await fetch(API+'/orders/'+id+'/shipping/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
   h.innerHTML=d.success?(d.history.map(e=>`${esc(e.time||'')} ${esc(e.name||e.status||'')} ${esc(e.location||'')}`).join('<br>')||esc(d.status||'No scans yet')):`<span style="color:var(--err)">${esc(d.error)}</span>`;
 }
 
