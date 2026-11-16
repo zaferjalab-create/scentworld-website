@@ -790,6 +790,22 @@ app.get('/compare', (req, res) => {
   res.render('compare', { products: diffusers });
 });
 
+// /commercial-scent-diffusers — landing page for "commercial diffuser" searches.
+// Rendered from the live catalogue so prices and promos stay current: every
+// active diffuser covering more than 500 sq ft, smallest coverage first.
+app.get(['/commercial-scent-diffusers', '/commercial-scent-diffusers.html'], (req, res) => {
+  const all = getActiveProducts();
+  const diffusers = all.filter(p => p.category === 'diffusers');
+  const bySize = (a, b) => (parseCoverageSqft(a) || 0) - (parseCoverageSqft(b) || 0);
+  const models = diffusers
+    .filter(p => ['large', 'commercial', 'hvac'].includes(coverageBucket(p)))
+    .sort(bySize)
+    .map(p => ({ ...p, _hvac: /hvac/i.test(`${p.name} ${p.short_desc || ''} ${p.full_desc || ''}`) }));
+  const small = diffusers.filter(p => coverageBucket(p) === 'small').sort(bySize);
+  const oilCount = all.filter(p => p.category === 'oils').length;
+  res.render('commercial-diffusers', { models, small, oilCount, shipping: shippingRules() });
+});
+
 // /search — name + description search
 app.get('/search', (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 80);
@@ -832,6 +848,7 @@ app.get('/sitemap.xml', (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
   const urls = [
     ['/', '1.0', 'weekly'], ['/shop', '0.9', 'weekly'], ['/about.html', '0.8', 'monthly'],
+    ['/commercial-scent-diffusers', '0.9', 'weekly'], ['/compare', '0.6', 'weekly'],
     ['/blog.html', '0.9', 'weekly'], ['/industries/', '0.9', 'monthly'],
     ['/industries/hotels.html', '0.8', 'monthly'], ['/industries/spas.html', '0.8', 'monthly'],
     ['/industries/restaurants.html', '0.8', 'monthly'],

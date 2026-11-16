@@ -1,0 +1,211 @@
+<%
+  // Server-rendered from the live catalogue (prices include any running promo).
+  // models: active diffusers covering more than 500 sq ft, smallest first.
+  // small:  the room-size units (up to 500 sq ft), mentioned once below the table.
+  const money = n => '$' + Number(n || 0).toLocaleString('en-CA', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const hvacNames = models.filter(m => m._hvac).map(m => m.name.replace(/\s+(Commercial|Nano)?\s*Diffuser$/i, ''));
+  const listNames = a => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  const lo = models.length ? Math.min(...models.map(m => m.price || 0)) : 0;
+  const hi = models.length ? Math.max(...models.map(m => m.price || 0)) : 0;
+  const faq = [
+    ['Which size do I need?',
+     'Measure the floor area you want scented, then pick the model whose coverage includes that number. If you are between two sizes, call us and we will help you choose.'],
+  ];
+  if (hvacNames.length) faq.push(['Can it connect to my HVAC system?',
+     `Yes. The ${listNames(hvacNames)} can connect to HVAC ducts, so one unit scents several rooms.`]);
+  faq.push(
+    ['What does it run on?',
+     `Scent World fragrance oils. There are ${oilCount} scents to choose from, and auto-refill delivery is available so you don't run out.`],
+    ['How fast is shipping?',
+     `Orders ship from Halifax within 24–48 hours and arrive in 3–8 business days, tracked. Shipping is free over $${shipping && shipping.threshold != null ? shipping.threshold : 150} CAD anywhere in Canada.`],
+    ['Can you create a signature scent for our brand?',
+     'Yes. Tell us about your space and we will recommend a scent and a diffuser, or develop a custom signature scent for your business.']
+  );
+%><!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SW3F0J9C88"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SW3F0J9C88');
+  gtag('config', 'AW-16607372924');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2172433390181937');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commercial Scent Diffusers Canada | Scent World Canada</title>
+<meta name="description" content="Commercial scent diffusers for hotels, spas, restaurants and offices, 500 to 5,000 sq ft. HVAC-ready models. Ships from Halifax, free over $150.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.scentworld.ca/commercial-scent-diffusers">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Commercial Scent Diffusers Canada | Scent World Canada">
+<meta property="og:description" content="Commercial scent diffusers for hotels, spas, restaurants and offices, 500 to 5,000 sq ft. Ships from Halifax.">
+<meta property="og:url" content="https://www.scentworld.ca/commercial-scent-diffusers">
+<meta property="og:image" content="https://www.scentworld.ca<%= (models[0] && models[0].image_url) || '/images/logo.png' %>">
+<script type="application/ld+json">
+<%- JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Commercial Scent Diffusers',
+  url: 'https://www.scentworld.ca/commercial-scent-diffusers',
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: models.map((m, i) => ({ '@type': 'ListItem', position: i + 1, url: 'https://www.scentworld.ca/products/' + m.slug, name: m.name }))
+  }
+}).replace(/</g, '\\u003c') %>
+</script>
+<script type="application/ld+json">
+<%- JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } }))
+}).replace(/</g, '\\u003c') %>
+</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.scentworld.ca/"},{"@type":"ListItem","position":2,"name":"Commercial Scent Diffusers","item":"https://www.scentworld.ca/commercial-scent-diffusers"}]}</script>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0908;--bg2:#12100e;--bg3:#1a1714;--bg4:#211e1a;--gold:#c9a55c;--gold-l:#e0ca8e;--cream:#f5f0e6;--cream2:#cdc5b8;--txt:#958e85;--txt2:#635d55;--bdr:rgba(201,165,92,.1);--df:'Playfair Display',serif;--bf:'Outfit',sans-serif}
+html{scroll-behavior:smooth}body{font-family:var(--bf);background:var(--bg);color:var(--cream);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:1.3rem 4vw;display:flex;align-items:center;justify-content:space-between;background:rgba(11,9,8,.93);backdrop-filter:blur(25px);border-bottom:1px solid var(--bdr)}
+.nl span{font-family:var(--df);font-size:1.2rem;color:var(--gold);letter-spacing:.06em}
+.crumb5{padding:6.2rem 4vw .2rem;font-size:.7rem;letter-spacing:.06em;color:var(--txt);position:relative;z-index:5}.crumb5 a{color:var(--txt);transition:color .3s}.crumb5 a:hover{color:var(--gold)}.crumb5 span{margin:0 .5rem;color:var(--txt2)}
+.intro{padding:3rem 4vw 4rem}
+.intro-inner{max-width:900px}
+.sl{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;display:inline-flex;align-items:center;gap:.7rem}
+.sl::before{content:'';width:30px;height:1px;background:var(--gold)}
+h1{font-family:var(--df);font-size:clamp(2.4rem,5vw,3.8rem);font-weight:500;line-height:1.1;margin-bottom:1.5rem}
+h1 em,h2 em{color:var(--gold);font-style:italic;font-weight:400}
+.lead{font-size:1.08rem;color:var(--cream2);font-weight:300;line-height:1.8;max-width:720px}
+.section{padding:5rem 4vw}
+.section-inner{max-width:1200px;margin:0 auto}
+.alt-bg{background:var(--bg2)}
+h2{font-family:var(--df);font-size:clamp(1.8rem,3vw,2.5rem);font-weight:400;line-height:1.2;margin-bottom:1.5rem}
+.models{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem;margin-top:2.5rem}
+.model{background:var(--bg3);border:1px solid var(--bdr);display:flex;flex-direction:column;transition:border-color .3s,transform .3s;color:var(--cream)}
+.model:hover{border-color:rgba(201,165,92,.35);transform:translateY(-3px)}
+.model-img{aspect-ratio:1/1;background:var(--bg4);overflow:hidden}
+.model-img img{width:100%;height:100%;object-fit:cover;display:block}
+.model-body{padding:1.4rem 1.4rem 1.6rem;display:flex;flex-direction:column;gap:.9rem;flex:1}
+.model h3{font-family:var(--df);font-size:1.25rem;font-weight:500}
+.specs{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;font-size:.85rem}
+.specs dt{color:var(--txt);font-weight:300}
+.specs dd{color:var(--cream2)}
+.price{margin-top:auto;font-family:var(--df);font-size:1.4rem;color:var(--gold)}
+.price s{font-family:var(--bf);font-size:.85rem;color:var(--txt);margin-left:.5rem}
+.small-note{margin-top:2rem;color:var(--cream2);font-weight:300;font-size:.95rem}
+.faq{max-width:820px;display:flex;flex-direction:column;gap:0;margin-top:1.5rem}
+.faq-item{border-top:1px solid var(--bdr);padding:1.5rem 0}
+.faq-item:last-child{border-bottom:1px solid var(--bdr)}
+.faq-item h3{font-family:var(--df);font-size:1.15rem;font-weight:500;color:var(--cream);margin-bottom:.6rem}
+.faq-item p{color:var(--cream2);font-weight:300;line-height:1.75}
+.links{display:flex;flex-wrap:wrap;gap:.8rem 1.6rem;margin-top:2rem;font-size:.9rem}
+.cta{background:linear-gradient(135deg,var(--bg2) 0,var(--bg3) 100%);border:1px solid rgba(201,165,92,.25);padding:4rem 2rem;text-align:center;border-radius:2px}
+.cta h2{color:var(--cream)}
+.cta p{font-size:1rem;color:var(--cream2);margin:0 auto 2rem;font-weight:300;max-width:620px}
+.cta-btn{display:inline-block;padding:1rem 2.5rem;background:var(--gold);color:var(--bg);font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;font-weight:500;transition:all .3s;margin:.3rem .4rem}
+.cta-btn:hover{background:var(--gold-l)}
+.cta-btn-ghost{background:none;color:var(--gold);border:1px solid var(--gold)}
+.cta-btn-ghost:hover{background:var(--gold);color:var(--bg)}
+.cta-contact{margin-top:1.5rem;font-size:.9rem;color:var(--txt)}
+footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;text-align:center}
+</style>
+</head>
+<body>
+
+<%- include('partials/header', {cartLive: false}) %>
+<div class="crumb5"><a href="/">Home</a><span>&rsaquo;</span>Commercial Scent Diffusers</div>
+
+<section class="intro">
+  <div class="intro-inner">
+    <div class="sl">For Businesses</div>
+    <h1>Commercial <em>Scent Diffusers</em></h1>
+    <p class="lead">Scent World Canada sells commercial scent diffusers for hotels, spas, restaurants, offices and retail spaces across Canada, shipped from Halifax, Nova Scotia.<% if (models.length) { %> The range covers spaces from 500 to 5,000 sq ft and runs from <%= money(lo) %> to <%= money(hi) %> CAD.<% } %></p>
+  </div>
+</section>
+
+<section class="section alt-bg">
+  <div class="section-inner">
+    <div class="sl">Choose by floor area</div>
+    <h2>Which model fits <em>your space</em></h2>
+    <div class="models">
+      <% models.forEach(m => { %>
+      <a class="model" href="/products/<%= m.slug %>">
+        <div class="model-img"><img src="<%= m.image_url || '/images/placeholder.svg' %>" alt="<%= m.name %>" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'"></div>
+        <div class="model-body">
+          <h3><%= m.name %></h3>
+          <dl class="specs">
+            <dt>Coverage</dt><dd><%= m.spec_coverage || m.coverage || '—' %></dd>
+            <% if (m.spec_oil_capacity) { %><dt>Bottle</dt><dd><%= m.spec_oil_capacity %></dd><% } %>
+            <% if (m._hvac) { %><dt>HVAC</dt><dd>Connects to ducts</dd><% } %>
+          </dl>
+          <div class="price"><%= money(m.price) %><% if (m.regular_price && m.regular_price > m.price) { %><s><%= money(m.regular_price) %></s><% } %></div>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+    <% if (small.length) { %>
+    <p class="small-note">For a single room up to 500 sq ft, the <a href="/products/<%= small[0].slug %>"><%= small[0].name %></a> (<%= money(small[0].price) %>) is enough. <a href="/compare">Compare every diffuser side by side &rarr;</a></p>
+    <% } else { %>
+    <p class="small-note"><a href="/compare">Compare every diffuser side by side &rarr;</a></p>
+    <% } %>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="sl">Questions businesses ask</div>
+    <h2>Before you <em>order</em></h2>
+    <div class="faq">
+      <% faq.forEach(([q, a]) => { %>
+      <div class="faq-item"><h3><%= q %></h3><p><%= a %></p></div>
+      <% }) %>
+    </div>
+    <div class="links">
+      <a href="/shop?filter=oils">Browse fragrance oils &rarr;</a>
+      <a href="/industries/hotels.html">Scent for hotels &rarr;</a>
+      <a href="/industries/spas.html">Scent for spas &rarr;</a>
+      <a href="/industries/restaurants.html">Scent for restaurants &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="section alt-bg">
+  <div class="section-inner">
+    <div class="cta">
+      <h2>Not sure which one <em>you need</em>?</h2>
+      <p>Tell us about your space and we'll recommend a diffuser and a scent, usually within 24 hours.</p>
+      <a href="/#contact" class="cta-btn">Request a Quote</a>
+      <a href="/#booking" class="cta-btn cta-btn-ghost">Book a Consultation</a>
+      <p class="cta-contact">(902) 707-0807 · hello@scentworld.ca</p>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
+
+</body>
+</html>

@@ -141,6 +141,47 @@ test('main pages render', async () => {
   assert.equal((await get('/products/does-not-exist')).status, 404);
 });
 
+test('SEO: commercial diffusers page, llms.txt, honest homepage schema', async () => {
+  const jsonLd = html => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+    .map(m => JSON.parse(m[1]));
+
+  // Commercial page: live diffusers over 500 sq ft, smallest first, valid FAQ + list data
+  const r = await get('/commercial-scent-diffusers');
+  assert.equal(r.status, 200);
+  const html = await r.text();
+  assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, 'one h1');
+  assert.ok(html.includes('<link rel="canonical" href="https://www.scentworld.ca/commercial-scent-diffusers">'));
+  assert.ok(html.includes('href="/products/s200"') && html.includes('href="/products/s300"'));
+  assert.ok(!html.includes('href="/products/l100"'), 'hidden products stay off the page');
+  assert.ok(html.indexOf('href="/products/s30"') < html.indexOf('href="/products/s300"'), 'smallest first');
+  const data = jsonLd(html);
+  const list = data.find(d => d['@type'] === 'CollectionPage').mainEntity.itemListElement;
+  assert.ok(list.length >= 3 && list.every(i => i.url.startsWith('https://www.scentworld.ca/products/')));
+  const faq = data.find(d => d['@type'] === 'FAQPage').mainEntity;
+  for (const q of faq) assert.ok(html.includes(q.name.replace(/'/g, '&#39;')), 'FAQ markup matches visible text: ' + q.name);
+  assert.ok(faq.some(q => q.name.includes('HVAC')));
+
+  // Linked from the nav and listed in the sitemap
+  assert.ok((await (await get('/shop')).text()).includes('href="/commercial-scent-diffusers"'));
+  const sitemap = await (await get('/sitemap.xml')).text();
+  assert.ok(sitemap.includes('/commercial-scent-diffusers</loc>') && sitemap.includes('/compare</loc>'));
+
+  // llms.txt
+  const llms = await get('/llms.txt');
+  assert.equal(llms.status, 200);
+  assert.match(llms.headers.get('content-type'), /text\/plain/);
+  assert.ok((await llms.text()).startsWith('# Scent World Canada'));
+
+  // Homepage: no hidden rating/review markup, no retired search box, one h1
+  const home = await (await get('/')).text();
+  const homeData = jsonLd(home);
+  const biz = homeData.find(d => d['@type'] === 'LocalBusiness');
+  assert.ok(biz && !('aggregateRating' in biz) && !('review' in biz));
+  assert.ok(!homeData.some(d => d.potentialAction));
+  assert.equal((home.match(/<h1[\s>]/g) || []).length, 1, 'one h1');
+  assert.ok(home.includes('<title>Scent Diffusers &amp; Fragrance Oils | Scent World Canada</title>'));
+});
+
 test('product structured data: one priced variant per size (ids match the feed) + shipping that matches checkout', async () => {
   const ld = async slug => {
     const html = await (await get('/products/' + slug)).text();
