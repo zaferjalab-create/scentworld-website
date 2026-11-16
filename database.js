@@ -536,6 +536,8 @@ try {
       'S200 commercial scent diffuser for 3,000-4,000 sq ft: HVAC connection, app scheduling, 500 ml bottle, anti-theft lock. Ships from Halifax.'],
     oud: ['Oud Oil Canada: Diffuser Fragrance Oil | Scent World Canada',
       'Oud fragrance oil for scent diffusers: warm, smoky agarwood for hotel lobbies, majlis rooms and premium retail. Ships from Halifax across Canada.'],
+    'car-diffuser': [null,
+      'Compact in-car scent diffuser with automatic activation: durable metal body, USB-powered, several colours. Ships from Halifax, free over $150.'],
     'white-tea': ['White Tea Oil: Diffuser Fragrance Oil | Scent World Canada',
       'White tea fragrance oil for scent diffusers: light, clean and calming. Made for spas, clinics and boutique hotels. Ships from Halifax across Canada.'],
   };

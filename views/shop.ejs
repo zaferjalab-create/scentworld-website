@@ -43,6 +43,21 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
 <meta property="og:description" content="<%= desc %>">
 <meta property="og:url" content="https://www.scentworld.ca/shop">
 <meta property="og:image" content="https://www.scentworld.ca/images/logo.png">
+<% if (!isSearch && products && products.length) { %>
+<script type="application/ld+json">
+<%- JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Shop Scent World Canada',
+  url: 'https://www.scentworld.ca/shop',
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: products.length,
+    itemListElement: products.map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: 'https://www.scentworld.ca/products/' + p.slug, name: p.name }))
+  }
+}).replace(/</g, '\\u003c') %>
+</script>
+<% } %>
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">

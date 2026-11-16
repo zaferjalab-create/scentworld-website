@@ -10,7 +10,7 @@
 footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--bdr)}
 .ft{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
 .ftb p{font-size:.78rem;font-weight:200;line-height:1.7;color:var(--txt);max-width:280px;margin-top:.8rem}
-.ftc h4{font-family:var(--df);font-size:.95rem;font-weight:500;margin-bottom:1.2rem}
+.ftc .ftc-h{font-family:var(--df);font-size:.95rem;font-weight:500;margin-bottom:1.2rem}
 .ftc ul{list-style:none}
 .ftc ul li{margin-bottom:.6rem}
 .ftc ul li a{font-size:.75rem;font-weight:200;color:var(--txt);text-decoration:none;transition:color .3s}
@@ -42,9 +42,9 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
         </div>
       </a>
     </div>
-    <div class="ftc"><h4>Products</h4><ul><li><a href="/shop">Shop All Products</a></li><li><a href="/products/car-gift-set">Car Diffuser Gift Set</a></li><li><a href="/shop?filter=diffusers">Scent Diffusers</a></li><li><a href="/shop?filter=oils">Fragrance Oils</a></li></ul></div>
-    <div class="ftc"><h4>Industries</h4><ul><li><a href="/industries/hotels.html">For Hotels</a></li><li><a href="/industries/spas.html">For Spas</a></li><li><a href="/industries/restaurants.html">For Restaurants</a></li><li><a href="/commercial-scent-diffusers">Commercial Diffusers</a></li><li><a href="/industries/">All Industries</a></li></ul></div>
-    <div class="ftc"><h4>Company</h4><ul><li><a href="/about.html">About Us</a></li><li><a href="/blog.html">Blog</a></li><li><a href="/#contact">Contact</a></li><li><a href="/track">Track Order</a></li><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms.html">Terms of Service</a></li><li><a href="/shipping.html">Shipping Policy</a></li><li><a href="/refund.html">Refund Policy</a></li></ul></div>
+    <div class="ftc"><p class="ftc-h">Products</p><ul><li><a href="/shop">Shop All Products</a></li><li><a href="/products/car-gift-set">Car Diffuser Gift Set</a></li><li><a href="/shop?filter=diffusers">Scent Diffusers</a></li><li><a href="/shop?filter=oils">Fragrance Oils</a></li></ul></div>
+    <div class="ftc"><p class="ftc-h">Industries</p><ul><li><a href="/industries/hotels.html">For Hotels</a></li><li><a href="/industries/spas.html">For Spas</a></li><li><a href="/industries/restaurants.html">For Restaurants</a></li><li><a href="/commercial-scent-diffusers">Commercial Diffusers</a></li><li><a href="/industries/">All Industries</a></li></ul></div>
+    <div class="ftc"><p class="ftc-h">Company</p><ul><li><a href="/about.html">About Us</a></li><li><a href="/blog.html">Blog</a></li><li><a href="/#contact">Contact</a></li><li><a href="/track">Track Order</a></li><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms.html">Terms of Service</a></li><li><a href="/shipping.html">Shipping Policy</a></li><li><a href="/refund.html">Refund Policy</a></li></ul></div>
   </div>
   <div class="fb">
     <p>&copy; <%= new Date().getFullYear() %> Scent World Canada. All rights reserved.</p>
@@ -169,7 +169,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <% if (promo.poster) { %><a href="/shop" class="sw-promo-img"><img src="<%= promo.poster %>" alt="<%= promo.posterAlt %>" width="900" height="900"></a><% } %>
     <div class="sw-promo-body">
       <div class="sw-pop-eyebrow"><%= promo.name %></div>
-      <h3 class="sw-pop-h"><%= promo.bar.split(' · ')[promo.id === 'november' ? 0 : 1] %></h3>
+      <div class="sw-pop-h" role="heading" aria-level="2"><%= promo.bar.split(' · ')[promo.id === 'november' ? 0 : 1] %></div>
       <p class="sw-pop-p">Sale prices are shown on every product and applied automatically at checkout. No code needed.</p>
       <a class="sw-promo-btn" href="/shop">Shop the sale</a>
       <p class="sw-pop-note">Offers can't be combined. Not valid on rentals or subscriptions. Shopping in person? We'll apply it for you.</p>
@@ -221,7 +221,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
   <div class="sw-pop-card" role="dialog" aria-label="Save 10% on your first order">
     <button class="sw-pop-x" id="swPopX" aria-label="Close">&times;</button>
     <div class="sw-pop-eyebrow">Welcome offer</div>
-    <h3 class="sw-pop-h">Save <em>10%</em> on your first order</h3>
+    <div class="sw-pop-h" role="heading" aria-level="2">Save <em>10%</em> on your first order</div>
     <p class="sw-pop-p">Join our list for early access to new fragrances, seasonal collections, and a code for 10% off your first purchase.</p>
     <form class="sw-pop-form" id="swPopForm">
       <input type="email" id="swPopEmail" placeholder="you@email.com" required aria-label="Email address">

@@ -214,6 +214,33 @@ test('SEO quick wins: per-product search title/description, admin edits win, bla
   assert.equal(titleOf(await (await get('/products/vienna')).text()), 'Vienna Oil | Scent World Canada');
 });
 
+test('SEO technical: headings never skip a level, snippets fit, /shop lists its products', async () => {
+  const titleOf = html => (html.match(/<title>([^<]*)<\/title>/) || [])[1];
+  const descOf = html => (html.match(/<meta name="description" content="([^"]*)"/) || [])[1];
+  // Heading levels must step down one at a time (h2 -> h4 is a skip), across
+  // every sitemap page plus /shop variants.
+  const sitemap = await (await get('/sitemap.xml')).text();
+  const paths = [...sitemap.matchAll(/<loc>https:\/\/www\.scentworld\.ca([^<]*)<\/loc>/g)].map(m => m[1]);
+  assert.ok(paths.length > 40);
+  for (const p of [...paths, '/shop?filter=oils', '/track', '/wishlist']) {
+    const html = (await (await get(p)).text()).replace(/<script[\s\S]*?<\/script>/g, '');
+    let prev = 0;
+    for (const m of html.matchAll(/<h([1-6])[\s>]/g)) {
+      const lvl = +m[1];
+      assert.ok(prev === 0 || lvl <= prev + 1, `${p}: h${prev} -> h${lvl}`);
+      prev = lvl;
+    }
+    const t = titleOf(html), d = descOf(html);
+    assert.ok(t && t.replace(/&amp;/g, '&').length <= 60, `${p} title ${t && t.length}: ${t}`);
+    if (!p.startsWith('/track') && !p.startsWith('/wishlist')) assert.ok(d && d.length <= 160, `${p} description ${d && d.length}`);
+  }
+  const shop = await (await get('/shop')).text();
+  const list = [...shop.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => JSON.parse(m[1]))
+    .find(d => d['@type'] === 'CollectionPage').mainEntity;
+  assert.ok(list.numberOfItems > 30 && list.itemListElement.every(i => i.url.includes('/products/')));
+  assert.ok(!(await (await get('/search?q=oud')).text()).includes('"CollectionPage"'), 'search results stay unmarked');
+});
+
 test('product structured data: one priced variant per size (ids match the feed) + shipping that matches checkout', async () => {
   const ld = async slug => {
     const html = await (await get('/products/' + slug)).text();
