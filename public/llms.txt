@@ -4,17 +4,18 @@
 > and homes. Based in Halifax, Nova Scotia. Ships across Canada.
 
 ## What we sell
-- Commercial scent diffusers for spaces of 500 to 5,000 sq ft
-  (S30, S100, S200, S300). The S30, S200 and S300 connect to HVAC;
-  the S200 and S300 have app control and an anti-theft lock.
-- S20 Nano diffuser for single rooms up to 500 sq ft.
-- Car scent diffuser and car diffuser gift set.
-- 29 fragrance oils for diffusers.
+- [Commercial scent diffusers](https://www.scentworld.ca/commercial-scent-diffusers): spaces of 500 to 5,000 sq ft. The [S30](https://www.scentworld.ca/products/s30), [S200](https://www.scentworld.ca/products/s200) and [S300](https://www.scentworld.ca/products/s300) connect to HVAC; the S200 and S300 have app control and an anti-theft lock. The [S100](https://www.scentworld.ca/products/s100) covers 1,500 to 3,000 sq ft.
+- [S20 Nano diffuser](https://www.scentworld.ca/products/s20): single rooms up to 500 sq ft.
+- [Car scent diffuser](https://www.scentworld.ca/products/car-diffuser) and [car diffuser gift set](https://www.scentworld.ca/products/car-gift-set).
+- [29 fragrance oils for diffusers](https://www.scentworld.ca/shop?filter=oils), for example [Oud](https://www.scentworld.ca/products/oud) and [White Tea](https://www.scentworld.ca/products/white-tea).
 - Custom signature scents and auto-refill delivery for businesses.
-Current prices: https://www.scentworld.ca/shop
+- Current prices: [Shop](https://www.scentworld.ca/shop)
 
 ## Who we work with
-Hotels, spas and wellness centres, restaurants, offices, retail and homes.
+- [Hotels](https://www.scentworld.ca/industries/hotels.html)
+- [Spas and wellness centres](https://www.scentworld.ca/industries/spas.html)
+- [Restaurants](https://www.scentworld.ca/industries/restaurants.html)
+- Offices, retail and homes: [all industries](https://www.scentworld.ca/industries/)
 
 ## Where we work
 Based in Halifax, NS. Clients across Atlantic Canada, including Halifax,
@@ -24,6 +25,8 @@ every Canadian province.
 ## Shipping and returns
 Free shipping over $150 CAD in Canada. Orders processed in 24-48 hours
 and delivered in 3-8 days, tracked. 30-day returns.
+- [Shipping policy](https://www.scentworld.ca/shipping.html)
+- [Returns and refunds](https://www.scentworld.ca/refund.html)
 
 ## Hours
 Monday-Friday 9am-6pm Atlantic time. Weekends by appointment.
@@ -33,14 +36,7 @@ Phone: (902) 707-0807
 Email: hello@scentworld.ca
 Address: 6156 Quinpool Road, Halifax, NS B3L 1A3
 
-## Key pages
-- Commercial diffusers: https://www.scentworld.ca/commercial-scent-diffusers
-- Shop: https://www.scentworld.ca/shop
-- Compare diffusers: https://www.scentworld.ca/compare
-- Industries: https://www.scentworld.ca/industries/
-- Hotels: https://www.scentworld.ca/industries/hotels.html
-- Spas: https://www.scentworld.ca/industries/spas.html
-- Restaurants: https://www.scentworld.ca/industries/restaurants.html
-- About: https://www.scentworld.ca/about.html
-- Shipping: https://www.scentworld.ca/shipping.html
-- Returns: https://www.scentworld.ca/refund.html
+## More
+- [About Scent World Canada](https://www.scentworld.ca/about.html)
+- [Compare diffusers](https://www.scentworld.ca/compare)
+- [Blog](https://www.scentworld.ca/blog.html) ([RSS feed](https://www.scentworld.ca/blog/feed.xml))

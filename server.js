@@ -736,9 +736,18 @@ function getTestimonials() {
 
 // Homepage — products rendered server-side
 // ?cart=open is legacy; redirect to / so Google doesn't flag it as a redirect page
+// Last date the homepage's own copy changed. Bump it when the homepage text is
+// edited; product edits (prices, names, descriptions) count on their own.
+const HOMEPAGE_COPY_UPDATED = '2026-11-16';
 app.get('/', (req, res) => {
   if (req.query.cart === 'open') return res.redirect(301, '/');
-  res.render('index', { products: withRatings(homepageProducts()), testimonials: getTestimonials(), buckets: sizeBuckets() });
+  const products = withRatings(homepageProducts());
+  // dateModified = the newest of the homepage copy and any product it shows
+  const pageModified = products.reduce((d, p) => {
+    const u = String(p.updated_at || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(u) && u > d ? u : d;
+  }, HOMEPAGE_COPY_UPDATED);
+  res.render('index', { products, testimonials: getTestimonials(), buckets: sizeBuckets(), pageModified });
 });
 
 // Clean product detail URLs: /products/:slug (SSR)
@@ -840,6 +849,12 @@ app.get('/api/search', (req, res) => {
       category: CAT[p.category] || p.category,
     })),
   });
+});
+
+// Blog RSS feed (lib/blog-feed.js reads the posts in views/blog/)
+const blogFeed = require('./lib/blog-feed');
+app.get('/blog/feed.xml', (req, res) => {
+  res.type('application/rss+xml').send(blogFeed.feedXml());
 });
 
 // Dynamic sitemap.xml (DB-driven)

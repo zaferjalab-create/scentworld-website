@@ -241,6 +241,36 @@ test('SEO technical: headings never skip a level, snippets fit, /shop lists its 
   assert.ok(!(await (await get('/search?q=oud')).text()).includes('"CollectionPage"'), 'search results stay unmarked');
 });
 
+test('GEO: llms.txt uses markdown links, homepage dateModified + video data, blog RSS feed', async () => {
+  const llms = await (await get('/llms.txt')).text();
+  const links = [...llms.matchAll(/\[[^\]]+\]\((https:\/\/www\.scentworld\.ca[^)]*)\)/g)].map(m => m[1]);
+  assert.ok(links.length >= 15, `llms.txt markdown links: ${links.length}`);
+  assert.ok(!/^- [^[]*: https?:\/\//m.test(llms), 'no bare-URL list items left');
+
+  const home = await (await get('/')).text();
+  const data = [...home.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => JSON.parse(m[1]));
+  const page = data.find(d => d['@type'] === 'WebPage');
+  assert.match(page.dateModified, /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(page.dateModified >= '2026-11-16');
+  assert.ok(home.includes(`<meta property="article:modified_time" content="${page.dateModified}">`));
+  const videos = data.find(d => d['@type'] === 'ItemList' && d.itemListElement?.[0]?.item?.['@type'] === 'VideoObject');
+  assert.ok(videos, 'homepage reel videos are described');
+  for (const { item } of videos.itemListElement) {
+    assert.ok(item.name && item.description && item.uploadDate && item.thumbnailUrl.startsWith('https://') && item.contentUrl.endsWith('.mp4'));
+    assert.equal((await get(item.contentUrl.replace('https://www.scentworld.ca', ''), { method: 'HEAD' })).status, 200, item.contentUrl);
+  }
+  assert.ok(home.includes('type="application/rss+xml"'));
+
+  const r = await get('/blog/feed.xml');
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('content-type'), /rss\+xml/);
+  const feed = await r.text();
+  const items = [...feed.matchAll(/<item>[\s\S]*?<link>([^<]+)<\/link>[\s\S]*?<\/item>/g)].map(m => m[1]);
+  assert.equal(items.length, 6);
+  for (const u of items) assert.equal((await get(u.replace('https://www.scentworld.ca', ''))).status, 200, u);
+  assert.ok(!feed.includes('&amp;amp;'), 'no double escaping');
+});
+
 test('product structured data: one priced variant per size (ids match the feed) + shipping that matches checkout', async () => {
   const ld = async slug => {
     const html = await (await get('/products/' + slug)).text();
