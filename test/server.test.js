@@ -180,6 +180,38 @@ test('SEO: commercial diffusers page, llms.txt, honest homepage schema', async (
   assert.ok(!homeData.some(d => d.potentialAction));
   assert.equal((home.match(/<h1[\s>]/g) || []).length, 1, 'one h1');
   assert.ok(home.includes('<title>Scent Diffusers &amp; Fragrance Oils | Scent World Canada</title>'));
+  assert.ok(biz.alternateName.includes('ScentWorld'));
+});
+
+test('SEO quick wins: per-product search title/description, admin edits win, blank falls back', async () => {
+  const titleOf = html => (html.match(/<title>([^<]*)<\/title>/) || [])[1];
+  const descOf = html => (html.match(/<meta name="description" content="([^"]*)"/) || [])[1];
+
+  const s200 = await (await get('/products/s200')).text();
+  assert.equal(titleOf(s200), 'S200 Commercial Scent Diffuser | Scent World Canada');
+  assert.ok(descOf(s200).startsWith('S200 commercial scent diffuser for 3,000-4,000 sq ft'));
+  assert.ok(s200.includes('href="/commercial-scent-diffusers"'), 'links to the commercial page');
+  assert.equal(titleOf(await (await get('/products/oud')).text()), 'Oud Oil Canada: Diffuser Fragrance Oil | Scent World Canada');
+  assert.equal(titleOf(await (await get('/products/white-tea')).text()), 'White Tea Oil: Diffuser Fragrance Oil | Scent World Canada');
+  // Products without one keep the old pattern
+  const vienna = await (await get('/products/vienna')).text();
+  assert.equal(titleOf(vienna), 'Vienna Oil | Scent World Canada');
+  assert.ok(descOf(vienna).endsWith('Ships from Halifax. Free shipping over $150 CAD across Canada.'));
+
+  // Admin: an update without the SEO fields leaves them alone; sending them changes them
+  const row = db.prepare("SELECT * FROM products WHERE slug = 'vienna'").get();
+  const cookie = await login();
+  const put = body => fetch(BASE + `/api/admin/products/${row.id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: cookie, Origin: BASE }, body: JSON.stringify(body) });
+  const base = { ...row, gallery_images: JSON.parse(row.gallery_images || '[]'), featured: !!row.featured, active: !!row.active };
+  delete base.seo_title; delete base.seo_description;
+  assert.equal((await put({ ...base, seo_title: 'Vienna Diffuser Oil | Scent World Canada', seo_description: '  ' })).status, 200);
+  assert.equal(titleOf(await (await get('/products/vienna')).text()), 'Vienna Diffuser Oil | Scent World Canada');
+  assert.equal((await put(base)).status, 200);
+  assert.equal(db.prepare('SELECT seo_title FROM products WHERE id = ?').get(row.id).seo_title, 'Vienna Diffuser Oil | Scent World Canada');
+  assert.equal(db.prepare('SELECT seo_description FROM products WHERE id = ?').get(row.id).seo_description, null, 'blank saves as empty');
+  await put({ ...base, seo_title: '', seo_description: '' });
+  assert.equal(titleOf(await (await get('/products/vienna')).text()), 'Vienna Oil | Scent World Canada');
 });
 
 test('product structured data: one priced variant per size (ids match the feed) + shipping that matches checkout', async () => {

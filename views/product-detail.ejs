@@ -36,7 +36,8 @@ const minPrice = sizes ? Math.min(...sizes.map(s => s.price)) : (product.price |
 const maxPrice = sizes ? Math.max(...sizes.map(s => s.price)) : (product.price || 0);
 const isOil = product.category === 'oils';
 const isDiffuser = product.category === 'diffusers';
-const metaDesc = (product.short_desc || product.name) + ' Ships from Halifax. Free shipping over $150 CAD across Canada.';
+const metaDesc = product.seo_description || ((product.short_desc || product.name) + ' Ships from Halifax. Free shipping over $150 CAD across Canada.');
+const pageTitle = product.seo_title || (product.name + ' | Scent World Canada');
 const BASE = 'https://www.scentworld.ca';
 const pageUrl = BASE + '/products/' + product.slug;
 const imgAbs = u => u && u.startsWith('http') ? u : BASE + (u || '/images/logo.png');
@@ -77,12 +78,12 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
 <!-- End Meta Pixel Code -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><%= product.name %> | Scent World Canada</title>
+<title><%= pageTitle %></title>
 <meta name="description" content="<%= metaDesc %>">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="<%= pageUrl %>">
 <meta property="og:type" content="product">
-<meta property="og:title" content="<%= product.name %> | Scent World Canada">
+<meta property="og:title" content="<%= pageTitle %>">
 <meta property="og:description" content="<%= metaDesc %>">
 <meta property="og:url" content="<%= pageUrl %>">
 <meta property="og:image" content="<%= imgAbs(images[0]) %>">
@@ -604,6 +605,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bdr);padding:2.5rem 4vw;
     <div class="pd-eta">Order today — arrives <strong id="pdEta"></strong></div>
 
     <p class="pd-desc"><%= product.short_desc || '' %></p>
+    <% if (isDiffuser) { %>
+    <p class="pd-compare-link" style="margin:-1rem 0 1.6rem;font-size:.85rem"><a href="/commercial-scent-diffusers">Comparing sizes? See all commercial scent diffusers &rarr;</a></p>
+    <% } %>
 
     <% if (product.coverage || product.spec_coverage) { %>
     <div style="display:flex;align-items:center;gap:.7rem;padding:.8rem 1rem;background:var(--bg2);border:1px solid var(--bdr);margin-bottom:1.8rem;border-radius:2px">

@@ -324,6 +324,7 @@ router.get('/api/admin/product-images', requireAdmin, (req, res) => {
 });
 
 // Products CRUD
+const seoText = v => (typeof v === 'string' && v.trim()) ? v.trim().slice(0, 300) : null;
 router.get('/api/admin/products', requireAdmin, (req, res) => {
   const products = db.prepare('SELECT * FROM products ORDER BY sort_order').all();
   res.json({ success: true, products });
@@ -342,6 +343,8 @@ router.post('/api/admin/products', requireAdmin, (req, res) => {
   const result = stmt.run(name, slug, category, short_desc || null, full_desc || null, price || null, coverage || null, image_url || null, gallery, sizesJson,
     spec_coverage || null, spec_oil_capacity || null, spec_noise || null, spec_power || null, spec_dimensions || null, spec_weight || null, spec_warranty || null, boxJson,
     featured ? 1 : 0, active !== false ? 1 : 0, sort_order || 0);
+  db.prepare('UPDATE products SET seo_title = ?, seo_description = ? WHERE id = ?')
+    .run(seoText(req.body.seo_title), seoText(req.body.seo_description), result.lastInsertRowid);
   res.json({ success: true, id: result.lastInsertRowid });
 });
 
@@ -357,6 +360,11 @@ router.put('/api/admin/products/:id', requireAdmin, (req, res) => {
     .run(name, slug, category, short_desc ?? null, full_desc ?? null, price ?? null, coverage ?? null, image_url ?? null, gallery, sizesJson,
          spec_coverage ?? null, spec_oil_capacity ?? null, spec_noise ?? null, spec_power ?? null, spec_dimensions ?? null, spec_weight ?? null, spec_warranty ?? null, boxJson,
          featured ? 1 : 0, active ? 1 : 0, sort_order || 0, req.params.id);
+  // SEO fields only change when the request carries them, so an older client
+  // saving a product never wipes them.
+  for (const col of ['seo_title', 'seo_description']) {
+    if (col in req.body) db.prepare(`UPDATE products SET ${col} = ? WHERE id = ?`).run(seoText(req.body[col]), req.params.id);
+  }
   res.json({ success: true });
 });
 

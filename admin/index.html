@@ -250,6 +250,10 @@ tr.row-new:hover td{background:rgba(255,90,60,.11)}
         <div><label>Weight</label><input id="prod-spec_weight" placeholder="2.4 kg"></div>
         <div style="grid-column:1/-1"><label>Warranty</label><input id="prod-spec_warranty" placeholder="1-year limited warranty"></div>
       </div>
+      <label style="margin-top:.8rem">Search title <span style="opacity:.6">(optional, about 60 characters; blank = "Name | Scent World Canada")</span></label>
+      <input id="prod-seo_title" maxlength="300" placeholder="S200 Commercial Scent Diffuser | Scent World Canada">
+      <label style="margin-top:.6rem">Search description <span style="opacity:.6">(optional, about 155 characters; blank = short description)</span></label>
+      <textarea id="prod-seo_description" maxlength="300" style="min-height:60px"></textarea>
       <label style="margin-top:.8rem">What's in the Box (one item per line)</label>
       <textarea id="prod-box_contents" placeholder="S100 Diffuser unit&#10;Power adapter&#10;User manual" style="min-height:80px"></textarea>
     </div>
@@ -718,7 +722,7 @@ async function loadProducts(){
 }
 function openProductModal(p){
   document.getElementById('modalTitle').textContent=p?'Edit Product':'Add Product';
-  ['id','name','slug','category','short_desc','full_desc','price','coverage','image_url','sort_order','spec_coverage','spec_oil_capacity','spec_noise','spec_power','spec_dimensions','spec_weight','spec_warranty'].forEach(f=>{
+  ['id','name','slug','category','short_desc','full_desc','price','coverage','image_url','sort_order','spec_coverage','spec_oil_capacity','spec_noise','spec_power','spec_dimensions','spec_weight','spec_warranty','seo_title','seo_description'].forEach(f=>{
     const el=document.getElementById('prod-'+f);if(el)el.value=p?p[f]||'':'';
   });
   // Box contents: JSON array <-> one item per line
@@ -955,7 +959,7 @@ async function editProduct(id){
 }
 async function saveProduct(){
   const data={};
-  ['name','slug','category','short_desc','full_desc','price','coverage','image_url','sort_order','spec_coverage','spec_oil_capacity','spec_noise','spec_power','spec_dimensions','spec_weight','spec_warranty'].forEach(f=>{
+  ['name','slug','category','short_desc','full_desc','price','coverage','image_url','sort_order','spec_coverage','spec_oil_capacity','spec_noise','spec_power','spec_dimensions','spec_weight','spec_warranty','seo_title','seo_description'].forEach(f=>{
     const el=document.getElementById('prod-'+f);data[f]=el?el.value:'';
   });
   // Box contents: lines -> JSON array

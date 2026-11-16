@@ -166,6 +166,17 @@ try {
   console.error('❌ spec columns migration error:', e.message);
 }
 
+// Migration: optional per-product SEO title + meta description. Blank = the
+// page falls back to "<name> | Scent World Canada" and the short description.
+try {
+  const cols = db.prepare('PRAGMA table_info(products)').all().map(c => c.name);
+  for (const name of ['seo_title', 'seo_description']) {
+    if (!cols.includes(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} TEXT`);
+  }
+} catch (e) {
+  console.error('❌ seo columns migration error:', e.message);
+}
+
 // Migration: Add sizes column for product variants (e.g. 100ml/200ml/500ml)
 try {
   // Check if column exists first
@@ -515,6 +526,26 @@ try {
   if (n > 0) console.log(`✅ Filled ${n} diffuser descriptions`);
 } catch (e) {
   console.error('❌ diffuser content error:', e.message);
+}
+
+// SEO titles/descriptions for pages that rank 5-15 for real searches (Search
+// Console, Aug-Nov 2026). Only fills blanks, so edits made in the admin win.
+try {
+  const seo = {
+    s200: ['S200 Commercial Scent Diffuser | Scent World Canada',
+      'S200 commercial scent diffuser for 3,000-4,000 sq ft: HVAC connection, app scheduling, 500 ml bottle, anti-theft lock. Ships from Halifax.'],
+    oud: ['Oud Oil Canada: Diffuser Fragrance Oil | Scent World Canada',
+      'Oud fragrance oil for scent diffusers: warm, smoky agarwood for hotel lobbies, majlis rooms and premium retail. Ships from Halifax across Canada.'],
+    'white-tea': ['White Tea Oil: Diffuser Fragrance Oil | Scent World Canada',
+      'White tea fragrance oil for scent diffusers: light, clean and calming. Made for spas, clinics and boutique hotels. Ships from Halifax across Canada.'],
+  };
+  const fill = db.prepare(`UPDATE products SET
+    seo_title = CASE WHEN seo_title IS NULL OR seo_title = '' THEN ? ELSE seo_title END,
+    seo_description = CASE WHEN seo_description IS NULL OR seo_description = '' THEN ? ELSE seo_description END
+    WHERE slug = ?`);
+  for (const [slug, [title, desc]] of Object.entries(seo)) fill.run(title, desc, slug);
+} catch (e) {
+  console.error('❌ seo defaults error:', e.message);
 }
 
 // Product display order: Diffusers → Aerosol → Home & Car → Fragrance Oils.
