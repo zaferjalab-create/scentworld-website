@@ -291,8 +291,13 @@ test('homepage copy: plain-facts opening, FAQ data matches the visible answers, 
   faq.forEach((q, i) => assert.equal(q.acceptedAnswer.text, answers[i], q.name));
   const cost = faq.find(q => q.name === 'How much does a commercial scent diffuser cost?').acceptedAnswer.text;
   for (const d of diffusers) if (/sq\s*ft/.test(d.spec_coverage || d.coverage || '')) {
-    assert.ok(cost.includes(d.name) && cost.includes(`$${Number(d.price).toLocaleString('en-CA')}`), d.name);
+    const short = d.name.replace(/\s+(Commercial|Nano)?\s*Diffuser$/i, '');
+    assert.ok(cost.includes(`The ${short} is $${Number(d.price).toLocaleString('en-CA')}`), d.name);
   }
+  // Keep "diffuser" under 2.5% of the page's words (GEO Optimizer's keyword-stuffing line)
+  const words = visible(home.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<noscript[\s\S]*?<\/noscript>/g, ' ')).toLowerCase().match(/\b\p{L}{4,}\b/gu);
+  const share = words.filter(w => w === 'diffuser').length / words.length;
+  assert.ok(share < 0.025, `"diffuser" is ${(share * 100).toFixed(2)}% of words`);
   assert.ok(faq.some(q => q.name.includes('HVAC')));
 });
 

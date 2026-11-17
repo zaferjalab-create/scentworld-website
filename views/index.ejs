@@ -193,10 +193,10 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
   if (diffusers.length) faq.push(
     ['How much does a commercial scent diffuser cost?',
      `Scent World diffusers cost ${cad(minPrice)} to ${cad(maxPrice)} CAD. ` +
-     diffusers.map(d => `The ${link('/products/' + d.slug, esc(d.name))} is ${cad(d.price)} and covers ${fmt(sqft(d)[0])}–${fmt(sqft(d)[1])} sq ft.`).join(' ') +
+     diffusers.map(d => `The ${link('/products/' + d.slug, esc(shortName(d)))} is ${cad(d.price)} and covers ${fmt(sqft(d)[0])}–${fmt(sqft(d)[1])} sq ft.`).join(' ') +
      ` Fragrance oils are sold separately. For several locations or a whole building, ${link('#contact', 'request a quote')}.`],
     ['Which diffuser size do I need?',
-     `Pick the diffuser by the floor area you want to scent: ` +
+     `Pick a model by the floor area you want to scent: ` +
      list(diffusers.map(d => `${esc(shortName(d))} for ${fmt(sqft(d)[0])}–${fmt(sqft(d)[1])} sq ft`)) +
      `. For spaces over ${fmt(maxArea)} sq ft, ${link('#booking', 'book a free consultation')} and we will plan the coverage. ${link('/compare', 'Compare all diffusers')}.`]
   );
@@ -745,7 +745,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <button class="pf-btn" data-cat="oils">Fragrance Oils</button>
   </div>
   <div class="finder rv">
-    <span class="finder-label">Find the right diffuser for your space:</span>
+    <span class="finder-label">Find the right size for your space:</span>
     <div class="finder-opts">
       <% const hasSize = b => typeof buckets === 'undefined' || buckets.includes(b); %>
       <% if (hasSize('small')) { %><a href="/shop?size=small">Up to 500 sq ft<small>Home office · Boutique</small></a><% } %>
