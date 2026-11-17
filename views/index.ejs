@@ -184,6 +184,7 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
   const maxPrice = diffusers.length ? Math.max(...diffusers.map(d => d.price || 0)) : 0;
   const freeOver = shipping && shipping.threshold != null ? shipping.threshold : 150;
   const link = (href, text) => `<a href="${href}" style="color:var(--gold)">${text}</a>`;
+  const bottles = diffusers.filter(d => /\d\s*ml/i.test(d.spec_oil_capacity || ''));
   const list = items => items.length <= 1 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
 
   const faq = [
@@ -220,7 +221,9 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
     ['Are your fragrance oils safe for commercial use?',
      `Yes, all our fragrance oils are professionally formulated for commercial environments and meet IFRA (International Fragrance Association) safety standards. They are non-toxic, hypoallergenic friendly, and designed for continuous use in occupied spaces.`],
     ['How long does a bottle of fragrance oil last?',
-     `Fragrance oil duration depends on the size of your space, the diffuser settings, and how many hours per day the system operates. On average, a standard bottle lasts 30 to 60 days in a typical commercial space with regular use. We help you calculate exact needs during your consultation.`]
+     `About one month. Each model's oil bottle is sized to last roughly a month of regular use` +
+     (bottles.length ? `: ${list(bottles.map(d => `the ${esc(shortName(d))} holds ${esc(d.spec_oil_capacity)}`))}` : '') +
+     `. The exact time depends on the intensity setting and how many hours a day it runs. We help you set a schedule during your free consultation.`]
   );
 %>
 <script type="application/ld+json">
@@ -862,7 +865,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
     <p class="sd rv d2" style="margin-top:1rem">Now, we bring that same dedication to Canada &mdash; offering luxury scent solutions for hotels, restaurants, spas, offices, and homes from Halifax to Vancouver.</p>
     <div class="about-s rv d3">
       <div class="as"><div class="an">30K+</div><div class="al">Units Sold</div></div>
-      <div class="as"><div class="an">150+</div><div class="al">Fragrances</div></div>
+      <div class="as"><div class="an"><%= oilCount %></div><div class="al">Fragrances</div></div>
       <div class="as"><div class="an">Global</div><div class="al">Presence</div></div>
     </div>
     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem">

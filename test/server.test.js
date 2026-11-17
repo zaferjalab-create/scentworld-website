@@ -299,6 +299,14 @@ test('homepage copy: plain-facts opening, FAQ data matches the visible answers, 
   const share = words.filter(w => w === 'diffuser').length / words.length;
   assert.ok(share < 0.025, `"diffuser" is ${(share * 100).toFixed(2)}% of words`);
   assert.ok(faq.some(q => q.name.includes('HVAC')));
+  // Fragrance count is the live number of oils (owner: 29 now, more later), not a fixed "150+"
+  const oils = db.prepare("SELECT COUNT(*) AS n FROM products WHERE active = 1 AND category = 'oils'").get().n;
+  assert.ok(home.includes(`<div class="an">${oils}</div><div class="al">Fragrances</div>`));
+  assert.ok(!home.includes('150+'));
+  // Bottle life: about one month per device, with each device's own bottle size
+  const bottle = faq.find(q => q.name === 'How long does a bottle of fragrance oil last?').acceptedAnswer.text;
+  assert.match(bottle, /^About one month\./);
+  assert.ok(bottle.includes('the S20 holds 100 ml') && bottle.includes('the S300 holds 800 ml') && !bottle.includes('30 to 60'), bottle);
 });
 
 test('product structured data: one priced variant per size (ids match the feed) + shipping that matches checkout', async () => {
