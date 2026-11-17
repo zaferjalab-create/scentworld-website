@@ -253,9 +253,12 @@ test('GEO: llms.txt uses markdown links, homepage dateModified + video data, blo
   assert.match(page.dateModified, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(page.dateModified >= '2026-11-16');
   assert.ok(home.includes(`<meta property="article:modified_time" content="${page.dateModified}">`));
-  const videos = data.find(d => d['@type'] === 'ItemList' && d.itemListElement?.[0]?.item?.['@type'] === 'VideoObject');
-  assert.ok(videos, 'homepage reel videos are described');
-  for (const { item } of videos.itemListElement) {
+  // One top-level VideoObject per reel video (not nested in a list)
+  const videos = data.filter(d => d['@type'] === 'VideoObject');
+  const reelCount = (home.match(/class="reel-card/g) || []).length;
+  assert.ok(reelCount > 0 && videos.length === reelCount, `videos ${videos.length} vs reel cards ${reelCount}`);
+  for (const item of videos) {
+    assert.equal(item['@context'], 'https://schema.org');
     assert.ok(item.name && item.description && item.uploadDate && item.thumbnailUrl.startsWith('https://') && item.contentUrl.endsWith('.mp4'));
     assert.equal((await get(item.contentUrl.replace('https://www.scentworld.ca', ''), { method: 'HEAD' })).status, 200, item.contentUrl);
   }

@@ -149,32 +149,22 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
   dateModified: pageModified
 }).replace(/</g, '\\u003c') %>
 </script>
-<% const reelVideos = products.filter(p => productVideos[p.slug]); %>
-<% if (reelVideos.length) { %>
+<%# One top-level VideoObject per reel video: nested inside an ItemList, search
+    engines and audit tools don't reliably read them. %>
+<% products.filter(p => productVideos[p.slug]).forEach(p => { const v = productVideos[p.slug]; %>
 <script type="application/ld+json">
 <%- JSON.stringify({
   '@context': 'https://schema.org',
-  '@type': 'ItemList',
-  name: 'Scent World Canada product videos',
-  itemListElement: reelVideos.map((p, i) => {
-    const v = productVideos[p.slug];
-    return {
-      '@type': 'ListItem',
-      position: i + 1,
-      item: {
-        '@type': 'VideoObject',
-        name: p.name + ' — product demo',
-        description: p.short_desc || p.name,
-        thumbnailUrl: 'https://www.scentworld.ca' + (v.poster || p.image_url || '/images/logo.png'),
-        contentUrl: 'https://www.scentworld.ca' + v.src,
-        uploadDate: '2026-09-27',
-        url: 'https://www.scentworld.ca/products/' + p.slug
-      }
-    };
-  })
+  '@type': 'VideoObject',
+  name: p.name + ' — product demo',
+  description: p.short_desc || p.name,
+  thumbnailUrl: 'https://www.scentworld.ca' + (v.poster || p.image_url || '/images/logo.png'),
+  contentUrl: 'https://www.scentworld.ca' + v.src,
+  uploadDate: '2026-09-27',
+  url: 'https://www.scentworld.ca/products/' + p.slug
 }).replace(/</g, '\\u003c') %>
 </script>
-<% } %>
+<% }) %>
 <link rel="alternate" type="application/rss+xml" title="Scent World Canada Blog" href="https://www.scentworld.ca/blog/feed.xml">
 <script type="application/ld+json">
 {
