@@ -274,6 +274,28 @@ test('GEO: llms.txt uses markdown links, homepage dateModified + video data, blo
   assert.ok(!feed.includes('&amp;amp;'), 'no double escaping');
 });
 
+test('homepage copy: plain-facts opening, FAQ data matches the visible answers, prices match the catalogue', async () => {
+  const home = await (await get('/')).text();
+  const visible = s => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
+  // Opening paragraph says what the business is, where, and the live price floor
+  const hp = visible((home.match(/<p class="hp">([\s\S]*?)<\/p>/) || [])[1] || '');
+  assert.match(hp, /^Scent World Canada sells scent diffusers and fragrance oils from Halifax, Nova Scotia/);
+  const diffusers = db.prepare("SELECT * FROM products WHERE active = 1 AND category = 'diffusers'").all();
+  const cheapest = Math.min(...diffusers.map(d => d.price));
+  assert.ok(hp.includes(`$${cheapest.toLocaleString('en-CA')} CAD`), hp);
+
+  const faq = [...home.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => JSON.parse(m[1]))
+    .find(d => d['@type'] === 'FAQPage').mainEntity;
+  const answers = [...home.matchAll(/<div class="faq-a-inner">([\s\S]*?)<\/div><\/div>/g)].map(m => visible(m[1]));
+  assert.equal(faq.length, answers.length);
+  faq.forEach((q, i) => assert.equal(q.acceptedAnswer.text, answers[i], q.name));
+  const cost = faq.find(q => q.name === 'How much does a commercial scent diffuser cost?').acceptedAnswer.text;
+  for (const d of diffusers) if (/sq\s*ft/.test(d.spec_coverage || d.coverage || '')) {
+    assert.ok(cost.includes(d.name) && cost.includes(`$${Number(d.price).toLocaleString('en-CA')}`), d.name);
+  }
+  assert.ok(faq.some(q => q.name.includes('HVAC')));
+});
+
 test('product structured data: one priced variant per size (ids match the feed) + shipping that matches checkout', async () => {
   const ld = async slug => {
     const html = await (await get('/products/' + slug)).text();

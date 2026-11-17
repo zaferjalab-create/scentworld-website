@@ -747,7 +747,9 @@ app.get('/', (req, res) => {
     const u = String(p.updated_at || '').slice(0, 10);
     return /^\d{4}-\d{2}-\d{2}$/.test(u) && u > d ? u : d;
   }, HOMEPAGE_COPY_UPDATED);
-  res.render('index', { products, testimonials: getTestimonials(), buckets: sizeBuckets(), pageModified });
+  const oilCount = getActiveProducts().filter(p => p.category === 'oils').length;
+  res.render('index', { products, testimonials: getTestimonials(), buckets: sizeBuckets(), pageModified,
+    oilCount, shipping: shippingRules() });
 });
 
 // Clean product detail URLs: /products/:slug (SSR)

@@ -166,82 +166,69 @@ src="https://www.facebook.com/tr?id=2172433390181937&ev=PageView&noscript=1"
 </script>
 <% }) %>
 <link rel="alternate" type="application/rss+xml" title="Scent World Canada Blog" href="https://www.scentworld.ca/blog/feed.xml">
+<%
+  // Homepage facts, computed from the live catalogue so prices, ranges and
+  // counts are never out of date. The FAQ below feeds both the visible list
+  // and the FAQPage structured data, so the two can't drift apart.
+  const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const strip = h => String(h).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+  const cad = n => '$' + Number(n || 0).toLocaleString('en-CA', { maximumFractionDigits: 2 });
+  const sqft = d => { const m = String(d.spec_coverage || d.coverage || '').replace(/,/g, '').match(/([\d.]+)\s*[–-]\s*([\d.]+)\s*sq\s*ft/i); return m ? [+m[1], +m[2]] : null; };
+  const fmt = n => n.toLocaleString('en-CA');
+  const diffusers = products.filter(d => d.category === 'diffusers' && sqft(d)).sort((a, b) => sqft(a)[1] - sqft(b)[1]);
+  const hvac = diffusers.filter(d => /hvac/i.test(`${d.name} ${d.short_desc || ''} ${d.full_desc || ''}`));
+  const shortName = d => d.name.replace(/\s+(Commercial|Nano)?\s*Diffuser$/i, '');
+  const minArea = diffusers.length ? sqft(diffusers[0])[0] : 0;
+  const maxArea = diffusers.length ? sqft(diffusers[diffusers.length - 1])[1] : 0;
+  const minPrice = diffusers.length ? Math.min(...diffusers.map(d => d.price || 0)) : 0;
+  const maxPrice = diffusers.length ? Math.max(...diffusers.map(d => d.price || 0)) : 0;
+  const freeOver = shipping && shipping.threshold != null ? shipping.threshold : 150;
+  const link = (href, text) => `<a href="${href}" style="color:var(--gold)">${text}</a>`;
+  const list = items => items.length <= 1 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+
+  const faq = [
+    ['What does Scent World Canada do?',
+     `Scent World Canada sells scent diffusers, fragrance oils and scent marketing services to businesses and homes across Canada. It is based at 6156 Quinpool Road in Halifax, Nova Scotia. Customers include hotels, spas, restaurants, offices and retail stores, and the company also develops custom signature scents.`],
+  ];
+  if (diffusers.length) faq.push(
+    ['How much does a commercial scent diffuser cost?',
+     `Scent World diffusers cost ${cad(minPrice)} to ${cad(maxPrice)} CAD. ` +
+     diffusers.map(d => `The ${link('/products/' + d.slug, esc(d.name))} is ${cad(d.price)} and covers ${fmt(sqft(d)[0])}–${fmt(sqft(d)[1])} sq ft.`).join(' ') +
+     ` Fragrance oils are sold separately. For several locations or a whole building, ${link('#contact', 'request a quote')}.`],
+    ['Which diffuser size do I need?',
+     `Pick the diffuser by the floor area you want to scent: ` +
+     list(diffusers.map(d => `${esc(shortName(d))} for ${fmt(sqft(d)[0])}–${fmt(sqft(d)[1])} sq ft`)) +
+     `. For spaces over ${fmt(maxArea)} sq ft, ${link('#booking', 'book a free consultation')} and we will plan the coverage. ${link('/compare', 'Compare all diffusers')}.`]
+  );
+  if (hvac.length) faq.push(
+    ['Can a scent diffuser connect to my HVAC system?',
+     `Yes. The ${list(hvac.map(d => link('/products/' + d.slug, esc(shortName(d)))))} can connect to HVAC ducts, so one unit scents several rooms through the existing air system.`]
+  );
+  faq.push(
+    ['Do you ship across Canada?',
+     `Yes. Orders ship from Halifax within 24 to 48 hours and arrive in 3 to 8 business days, with tracking. Shipping is <strong>free on orders over $${freeOver} CAD</strong>.`],
+    ['What types of businesses do you work with?',
+     `Hotels and boutique inns, spas and wellness centres, restaurants, retail stores, corporate offices, real estate showings and private homes. See ${link('/industries/hotels.html', 'hotels')}, ${link('/industries/spas.html', 'spas')} and ${link('/industries/restaurants.html', 'restaurants')}.`],
+    ['Can you create a custom signature scent for my business?',
+     `Yes. Scent World develops custom signature scents matched to a brand and the atmosphere it wants. It starts with a free 30-minute consultation about your space, audience and goals.`],
+    ['Do you offer free consultations?',
+     `Yes. Consultations are free and take 30 minutes. ${link('#booking', 'Book a time')} on this page and we will confirm it within 24 hours.`],
+    ['Where is Scent World Canada located?',
+     `At <strong>6156 Quinpool Road, Halifax, Nova Scotia</strong>. We work with clients across Atlantic Canada, including Halifax, Dartmouth, Bedford, Moncton, Fredericton and Charlottetown, and ship to every Canadian province. Hours are Monday to Friday, 9 am to 6 pm Atlantic time, and weekends by appointment.`],
+    ['What is your return policy?',
+     `Returns are accepted within <strong>30 days</strong> on all purchases. Items must be unused, unopened and in their original packaging, and refunds are processed within 10 business days. Damaged or defective items get free return shipping and a full replacement or refund. ${link('/refund.html', 'Read the full refund policy')}.`],
+    ['Are your fragrance oils safe for commercial use?',
+     `Yes, all our fragrance oils are professionally formulated for commercial environments and meet IFRA (International Fragrance Association) safety standards. They are non-toxic, hypoallergenic friendly, and designed for continuous use in occupied spaces.`],
+    ['How long does a bottle of fragrance oil last?',
+     `Fragrance oil duration depends on the size of your space, the diffuser settings, and how many hours per day the system operates. On average, a standard bottle lasts 30 to 60 days in a typical commercial space with regular use. We help you calculate exact needs during your consultation.`]
+  );
+%>
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [{
-    "@type": "Question",
-    "name": "What does Scent World Canada do?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Scent World Canada provides premium scent marketing and luxury fragrance solutions to hotels, spas, restaurants, retail spaces, offices, and homes across Canada. We supply commercial scent diffusers, signature fragrance oils, and custom scent strategy consultations to help businesses elevate guest experience through atmosphere."
-    }
-  },{
-    "@type": "Question",
-    "name": "Do you ship across Canada?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Yes, we ship coast to coast across Canada. Orders are processed within 24 to 48 hours and typical delivery time is 3 to 8 business days. We offer free shipping on all orders over $150 CAD, and all packages are sent with tracking numbers."
-    }
-  },{
-    "@type": "Question",
-    "name": "What types of businesses do you work with?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We specialize in serving luxury hotels, boutique inns, spas and wellness centres, fine dining restaurants, retail stores, corporate offices, real estate showings, and high-end residential clients. Any space where atmosphere matters can benefit from our scent solutions."
-    }
-  },{
-    "@type": "Question",
-    "name": "Can you create a custom signature scent for my business?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Absolutely. We offer bespoke fragrance development tailored to your brand identity, target audience, and the specific atmosphere you want to create. Our scent strategy consultations help you design a signature scent that becomes part of your brand experience."
-    }
-  },{
-    "@type": "Question",
-    "name": "How much does a commercial scent diffuser cost?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Our scent diffusers and fragrance solutions vary in price depending on the size of your space, type of system, and fragrance selected. We offer solutions for small boutique spaces all the way up to large hotel chains. Request a quote on our website for personalized pricing tailored to your needs."
-    }
-  },{
-    "@type": "Question",
-    "name": "Do you offer free consultations?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Yes! We provide complimentary 30-minute scent strategy consultations to discuss your space, audience, and goals. Book your free consultation directly on our website and we will reach out within 24 hours to confirm your time slot."
-    }
-  },{
-    "@type": "Question",
-    "name": "Where is Scent World Canada located?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We are based at 6156 Quinpool Road in Halifax, Nova Scotia. We serve clients across all of Atlantic Canada including Halifax, Dartmouth, Bedford, Moncton, Fredericton, and Charlottetown, as well as nationwide shipping to all Canadian provinces."
-    }
-  },{
-    "@type": "Question",
-    "name": "What is your return policy?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We offer a 30-day return policy on all purchases. Items must be unused, unopened, and in original packaging. Refunds are processed within 10 business days. For damaged or defective items, we provide free return shipping and a full replacement or refund."
-    }
-  },{
-    "@type": "Question",
-    "name": "Are your fragrance oils safe for commercial use?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Yes, all our fragrance oils are professionally formulated for commercial environments and meet IFRA (International Fragrance Association) safety standards. They are non-toxic, hypoallergenic friendly, and designed for continuous use in occupied spaces."
-    }
-  },{
-    "@type": "Question",
-    "name": "How long does a bottle of fragrance oil last?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Fragrance oil duration depends on the size of your space, the diffuser settings, and how many hours per day the system operates. On average, a standard bottle lasts 30 to 60 days in a typical commercial space with regular use. We help you calculate exact needs during your consultation."
-    }
-  }]
-}
+<%- JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: strip(a) } }))
+}).replace(/</g, '\\u003c') %>
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -731,7 +718,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
   <div class="hero-c">
     <h1 class="hero-ey"><span>Scent Diffusers &amp; Fragrance Oils</span></h1>
     <p class="ht">Where Fragrance <br>Becomes <em>Experience</em></p>
-    <p class="hp">Premium scent diffusers and artisan fragrance oils, crafted to transform hotels, restaurants, spas, and homes into unforgettable sensory destinations. Now shipping coast to coast across Canada.</p>
+    <p class="hp">Scent World Canada sells scent diffusers and fragrance oils from Halifax, Nova Scotia, to hotels, spas, restaurants, offices and homes across Canada.<% if (diffusers.length) { %> Diffusers cover <%= fmt(minArea) %> to <%= fmt(maxArea) %> sq ft and start at <%= cad(minPrice) %> CAD.<% } %></p>
     <div class="hb"><a href="#products" class="bg">Shop Collection</a><a href="#contact" class="bo">Request a Quote</a></div>
   </div>
   <div class="hs"><span>Discover</span><div class="sb"></div></div>
@@ -748,7 +735,7 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
 <section class="products" id="products">
   <div class="ph">
     <div><div class="sl rv">Our Collection</div><h2 class="st rv d1">Engineered for<br><em>Elegance</em></h2></div>
-    <p class="sd rv d2">Every device is precision-crafted with cold-air nano technology. Every fragrance, globally sourced and meticulously blended.</p>
+    <p class="sd rv d2"><% if (diffusers.length) { %><%= diffusers.length %> cold-air diffusers sized by floor area, from a <%= fmt(minArea) %> sq ft room to a <%= fmt(maxArea) %> sq ft hotel lobby, and <%= oilCount %> fragrance oils made to run in them.<% } else { %>Cold-air diffusers sized by floor area, and fragrance oils made to run in them.<% } %></p>
   </div>
   <div class="pf" id="filterBtns">
     <button class="pf-btn active" data-cat="all">All Products</button>
@@ -998,46 +985,12 @@ footer{background:var(--bg2);padding:4rem 4vw 1.5rem;border-top:1px solid var(--
       <h2 class="st rv d1" style="text-align:center">Frequently Asked <em>Questions</em></h2>
     </div>
     <div class="faq-list rv d2">
+      <% faq.forEach(([q, a]) => { %>
       <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">What does Scent World Canada do?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Scent World Canada provides premium scent marketing and luxury fragrance solutions to hotels, spas, restaurants, retail spaces, offices, and homes across Canada. We supply commercial scent diffusers, signature fragrance oils, and custom scent strategy consultations to help businesses elevate guest experience through atmosphere.</div></div>
+        <button class="faq-q" aria-expanded="false"><%= q %><span class="faq-icon"></span></button>
+        <div class="faq-a"><div class="faq-a-inner"><%- a %></div></div>
       </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">Do you ship across Canada?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Yes, we ship coast to coast across Canada. Orders are processed within 24 to 48 hours and typical delivery time is 3 to 8 business days. We offer <strong>free shipping on all orders over $150 CAD</strong>, and all packages are sent with tracking numbers.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">What types of businesses do you work with?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">We specialize in serving luxury hotels, boutique inns, spas and wellness centres, fine dining restaurants, retail stores, corporate offices, real estate showings, and high-end residential clients. Any space where atmosphere matters can benefit from our scent solutions.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">Can you create a custom signature scent for my business?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Absolutely. We offer bespoke fragrance development tailored to your brand identity, target audience, and the specific atmosphere you want to create. Our scent strategy consultations help you design a signature scent that becomes part of your brand experience.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">How much does a commercial scent diffuser cost?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Our scent diffusers and fragrance solutions vary in price depending on the size of your space, type of system, and fragrance selected. We offer solutions for small boutique spaces all the way up to large hotel chains. <a href="#contact" style="color:var(--gold)">Request a quote</a> for personalized pricing tailored to your needs.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">Do you offer free consultations?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Yes! We provide complimentary 30-minute scent strategy consultations to discuss your space, audience, and goals. <a href="#booking" style="color:var(--gold)">Book your free consultation</a> directly on our website and we will reach out within 24 hours to confirm your time slot.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">Where is Scent World Canada located?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">We are based at <strong>6156 Quinpool Road, Halifax, Nova Scotia</strong>. We serve clients across all of Atlantic Canada including Halifax, Dartmouth, Bedford, Moncton, Fredericton, and Charlottetown, as well as nationwide shipping to all Canadian provinces.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">What is your return policy?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">We offer a <strong>30-day return policy</strong> on all purchases. Items must be unused, unopened, and in original packaging. Refunds are processed within 10 business days. For damaged or defective items, we provide free return shipping and a full replacement or refund. <a href="/refund.html" style="color:var(--gold)">Read full refund policy</a>.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">Are your fragrance oils safe for commercial use?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Yes, all our fragrance oils are professionally formulated for commercial environments and meet IFRA (International Fragrance Association) safety standards. They are non-toxic, hypoallergenic friendly, and designed for continuous use in occupied spaces.</div></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" aria-expanded="false">How long does a bottle of fragrance oil last?<span class="faq-icon"></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Fragrance oil duration depends on the size of your space, the diffuser settings, and how many hours per day the system operates. On average, a standard bottle lasts 30 to 60 days in a typical commercial space with regular use. We help you calculate exact needs during your consultation.</div></div>
-      </div>
+      <% }) %>
     </div>
     <div class="faq-cta rv d3">
       <p>Still have questions? We're here to help.</p>
